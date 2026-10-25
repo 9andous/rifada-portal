@@ -1,0 +1,56 @@
+# dependencies
+/node_modules
+
+# build output
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts
+
+# generated Prisma client
+/src/generated/
+
+# env files (only the example is committed)
+.env*
+!.env.example
+
+# uploaded files and local database volume
+/storage/
+/.data/
+
+# tests
+/coverage
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+.vercel
+
+# Private material that must never be committed to this repository
+docs/*.pdf
+*.pdf
+docs/screenshots/
+docs/rifada-portal-draft.html
+docs/design-lab.md
+docs/brand/
+public/brand/haramain-logo-*
+src/app/dev/
+.claude/
+
+# scratch, logs and exports
+*.log
+logs/
+scratch/
+exports/
+*.bak
+*.dump
+*.sql.gz
+*.key
+*.p12
+*.pfx
+credentials*

@@ -1,0 +1,10 @@
+{
+  "_note": "Default attachment types. Names are placeholders to confirm with the Presidency (docs/COPY-REVIEW.md). Create-only: existing keys are never updated by the seed.",
+  "attachmentTypes": [
+    { "key": "program_plan", "name": "خطة البرنامج", "groups": ["pdf", "word"] },
+    { "key": "request_letter", "name": "خطاب الطلب الرسمي", "groups": ["pdf", "image"] },
+    { "key": "trainer_cvs", "name": "السير الذاتية للمدربين والمعلمين", "groups": ["pdf", "word"] },
+    { "key": "execution_timeline", "name": "الجدول الزمني للتنفيذ", "groups": ["pdf", "word", "excel"] },
+    { "key": "supporting_documents", "name": "مستندات داعمة", "groups": ["pdf", "word", "excel", "image"] }
+  ]
+}

@@ -1,0 +1,205 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Semantic tokens as Tailwind utilities (bg-surface, text-ink, border-line, bg-band, ...). */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-inverse: var(--ink-inverse);
+
+  --color-band: var(--band);
+  --color-band-2: var(--band-2);
+  --color-on-band: var(--on-band);
+  --color-on-band-muted: var(--on-band-muted);
+  --color-gold-on-band: var(--gold-on-band);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-ink: var(--primary-ink);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-ink: var(--primary-soft-ink);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+
+  --color-st-neutral: var(--st-neutral);
+  --color-st-neutral-soft: var(--st-neutral-soft);
+  --color-st-info: var(--st-info);
+  --color-st-info-soft: var(--st-info-soft);
+  --color-st-review: var(--st-review);
+  --color-st-review-soft: var(--st-review-soft);
+  --color-st-warn: var(--st-warn);
+  --color-st-warn-soft: var(--st-warn-soft);
+  --color-st-ok: var(--st-ok);
+  --color-st-ok-soft: var(--st-ok-soft);
+  --color-st-bad: var(--st-bad);
+  --color-st-bad-soft: var(--st-bad-soft);
+  /* Aliases kept for form and alert components */
+  --color-success: var(--st-ok);
+  --color-success-soft: var(--st-ok-soft);
+  --color-warning: var(--st-warn);
+  --color-warning-soft: var(--st-warn-soft);
+  --color-danger: var(--st-bad);
+  --color-danger-soft: var(--st-bad-soft);
+  --color-info: var(--st-info);
+  --color-info-soft: var(--st-info-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-track: var(--chart-track);
+  --color-focus: var(--focus);
+
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+
+  --font-sans: var(--font-cairo-digits), var(--font-cairo-arabic), var(--font-cairo-latin), system-ui, sans-serif;
+  --font-display: var(--font-sans);
+}
+
+@theme {
+  /* Sharp corners everywhere (2px). Only rounded-full (avatars, status dots, radios) stays round. */
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
+  --radius-3xl: 2px;
+  --radius-4xl: 2px;
+
+  /* Type scale (rem) with line heights suited to Cairo's tall Arabic forms */
+  --text-2xs: 0.75rem;
+  --text-2xs--line-height: 1.6;
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.6;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.7;
+  --text-base: 1rem;
+  --text-base--line-height: 1.75;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.55;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.45;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1.4;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 1.35;
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 1.2;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background: var(--canvas);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-variant-numeric: tabular-nums;
+  }
+
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    min-height: 100dvh;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--ink);
+  }
+}
+
+/* Print (review page now, Phase 6 reports later): white paper, no navigation or green band, and
+   coloured marks kept. Elements marked data-print="hide" are screen-only. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  [data-print="hide"] {
+    display: none !important;
+  }
+}
+
+/*
+ * Typographic roles (docs/DESIGN.md: Typography). Components layer, so utilities can still
+ * override colour or size, e.g. white titles on the green band.
+ */
+@layer components {
+  /* Green band edge (docs/DESIGN.md: Green band): the band, pattern included, extends 32px and
+     fades softly into the page. Content never sits in the fading strip. */
+  .band-fade {
+    padding-bottom: 2rem;
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 2rem), transparent);
+  }
+
+  .t-page {
+    font-size: 2rem;
+    line-height: 1.35;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .t-section {
+    font-size: 1.0625rem;
+    line-height: 1.5;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .t-label {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    font-weight: 600;
+    color: var(--ink-subtle);
+  }
+  .t-body {
+    font-size: 0.9375rem;
+    line-height: 1.85;
+    font-weight: 400;
+    color: var(--ink-muted);
+  }
+  .t-figure {
+    font-weight: 700;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums lining-nums;
+    color: var(--ink);
+  }
+  .t-table {
+    font-size: 0.875rem;
+    line-height: 1.55;
+    font-variant-numeric: tabular-nums lining-nums;
+    color: var(--ink);
+  }
+  .t-caption {
+    font-size: 0.75rem;
+    line-height: 1.55;
+    color: var(--ink-subtle);
+  }
+}

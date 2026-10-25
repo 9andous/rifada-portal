@@ -1,0 +1,677 @@
+// Rifada data model. Conventions: cuid ids, UTC timestamps, `archivedAt` soft-delete on
+// reference data, `isDemo` on every operational table so demo data can be wiped precisely.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Identity (Better Auth core tables + Rifada fields)
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SUPER_ADMIN
+  UNIT_MANAGER
+  SUPERVISOR
+  ASSOCIATION_OFFICER
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  name               String
+  // Better Auth requires an email. Accounts without one get a placeholder on the
+  // reserved `.invalid` TLD (see src/server/auth/placeholder-email.ts).
+  email              String    @unique
+  emailVerified      Boolean   @default(false)
+  image              String?
+  username           String?   @unique
+  role               Role
+  // Used only by the mock Nafath provider. Never required.
+  nationalId         String?   @unique
+  phone              String?
+  associationId      String?   @unique
+  mustChangePassword Boolean   @default(true)
+  isActive           Boolean   @default(true)
+  lastLoginAt        DateTime?
+  isDemo             Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  association          Association?            @relation(fields: [associationId], references: [id])
+  sessions             Session[]
+  accounts             Account[]
+  supervisedPrograms   SupervisorProgram[]
+  assignedRequests     Request[]               @relation("AssignedSupervisor")
+  createdRequests      Request[]               @relation("RequestCreator")
+  statusChanges        RequestStatusHistory[]
+  comments             Comment[]
+  notifications        Notification[]
+  auditLogs            AuditLog[]
+  assignmentsMade      AssignmentHistory[]     @relation("AssignmentActor")
+  assignmentsReceived  AssignmentHistory[]     @relation("AssignmentTo")
+  assignmentsReleased  AssignmentHistory[]     @relation("AssignmentFrom")
+  uploadedAttachments  Attachment[]
+  uploadedVersions     AttachmentVersion[]
+  settingsUpdated      Setting[]
+  templateFiles        TemplateFile[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+// ---------------------------------------------------------------------------
+// Associations
+// ---------------------------------------------------------------------------
+
+model Association {
+  id             String    @id @default(cuid())
+  name           String
+  licenseNumber  String?   @unique
+  city           String?
+  region         String?
+  classification String?
+  contactName    String?
+  contactEmail   String?
+  contactPhone   String?
+  isActive       Boolean   @default(true)
+  isDemo         Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  officer  User?
+  requests Request[]
+
+  @@map("associations")
+}
+
+// ---------------------------------------------------------------------------
+// Strategy taxonomy (reference data, editable by the super admin)
+// ---------------------------------------------------------------------------
+
+model StrategicObjective {
+  id          String    @id @default(cuid())
+  number      Int       @unique
+  title       String
+  description String?
+  // Original wording kept when the title is edited (Phase 2b).
+  sourceNote  String?
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  initiativeLinks InitiativeObjectiveLink[]
+
+  @@map("strategic_objectives")
+}
+
+model Program {
+  id           String    @id @default(cuid())
+  number       Int       @unique
+  name         String
+  officialName String?
+  description  String?
+  // Original wording kept when the name is edited (Phase 2b).
+  sourceNote   String?
+  sortOrder    Int       @default(0)
+  isActive     Boolean   @default(true)
+  archivedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  goals       ProgramGoal[]
+  initiatives Initiative[]
+  supervisors SupervisorProgram[]
+  requests    Request[]
+  templates   Template[]
+
+  @@map("programs")
+}
+
+model ProgramGoal {
+  id        String   @id @default(cuid())
+  programId  String
+  number     Int
+  text       String
+  // Original wording kept when the text is edited (Phase 2b).
+  sourceNote String?
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, number])
+  @@map("program_goals")
+}
+
+model Initiative {
+  id          String    @id @default(cuid())
+  programId   String
+  number      Int
+  name        String
+  description String?
+  sourceNote  String?
+  isActive    Boolean   @default(true)
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  program        Program                   @relation(fields: [programId], references: [id], onDelete: Restrict)
+  objectiveLinks InitiativeObjectiveLink[]
+  requirements   InitiativeRequirement[]
+  requests       Request[]
+  templates      Template[]
+
+  @@unique([programId, number])
+  @@map("initiatives")
+}
+
+model InitiativeObjectiveLink {
+  initiativeId String
+  objectiveId  String
+
+  initiative Initiative         @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  objective  StrategicObjective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+
+  @@id([initiativeId, objectiveId])
+  @@map("initiative_objective_links")
+}
+
+enum RequirementKind {
+  FIELD
+  ATTACHMENT
+}
+
+enum FieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  DATE
+  SELECT
+}
+
+model AttachmentType {
+  id                String    @id @default(cuid())
+  key               String    @unique
+  name              String
+  allowedMimeGroups String[]
+  archivedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  requirements InitiativeRequirement[]
+  attachments  Attachment[]
+  templates    Template[]
+
+  @@map("attachment_types")
+}
+
+model InitiativeRequirement {
+  id               String          @id @default(cuid())
+  initiativeId     String
+  kind             RequirementKind
+  key              String
+  label            String
+  fieldType        FieldType?
+  options          Json?
+  attachmentTypeId String?
+  isRequired       Boolean         @default(true)
+  sortOrder        Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  initiative     Initiative      @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  attachmentType AttachmentType? @relation(fields: [attachmentTypeId], references: [id])
+
+  @@unique([initiativeId, key])
+  @@map("initiative_requirements")
+}
+
+model SupervisorProgram {
+  userId    String
+  programId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@id([userId, programId])
+  @@map("supervisor_programs")
+}
+
+// ---------------------------------------------------------------------------
+// Request workflow
+// ---------------------------------------------------------------------------
+
+model RequestStatus {
+  id         String   @id @default(cuid())
+  // Stable code used by the workflow engine (DRAFT, SUBMITTED, ...). Names are editable.
+  key        String   @unique
+  name       String
+  colorToken String
+  isTerminal Boolean  @default(false)
+  isSystem   Boolean  @default(false)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  requests        Request[]
+  historyFrom     RequestStatusHistory[] @relation("HistoryFrom")
+  historyTo       RequestStatusHistory[] @relation("HistoryTo")
+  transitionsFrom StatusTransition[]     @relation("TransitionFrom")
+  transitionsTo   StatusTransition[]     @relation("TransitionTo")
+
+  @@map("request_statuses")
+}
+
+model StatusTransition {
+  id           String  @id @default(cuid())
+  fromStatusId String
+  toStatusId   String
+  allowedRoles Role[]
+  // Performed only by the system (e.g. the completeness check); never triggered by a user.
+  // Automatic transitions have no roles (Phase 2b stop 2).
+  isAutomatic  Boolean @default(false)
+
+  fromStatus RequestStatus @relation("TransitionFrom", fields: [fromStatusId], references: [id], onDelete: Cascade)
+  toStatus   RequestStatus @relation("TransitionTo", fields: [toStatusId], references: [id], onDelete: Cascade)
+
+  @@unique([fromStatusId, toStatusId])
+  @@map("status_transitions")
+}
+
+model ReferenceCounter {
+  hijriYear Int @id
+  lastSeq   Int @default(0)
+
+  @@map("reference_counters")
+}
+
+model Request {
+  id                   String    @id @default(cuid())
+  // Assigned on first successful submission: RF-<hijriYear>-<seq>.
+  referenceNo          String?   @unique
+  associationId        String
+  programId            String
+  initiativeId         String
+  statusId             String
+  title                String
+  description          String?
+  targetAudience       String?
+  location             String?
+  startDate            DateTime?
+  endDate              DateTime?
+  customFields         Json      @default("{}")
+  // The initiative's requirements as they stood at the last successful submission (D-077).
+  requirementsSnapshot Json?
+  assignedSupervisorId String?
+  createdById          String
+  submittedAt          DateTime?
+  decidedAt            DateTime?
+  slaDueAt             DateTime?
+  isDemo               Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  association        Association            @relation(fields: [associationId], references: [id], onDelete: Restrict)
+  program            Program                @relation(fields: [programId], references: [id], onDelete: Restrict)
+  initiative         Initiative             @relation(fields: [initiativeId], references: [id], onDelete: Restrict)
+  status             RequestStatus          @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  assignedSupervisor User?                  @relation("AssignedSupervisor", fields: [assignedSupervisorId], references: [id])
+  createdBy          User                   @relation("RequestCreator", fields: [createdById], references: [id])
+  statusHistory      RequestStatusHistory[]
+  assignmentHistory  AssignmentHistory[]
+  completenessChecks CompletenessCheck[]
+  comments           Comment[]
+  attachments        Attachment[]
+
+  @@index([associationId])
+  @@index([programId])
+  @@index([statusId])
+  @@index([assignedSupervisorId])
+  @@map("requests")
+}
+
+model RequestStatusHistory {
+  id           String   @id @default(cuid())
+  requestId    String
+  fromStatusId String?
+  toStatusId   String
+  actorId      String?
+  note         String?
+  isDemo       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  request    Request        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  fromStatus RequestStatus? @relation("HistoryFrom", fields: [fromStatusId], references: [id])
+  toStatus   RequestStatus  @relation("HistoryTo", fields: [toStatusId], references: [id])
+  actor      User?          @relation(fields: [actorId], references: [id])
+
+  @@index([requestId])
+  @@map("request_status_history")
+}
+
+model AssignmentHistory {
+  id         String   @id @default(cuid())
+  requestId  String
+  fromUserId String?
+  toUserId   String?
+  // Null actor means the automatic assignment rule made the change.
+  actorId    String?
+  reason     String?
+  isDemo     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  request  Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  fromUser User?   @relation("AssignmentFrom", fields: [fromUserId], references: [id])
+  toUser   User?   @relation("AssignmentTo", fields: [toUserId], references: [id])
+  actor    User?   @relation("AssignmentActor", fields: [actorId], references: [id])
+
+  @@index([requestId])
+  @@map("assignment_history")
+}
+
+enum CheckEngine {
+  RULES
+  AI
+}
+
+model CompletenessCheck {
+  id        String      @id @default(cuid())
+  requestId String
+  passed    Boolean
+  missing   Json        @default("[]")
+  ranBy     CheckEngine @default(RULES)
+  isDemo    Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("completeness_checks")
+}
+
+model Comment {
+  id         String    @id @default(cuid())
+  requestId  String
+  parentId   String?
+  authorId   String
+  body       String
+  // Internal notes are visible to staff only, never to association officers.
+  isInternal Boolean   @default(false)
+  isDemo     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  editedAt   DateTime?
+
+  request     Request      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  parent      Comment?     @relation("CommentThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[]    @relation("CommentThread")
+  author      User         @relation(fields: [authorId], references: [id])
+  attachments Attachment[]
+
+  @@index([requestId])
+  @@map("comments")
+}
+
+enum AttachmentOwner {
+  REQUEST
+  COMMENT
+}
+
+model Attachment {
+  id               String          @id @default(cuid())
+  ownerType        AttachmentOwner
+  requestId        String
+  commentId        String?
+  attachmentTypeId String?
+  title            String
+  currentVersionId String?         @unique
+  uploadedById     String
+  isDemo           Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  request        Request             @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  comment        Comment?            @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  attachmentType AttachmentType?     @relation(fields: [attachmentTypeId], references: [id])
+  uploadedBy     User                @relation(fields: [uploadedById], references: [id])
+  versions       AttachmentVersion[] @relation("AttachmentVersions")
+  currentVersion AttachmentVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+
+  @@index([requestId])
+  @@map("attachments")
+}
+
+model AttachmentVersion {
+  id           String   @id @default(cuid())
+  attachmentId String
+  versionNo    Int
+  storageKey   String   @unique
+  fileName     String
+  mime         String
+  size         Int
+  sha256       String
+  uploadedById String
+  isDemo       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  attachment  Attachment  @relation("AttachmentVersions", fields: [attachmentId], references: [id], onDelete: Cascade)
+  currentOf   Attachment? @relation("CurrentVersion")
+  uploadedBy  User        @relation(fields: [uploadedById], references: [id])
+
+  @@unique([attachmentId, versionNo])
+  @@map("attachment_versions")
+}
+
+// ---------------------------------------------------------------------------
+// Library, content, notifications
+// ---------------------------------------------------------------------------
+
+model Template {
+  id               String    @id @default(cuid())
+  title            String
+  description      String?
+  programId        String?
+  initiativeId     String?
+  attachmentTypeId String?
+  // The current file (copied from its template_files row).
+  storageKey       String
+  fileName         String
+  mime             String
+  size             Int
+  sha256           String?
+  currentFileId    String?   @unique
+  isPublished      Boolean   @default(false)
+  archivedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  program        Program?        @relation(fields: [programId], references: [id])
+  initiative     Initiative?     @relation(fields: [initiativeId], references: [id])
+  attachmentType AttachmentType? @relation(fields: [attachmentTypeId], references: [id])
+  currentFile    TemplateFile?   @relation("CurrentTemplateFile", fields: [currentFileId], references: [id])
+  files          TemplateFile[]  @relation("TemplateFiles")
+
+  @@map("templates")
+}
+
+// Every file ever uploaded for a template; replacing a file adds a version and keeps the old one.
+model TemplateFile {
+  id           String   @id @default(cuid())
+  templateId   String
+  versionNo    Int
+  storageKey   String   @unique
+  fileName     String
+  mime         String
+  size         Int
+  sha256       String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  template   Template  @relation("TemplateFiles", fields: [templateId], references: [id], onDelete: Restrict)
+  currentOf  Template? @relation("CurrentTemplateFile")
+  uploadedBy User      @relation(fields: [uploadedById], references: [id])
+
+  @@unique([templateId, versionNo])
+  @@map("template_files")
+}
+
+enum AnnouncementAudience {
+  PUBLIC
+  ASSOCIATIONS
+  STAFF
+}
+
+model Announcement {
+  id          String               @id @default(cuid())
+  title       String
+  body        String
+  audience    AnnouncementAudience @default(PUBLIC)
+  pinned      Boolean              @default(false)
+  publishedAt DateTime?
+  isDemo      Boolean              @default(false)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@map("announcements")
+}
+
+model Guide {
+  id         String   @id @default(cuid())
+  title      String
+  summary    String?
+  category   String?
+  body       String?
+  storageKey String?
+  fileName   String?
+  mime       String?
+  size       Int?
+  isPublic   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  isDemo     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("guides")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  isDemo    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+// Append-only. No code path updates or deletes audit rows.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Setting {
+  key         String   @id
+  value       Json
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("settings")
+}
+
+model SiteContent {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("site_content")
+}
+
+model CoreValue {
+  id          String   @id @default(cuid())
+  number      Int      @unique
+  title       String
+  description String
+  updatedAt   DateTime @updatedAt
+
+  @@map("core_values")
+}

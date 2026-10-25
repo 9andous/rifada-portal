@@ -1,0 +1,21 @@
+{
+  "statuses": [
+    { "key": "DRAFT", "name": "مسودة", "colorToken": "neutral", "isTerminal": false, "sortOrder": 1 },
+    { "key": "SUBMITTED", "name": "مقدَّم", "colorToken": "info", "isTerminal": false, "sortOrder": 2 },
+    { "key": "COMPLETENESS_CHECK", "name": "فحص الاكتمال", "colorToken": "info", "isTerminal": false, "sortOrder": 3 },
+    { "key": "UNDER_REVIEW", "name": "قيد المراجعة", "colorToken": "primary", "isTerminal": false, "sortOrder": 4 },
+    { "key": "RETURNED", "name": "معاد للتعديل", "colorToken": "warning", "isTerminal": false, "sortOrder": 5 },
+    { "key": "APPROVED", "name": "معتمد", "colorToken": "success", "isTerminal": true, "sortOrder": 6 },
+    { "key": "REJECTED", "name": "مرفوض", "colorToken": "danger", "isTerminal": true, "sortOrder": 7 }
+  ],
+  "transitions": [
+    { "from": "DRAFT", "to": "SUBMITTED", "roles": ["ASSOCIATION_OFFICER"] },
+    { "from": "SUBMITTED", "to": "COMPLETENESS_CHECK", "roles": [], "automatic": true },
+    { "from": "COMPLETENESS_CHECK", "to": "UNDER_REVIEW", "roles": [], "automatic": true },
+    { "from": "COMPLETENESS_CHECK", "to": "DRAFT", "roles": [], "automatic": true },
+    { "from": "UNDER_REVIEW", "to": "RETURNED", "roles": ["SUPERVISOR", "UNIT_MANAGER"] },
+    { "from": "UNDER_REVIEW", "to": "APPROVED", "roles": ["SUPERVISOR", "UNIT_MANAGER"] },
+    { "from": "UNDER_REVIEW", "to": "REJECTED", "roles": ["SUPERVISOR", "UNIT_MANAGER"] },
+    { "from": "RETURNED", "to": "SUBMITTED", "roles": ["ASSOCIATION_OFFICER"] }
+  ]
+}
