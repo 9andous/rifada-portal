@@ -21,7 +21,7 @@ Never start a phase that has not been approved.
 | **Phase 2 overall** | **Complete**, except the deferred CSV import (2a stop 2) | |
 | Phase 3 — Requests core | **Done**: verified by the owner on 2026-10-25 | Merged from `phase-3` with its milestone commits. Decisions D-070 to D-091; review screenshots kept privately. The intermittent hydration error (D-090) stays under «Open items before production». |
 | Phase 4 — Dashboards and notifications | Not started | |
-| Phase 5 — Public site, announcements, guides | Not started | |
+| Phase 5 — Public site, announcements, guides | **In progress**: home page built on 2026-10-25 with the design handoff v2 (D-092), awaiting the owner's review | Announcements, guides and programme pages not started. |
 | Phase 6 — Reports, print and PDF | Not started | |
 | Phase 7 — Demo mode, hardening, docs | Not started | |
 

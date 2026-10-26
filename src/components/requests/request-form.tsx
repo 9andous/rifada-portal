@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { HijriDateInput } from "@/components/ui/hijri-date-input";
 import { Select } from "@/components/ui/select";
-import { Alert, SectionTitle } from "@/components/ui/surface";
+import { Alert } from "@/components/ui/surface";
+import { toArabicDigits } from "@/lib/format";
 import { GENERAL_FIELD_LABELS, type RequirementSpec } from "@/lib/requests";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
 import { saveDraftAction, submitRequestAction } from "@/server/actions/requests";
@@ -70,7 +71,7 @@ export function RequestForm({
   const err = (key: string) => errors[key];
 
   return (
-    <form id="request-form" onSubmit={onSubmit} noValidate className="flex flex-col gap-10">
+    <form id="request-form" onSubmit={onSubmit} noValidate className="flex flex-col">
       <div ref={notice} className="scroll-mt-6" />
       {missing.length ? (
         <Alert tone="danger" title={submitState.message}>
@@ -88,8 +89,7 @@ export function RequestForm({
         <Alert tone={state.ok ? "success" : "danger"}>{state.message}</Alert>
       ) : null}
 
-      <section className="flex flex-col gap-5">
-        <SectionTitle>البيانات العامة</SectionTitle>
+      <FormSection n={1} title="البيانات العامة" hint="عنوان الطلب ووصفه والفئة المستهدفة ومكان التنفيذ ومدته.">
         <Field id="f-title" label={GENERAL_FIELD_LABELS.title} error={err("title")} required>
           <Input id="f-title" name="title" defaultValue={defaults.title} maxLength={REQUEST_LIMITS.title} aria-invalid={Boolean(err("title"))} />
         </Field>
@@ -110,21 +110,19 @@ export function RequestForm({
             <HijriDateInput id="f-endDate" name="endDate" defaultValue={defaults.endDate} invalid={Boolean(err("endDate"))} />
           </Field>
         </div>
-      </section>
+      </FormSection>
 
       {fields.length > 0 ? (
-        <section className="flex flex-col gap-5">
-          <SectionTitle>بيانات المبادرة</SectionTitle>
+        <FormSection n={2} title="بيانات المبادرة" hint="البيانات الخاصة التي تطلبها هذه المبادرة.">
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {fields.map((f) => (
               <CustomField key={f.key} field={f} value={defaults.custom[f.key] ?? ""} error={err(`custom.${f.key}`)} />
             ))}
           </div>
-        </section>
+        </FormSection>
       ) : null}
 
-      <section className="flex flex-col gap-5">
-        <SectionTitle>المرفقات</SectionTitle>
+      <FormSection n={fields.length > 0 ? 3 : 2} title="المرفقات" hint="تُحفظ الملفات فور رفعها.">
         {attachments.length === 0 ? (
           <p className="t-body text-sm">لا تتطلب هذه المبادرة مرفقات.</p>
         ) : (
@@ -134,9 +132,9 @@ export function RequestForm({
             ))}
           </div>
         )}
-      </section>
+      </FormSection>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="-mx-6 -mb-6 mt-8 flex flex-wrap items-center gap-3 rounded-b-xl border-t border-line bg-surface-muted px-6 py-4 lg:-mx-8 lg:-mb-8 lg:px-8">
         <Button type="submit" name="intent" value="submit" size="lg" disabled={pending}>
           {submitting ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <Send aria-hidden="true" strokeWidth={1.75} />}
           {submitting ? "جارٍ التحقق والتقديم…" : returned ? "إعادة تقديم الطلب" : "تقديم الطلب"}
@@ -148,6 +146,22 @@ export function RequestForm({
         <p className="t-caption">يتحقق النظام عند التقديم من اكتمال البيانات والمرفقات المطلوبة.</p>
       </div>
     </form>
+  );
+}
+
+/** One numbered part of the request form, separated from the next by a hairline. */
+function FormSection({ n, title, hint, children }: { n: number; title: string; hint?: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-5 border-b border-line py-8 first-of-type:pt-0 last-of-type:border-0 last-of-type:pb-0">
+      <header className="flex items-center gap-3">
+        <span className="t-figure flex size-8 shrink-0 items-center justify-center rounded-full bg-band text-sm text-band-gold">{toArabicDigits(n)}</span>
+        <div>
+          <h2 className="t-section">{title}</h2>
+          {hint ? <p className="text-xs text-ink-subtle">{hint}</p> : null}
+        </div>
+      </header>
+      {children}
+    </section>
   );
 }
 

@@ -6,7 +6,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
     <input
       className={cn(
         "h-10 w-full rounded-md border border-line-strong bg-surface px-3 text-sm text-ink",
-        "placeholder:text-ink-subtle focus-visible:border-primary focus-visible:outline-2",
+        "placeholder:text-ink-subtle transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/20",
         "aria-[invalid=true]:border-danger disabled:bg-surface-muted disabled:text-ink-subtle",
         className,
       )}
@@ -20,7 +20,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
     <textarea
       className={cn(
         "min-h-24 w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm leading-relaxed text-ink",
-        "placeholder:text-ink-subtle focus-visible:border-primary focus-visible:outline-2",
+        "placeholder:text-ink-subtle transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/20",
         "aria-[invalid=true]:border-danger disabled:bg-surface-muted disabled:text-ink-subtle",
         className,
       )}
@@ -43,7 +43,7 @@ type FieldProps = {
 export function Field({ id, label, hint, error, required, children, className }: FieldProps) {
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="text-sm font-medium text-ink">
+      <label htmlFor={id} className="text-sm font-semibold text-ink">
         {label}
         {required ? (
           <span className="ms-1 text-danger" aria-hidden="true">

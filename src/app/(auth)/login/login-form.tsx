@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
-import { Fingerprint, LoaderCircle, LogIn } from "lucide-react";
+import { ChevronLeft, Fingerprint, LoaderCircle, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { Alert } from "@/components/ui/surface";
@@ -70,17 +70,17 @@ export function LoginForm() {
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
         {error ? <Alert tone="danger">{error}</Alert> : null}
         <Field id="username" label="اسم المستخدم" required>
-          <Input id="username" name="username" autoComplete="username" dir="ltr" required autoFocus />
+          <Input id="username" name="username" autoComplete="username" dir="ltr" required autoFocus className="h-12" />
         </Field>
         <Field id="password" label="كلمة المرور" required>
-          <Input id="password" name="password" type="password" autoComplete="current-password" dir="ltr" required />
+          <Input id="password" name="password" type="password" autoComplete="current-password" dir="ltr" required className="h-12" />
         </Field>
         <div className="flex justify-end">
           <Link href="/forgot-password" className="text-sm text-primary underline-offset-4 hover:underline">
             نسيت كلمة المرور؟
           </Link>
         </div>
-        <Button type="submit" size="lg" disabled={pending}>
+        <Button type="submit" variant="dark" size="lg" disabled={pending}>
           {pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <LogIn aria-hidden="true" />}
           {pending ? "جارٍ التحقق…" : "تسجيل الدخول"}
         </Button>
@@ -93,10 +93,20 @@ export function LoginForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Button variant="outline" size="lg" onClick={() => setMode("nafath")}>
-          <Fingerprint aria-hidden="true" />
-          الدخول عبر النفاذ الوطني الموحد
-        </Button>
+        <button
+          type="button"
+          onClick={() => setMode("nafath")}
+          className="flex w-full items-center gap-3.5 rounded-lg border-[1.5px] border-primary bg-primary-soft/60 px-4 py-3.5 text-start transition-colors hover:bg-primary-soft"
+        >
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-ink">
+            <Fingerprint aria-hidden="true" className="size-6" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-bold text-brand-ink">الدخول عبر النفاذ الوطني الموحد</span>
+            <span className="block text-[0.8125rem] text-ink-muted">باستخدام رقم الهوية الوطنية وتطبيق نفاذ</span>
+          </span>
+          <ChevronLeft aria-hidden="true" className="size-5 shrink-0 text-ink-subtle" />
+        </button>
         <p className="t-caption text-center">الدخول عبر النفاذ الوطني في هذه البيئة محاكاة لأغراض التطوير.</p>
       </div>
     </div>

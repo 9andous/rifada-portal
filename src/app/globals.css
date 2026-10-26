@@ -21,6 +21,14 @@
   --color-on-band: var(--on-band);
   --color-on-band-muted: var(--on-band-muted);
   --color-gold-on-band: var(--gold-on-band);
+  --color-band-deep: var(--band-deep);
+  --color-band-ink: var(--band-ink);
+  --color-band-ink-muted: var(--band-ink-muted);
+  --color-band-gold: var(--band-gold);
+  --color-brand-ink: var(--brand-ink);
+  --color-gold-action: var(--gold-action);
+  --color-gold-action-hover: var(--gold-action-hover);
+  --color-on-gold-action: var(--on-gold-action);
 
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
@@ -71,15 +79,16 @@
 }
 
 @theme {
-  /* Sharp corners everywhere (2px). Only rounded-full (avatars, status dots, radios) stays round. */
-  --radius-xs: 2px;
-  --radius-sm: 2px;
-  --radius-md: 2px;
-  --radius-lg: 2px;
-  --radius-xl: 2px;
-  --radius-2xl: 2px;
-  --radius-3xl: 2px;
-  --radius-4xl: 2px;
+  /* Radii of the design handoff: 6 tags, 8 small controls, 10 buttons and inputs, 12 tiles and
+     menus, 14 cards, 20 hero panels. */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-4xl: 32px;
 
   /* Type scale (rem) with line heights suited to Cairo's tall Arabic forms */
   --text-2xs: 0.75rem;
@@ -121,7 +130,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--focus);
+    outline: 3px solid var(--focus);
     outline-offset: 2px;
   }
 
@@ -154,18 +163,50 @@
  * override colour or size, e.g. white titles on the green band.
  */
 @layer components {
-  /* Green band edge (docs/DESIGN.md: Green band): the band, pattern included, extends 32px and
-     fades softly into the page. Content never sits in the fading strip. */
-  .band-fade {
-    padding-bottom: 2rem;
-    mask-image: linear-gradient(to bottom, #000 calc(100% - 2rem), transparent);
+  /* White page head (docs/DESIGN.md: Page head): content written for the green band (on-band
+     text, gold marks) is remapped to ink colours. .band-scope restores the green-surface values
+     inside it, e.g. for the featured key figure. */
+  .page-head {
+    --on-band: var(--ink);
+    --on-band-muted: var(--ink-muted);
+    --gold-on-band: var(--accent-ink);
+  }
+  .band-scope {
+    --on-band: var(--band-ink);
+    --on-band-muted: var(--band-ink-muted);
+    --gold-on-band: var(--band-gold);
+  }
+
+  /* A table right under a card header starts at the header rule: no gap, no second rule. */
+  .panel-head + [data-table] {
+    margin-top: -1.25rem;
+  }
+  .panel-head + [data-table] thead {
+    border-top-width: 0;
+  }
+
+  /* Photographs framed by the ogee arch of the Rifada logo (viewBox 0 0 200 250). */
+  .arch-mask {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 250' preserveAspectRatio='none'%3E%3Cpath d='M0 250 V118 C0 70 48 50 100 0 C152 50 200 70 200 118 V250 Z'/%3E%3C/svg%3E");
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+  }
+
+  /* Content fades up on page entry (300ms), except for users who ask for reduced motion. */
+  .fade-up {
+    animation: fade-up 0.3s ease both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fade-up {
+      animation: none;
+    }
   }
 
   .t-page {
     font-size: 2rem;
     line-height: 1.35;
     font-weight: 700;
-    color: var(--ink);
+    color: var(--brand-ink);
   }
   .t-section {
     font-size: 1.0625rem;
@@ -201,5 +242,16 @@
     font-size: 0.75rem;
     line-height: 1.55;
     color: var(--ink-subtle);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }

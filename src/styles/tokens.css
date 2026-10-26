@@ -1,62 +1,76 @@
 /*
- * Rifada design tokens (docs/DESIGN.md). Direction C "Heritage panel" values from the design lab
- * (kept privately, not part of this repository), plus the chart palette and app aliases.
+ * Rifada design tokens (docs/DESIGN.md). Palette of the approved design handoff, aligned with
+ * prh.gov.sa: official greens, the gold of the Rifada logo, cool neutrals.
  *
  * Surface levels: canvas (page) < surface (cards) < surface-muted (raised: table headers, inputs,
- * hover) < surface-sunken (highest: selected rows, tracks). In dark mode each level is slightly
- * lighter and greener. The green band (navigation, page title, key figures) uses the band tokens.
+ * hover) < surface-sunken (highest: selected rows, tracks).
+ *
+ * Green surfaces (navigation bar, login panel, featured figure, footer) use the band tokens.
+ * `on-band`, `on-band-muted` and `gold-on-band` point at the band-ink values; the white page head
+ * remaps them to ink colours (globals.css: .page-head), so content written for the green band
+ * stays legible there.
  *
  * Every text/background pair, chart colour and accent is checked by `npm run contrast`.
  */
 
 :root {
   /* Surfaces */
-  --canvas: #f5efe1;
-  --surface: #fffcf4;
-  --surface-muted: #f6f0e2;
-  --surface-sunken: #eee5d1;
-  --line: #e8dec8;
-  --line-strong: #d3c6a9;
+  --canvas: #f5f6f4;
+  --surface: #ffffff;
+  --surface-muted: #f8f9f8;
+  --surface-sunken: #eef1ef;
+  --line: #e5e9e6;
+  --line-strong: #c9d1cc;
 
   /* Text */
-  --ink: #221f1a;
-  --ink-muted: #524c43;
-  --ink-subtle: #6b645a;
-  --ink-inverse: #fffcf4;
+  --ink: #161b18;
+  --ink-muted: #4b5751;
+  --ink-subtle: #5d6a63;
+  --ink-inverse: #ffffff;
+  /* Page titles and system name */
+  --brand-ink: #074d31;
 
-  /* Green band */
-  --band: #1d4236;
-  --band-2: #255043;
-  --on-band: #ffffff;
-  --on-band-muted: #c4d6cd;
-  --gold-on-band: #dcc27c;
-  --pattern-on-band: rgb(220 194 124 / 0.12);
+  /* Green surfaces */
+  --band: #074d31;
+  --band-2: #0a5c3b;
+  --band-deep: #03281a;
+  --band-ink: #ffffff;
+  --band-ink-muted: #c6d8ce;
+  --band-gold: #d8c48f;
+  --on-band: var(--band-ink);
+  --on-band-muted: var(--band-ink-muted);
+  --gold-on-band: var(--band-gold);
+  --pattern-on-band: rgb(216 196 143 / 0.1);
 
   /* Actions */
-  --primary: #1d4236;
-  --primary-hover: #15332a;
-  --primary-ink: #fffcf4;
-  --primary-soft: #e4efe8;
-  --primary-soft-ink: #1d4236;
+  --primary: #177a4d;
+  --primary-hover: #14704a;
+  --primary-ink: #ffffff;
+  --primary-soft: #e7f3ec;
+  --primary-soft-ink: #074d31;
 
-  /* Gold accent: rules, active marks, key figures. Text only through --accent-ink. */
-  --accent: #9c7b26;
-  --accent-ink: #775c1a;
-  --accent-soft: #f9eed4;
+  /* Gold of the logo: rules, diamonds, active marks. Text only through --accent-ink. */
+  --accent: #a38439;
+  --accent-ink: #7f6529;
+  --accent-soft: #f6efdc;
+  /* Gold button (role call-to-action, actions in the page head) */
+  --gold-action: #8a6f2e;
+  --gold-action-hover: #745d25;
+  --on-gold-action: #ffffff;
 
   /* Status (fixed, separate from the chart palette) */
-  --st-neutral: #544e45;
-  --st-neutral-soft: #f0e9da;
-  --st-info: #23557d;
-  --st-info-soft: #e9f0f6;
-  --st-review: #1f5a4a;
-  --st-review-soft: #e4efe8;
-  --st-warn: #7f5300;
-  --st-warn-soft: #f9eed4;
-  --st-ok: #2a6438;
-  --st-ok-soft: #e7f1e5;
-  --st-bad: #9b2f27;
-  --st-bad-soft: #f8e6e1;
+  --st-neutral: #56635d;
+  --st-neutral-soft: #f1f3f2;
+  --st-info: #1f6fb5;
+  --st-info-soft: #e8f1fa;
+  --st-review: #11695a;
+  --st-review-soft: #e3f2ee;
+  --st-warn: #985a00;
+  --st-warn-soft: #fdf3e1;
+  --st-ok: #15744a;
+  --st-ok-soft: #e7f3ec;
+  --st-bad: #b42318;
+  --st-bad-soft: #fdecea;
 
   /* Chart palette: green, gold, teal, slate blue, terracotta, sand */
   --chart-1: #255043;
@@ -65,67 +79,69 @@
   --chart-4: #4a5f8c;
   --chart-5: #923f26;
   --chart-6: #8a7a5c;
-  --chart-track: #eee5d1;
+  --chart-track: #eef1ef;
 
-  --focus: #8e7226;
-  --overlay: rgb(29 66 54 / 0.45);
+  --focus: #9c7e36;
+  --overlay: rgb(3 40 26 / 0.45);
 
-  /* Elevation: hairline-led, shadows stay faint */
-  --shadow-1: 0 1px 0 rgb(34 31 26 / 0.04);
-  --shadow-2: 0 6px 20px -12px rgb(29 66 54 / 0.25), 0 1px 0 rgb(34 31 26 / 0.04);
-  --shadow-3: 0 18px 40px -20px rgb(29 66 54 / 0.4), 0 1px 0 rgb(34 31 26 / 0.05);
+  --shadow-1: 0 1px 2px rgb(16 24 20 / 0.05);
+  --shadow-2: 0 1px 2px rgb(16 24 20 / 0.04), 0 6px 18px -8px rgb(7 77 49 / 0.16);
+  --shadow-3: 0 18px 40px -16px rgb(0 0 0 / 0.25);
 
-  --pattern-stroke: rgb(29 66 54 / 0.07);
+  --pattern-stroke: rgb(7 77 49 / 0.07);
 
   color-scheme: light;
 }
 
-/* Dark tokens apply on screen only: printed pages (review page, Phase 6 reports) always use the
-   light palette, whatever theme the user has chosen. */
+/* Dark tokens apply on screen only: printed pages always use the light palette. */
 @media screen {
 [data-theme="dark"] {
-  --canvas: #101714;
-  --surface: #16201c;
-  --surface-muted: #1c2723;
-  --surface-sunken: #23302b;
-  --line: #283530;
-  --line-strong: #374741;
+  --canvas: #0c120f;
+  --surface: #131b17;
+  --surface-muted: #18211d;
+  --surface-sunken: #1e2924;
+  --line: #25312c;
+  --line-strong: #3a4943;
 
-  --ink: #efe9dc;
-  --ink-muted: #bcc1b8;
-  --ink-subtle: #979f97;
-  --ink-inverse: #15130c;
+  --ink: #eef2ef;
+  --ink-muted: #b4c0ba;
+  --ink-subtle: #96a39c;
+  --ink-inverse: #0c120f;
+  --brand-ink: #eef2ef;
 
-  --band: #122a22;
-  --band-2: #1a382d;
-  --on-band: #f4efe2;
-  --on-band-muted: #adc1b7;
-  --gold-on-band: #dcc27c;
-  --pattern-on-band: rgb(220 194 124 / 0.1);
+  --band: #0b3a26;
+  --band-2: #0f442d;
+  --band-deep: #06170f;
+  --band-ink: #f4f7f5;
+  --band-ink-muted: #b7cbbf;
+  --band-gold: #d8c48f;
+  --pattern-on-band: rgb(216 196 143 / 0.08);
 
-  /* Primary action turns gold in dark mode */
-  --primary: #d2b56a;
-  --primary-hover: #dfc585;
-  --primary-ink: #15130c;
-  --primary-soft: #23302b;
-  --primary-soft-ink: #e7d39c;
+  --primary: #4fbf89;
+  --primary-hover: #6acd9d;
+  --primary-ink: #04140c;
+  --primary-soft: #16302a;
+  --primary-soft-ink: #8fd9b3;
 
   --accent: #c8a95a;
-  --accent-ink: #d6ba6e;
-  --accent-soft: #26251a;
+  --accent-ink: #d8c48f;
+  --accent-soft: #2b2616;
+  --gold-action: #c8a95a;
+  --gold-action-hover: #d8bb70;
+  --on-gold-action: #15130c;
 
-  --st-neutral: #b9beb5;
-  --st-neutral-soft: #202b27;
-  --st-info: #9cc3e6;
-  --st-info-soft: #172530;
-  --st-review: #8fd0b6;
-  --st-review-soft: #162a21;
-  --st-warn: #e9c47b;
-  --st-warn-soft: #26251a;
-  --st-ok: #95d3a5;
-  --st-ok-soft: #17291d;
-  --st-bad: #f0a199;
-  --st-bad-soft: #2d1b1a;
+  --st-neutral: #b4c0ba;
+  --st-neutral-soft: #1c2622;
+  --st-info: #6aa9e0;
+  --st-info-soft: #132536;
+  --st-review: #5fc4ad;
+  --st-review-soft: #12302a;
+  --st-warn: #e0a24a;
+  --st-warn-soft: #2e2412;
+  --st-ok: #4fbf89;
+  --st-ok-soft: #16302a;
+  --st-bad: #ef7a70;
+  --st-bad-soft: #331816;
 
   --chart-1: #5f9a84;
   --chart-2: #c8a95a;
@@ -133,16 +149,16 @@
   --chart-4: #8ea3d6;
   --chart-5: #bb7650;
   --chart-6: #c2b388;
-  --chart-track: #23302b;
+  --chart-track: #1e2924;
 
-  --focus: #d6ba6e;
+  --focus: #d8c48f;
   --overlay: rgb(0 0 0 / 0.6);
 
   --shadow-1: 0 1px 0 rgb(0 0 0 / 0.3);
   --shadow-2: 0 8px 24px -12px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.02);
   --shadow-3: 0 18px 40px -20px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.03);
 
-  --pattern-stroke: rgb(220 194 124 / 0.06);
+  --pattern-stroke: rgb(216 196 143 / 0.06);
 
   color-scheme: dark;
 }

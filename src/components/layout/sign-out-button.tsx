@@ -23,14 +23,14 @@ export function SignOutButton({ variant = "surface" }: { variant?: "band" | "sur
       }
       title="تسجيل الخروج"
       className={cn(
-        "inline-flex items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors disabled:opacity-60 [&_svg]:size-4",
+        "inline-flex h-[42px] items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors disabled:opacity-60 [&_svg]:size-[18px]",
         variant === "band"
-          ? "text-on-band-muted hover:bg-white/10 hover:text-on-band focus-visible:outline-gold-on-band"
-          : "text-ink-muted hover:bg-surface-muted hover:text-ink",
+          ? "text-band-ink-muted hover:bg-white/10 hover:text-band-ink focus-visible:outline-band-gold"
+          : "text-st-bad hover:bg-st-bad-soft",
       )}
     >
       <LogOut aria-hidden="true" />
-      <span className={variant === "band" ? "sr-only xl:not-sr-only" : undefined}>
+      <span className="sr-only xl:not-sr-only">
         {pending ? "جارٍ تسجيل الخروج…" : "تسجيل الخروج"}
       </span>
     </button>

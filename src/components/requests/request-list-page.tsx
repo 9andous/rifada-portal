@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
-import { FilePlus2 } from "lucide-react";
+import { FilePlus2, ListChecks } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { ListSkeleton } from "@/components/states/list-skeleton";
@@ -22,7 +22,7 @@ import { listRequests, parseRequestListParams, requestFilterOptions, requestStat
 import { getSetting } from "@/server/settings/read";
 import { RequestsTable } from "./requests-table";
 
-/** Big status numbers in the band that act as filters (change 16). */
+/** Big status numbers under the page head that act as filters (change 16). */
 async function StatusFigures({ user, view, path, searchParams }: { user: CurrentUser; view: RequestListView; path: string; searchParams: Promise<SearchParams> }) {
   const [params, counts] = await Promise.all([searchParams, requestStatusCounts(user, view)]);
   const active = typeof params.status === "string" ? params.status : undefined;
@@ -31,8 +31,8 @@ async function StatusFigures({ user, view, path, searchParams }: { user: Current
   const shown = counts.filter((s) => s.count > 0 || !["SUBMITTED", "COMPLETENESS_CHECK"].includes(s.key) || s.key === active);
   const items = [{ key: undefined as string | undefined, name: "الكل", count: total }, ...shown.map((s) => ({ key: s.key as string | undefined, name: s.name, count: s.count }))];
   return (
-    <nav aria-label="تصفية حسب الحالة" className="border-t border-white/12 pt-5">
-      <ul className="flex flex-wrap gap-x-10 gap-y-4">
+    <nav aria-label="تصفية حسب الحالة">
+      <ul className="flex flex-wrap gap-3">
         {items.map((s) => {
           const selected = s.key === active;
           return (
@@ -41,10 +41,13 @@ async function StatusFigures({ user, view, path, searchParams }: { user: Current
                 href={listHref(path, params, { status: s.key, page: undefined })}
                 aria-current={selected ? "true" : undefined}
                 scroll={false}
-                className={cn("group block border-b-[3px] pb-1.5", selected ? "border-gold-on-band" : "border-transparent hover:border-white/30")}
+                className={cn(
+                  "group block min-w-28 rounded-xl border px-4 py-3 shadow-1 transition-colors",
+                  selected ? "band-scope border-band bg-band" : "border-line bg-surface hover:border-primary",
+                )}
               >
-                <span className={cn("block text-sm", selected ? "font-bold text-on-band" : "text-on-band-muted group-hover:text-on-band")}>{s.name}</span>
-                <span className={cn("t-figure mt-1 block text-[2rem] leading-none", selected ? "text-gold-on-band" : "text-on-band")}>{formatNumber(s.count)}</span>
+                <span className={cn("block text-sm font-medium", selected ? "text-band-ink-muted" : "text-ink-muted")}>{s.name}</span>
+                <span className={cn("t-figure mt-2 block text-[1.75rem] leading-none", selected ? "text-band-ink" : "text-ink")}>{formatNumber(s.count)}</span>
               </Link>
             </li>
           );
@@ -56,9 +59,9 @@ async function StatusFigures({ user, view, path, searchParams }: { user: Current
 
 function FiguresSkeleton() {
   return (
-    <div className="flex flex-wrap gap-10 border-t border-white/12 pt-5" aria-hidden="true">
+    <div className="flex flex-wrap gap-3" aria-hidden="true">
       {[0, 1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className="block h-14 w-20 animate-pulse rounded-sm bg-white/10" />
+        <span key={i} className="block h-[78px] w-28 animate-pulse rounded-xl bg-surface-sunken" />
       ))}
     </div>
   );
@@ -144,7 +147,7 @@ async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDesc
 
   return (
     <Panel>
-      <PanelHeader title="قائمة الطلبات" description={`عدد النتائج: ${formatNumber(page.total)}`} />
+      <PanelHeader icon={<ListChecks strokeWidth={1.75} />} title="قائمة الطلبات" description={`عدد النتائج: ${formatNumber(page.total)}`} />
       <ListToolbar
         action={path}
         q={list.q}

@@ -88,7 +88,7 @@ function Shell({ open, onOpenChange, title, children, busy }: { open: boolean; o
     <Dialog.Root open={open} onOpenChange={(v) => !busy && onOpenChange(v)}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--overlay)]" />
-        <Dialog.Content className="fixed inset-x-0 top-1/2 z-50 mx-auto max-h-[90vh] w-[min(92vw,32rem)] -translate-y-1/2 overflow-y-auto rounded-sm border border-line bg-surface p-6 shadow-3 focus:outline-none">
+        <Dialog.Content className="fixed inset-x-0 top-1/2 z-50 mx-auto max-h-[90vh] w-[min(92vw,32rem)] -translate-y-1/2 overflow-y-auto rounded-2xl border border-line bg-surface p-6 shadow-3 focus:outline-none">
           <div className="flex items-start justify-between gap-4">
             <Dialog.Title className="t-section">{title}</Dialog.Title>
             <Dialog.Close className="text-ink-subtle hover:text-ink" aria-label="إغلاق" disabled={busy}>

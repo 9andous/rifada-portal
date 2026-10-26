@@ -1,4 +1,4 @@
-import { CircleCheck, CircleDashed, PenLine } from "lucide-react";
+import { CalendarDays, CircleCheck, CircleDashed, ClipboardCheck, Clock, FileText, History, ListTree, MessagesSquare, Paperclip, PenLine, ScrollText, ShieldCheck, UserRound } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PageBody } from "@/components/layout/app-shell";
@@ -7,7 +7,7 @@ import { PersonName } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
 import { RefNumber } from "@/components/ui/ref-number";
-import { Alert, Panel, SectionTitle, StatusText } from "@/components/ui/surface";
+import { Alert, HeaderIcon, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { DataTable, THead, Td, Th, Tr } from "@/components/ui/table";
 import { auditActionLabel } from "@/lib/audit-labels";
 import { acceptedGroups } from "@/lib/completeness";
@@ -20,6 +20,7 @@ import { Conversation } from "./conversation";
 import { DecisionPanel } from "./decision-panel";
 import { FileItem } from "./file-list";
 import { DiscardDraftButton, ReassignButton } from "./request-actions";
+import { RequestStepper } from "./request-stepper";
 import { StatusTimeline } from "./timeline";
 
 const DAY_UNIT = (n: number) => (n === 1 ? "يوم عمل واحد" : n === 2 ? "يوما عمل" : n >= 3 && n <= 10 ? `${formatNumber(n)} أيام عمل` : `${formatNumber(n)} يوم عمل`);
@@ -35,15 +36,21 @@ function slaText(r: RequestDetail, now: Date): string {
   return `متأخر ${DAY_UNIT(Math.max(1, workingDaysBetween(r.slaDueAt, now)))}`;
 }
 
-function Section({ title, aside, children, id }: { title: string; aside?: ReactNode; children: ReactNode; id?: string }) {
+function Section({ title, aside, children, id, icon, flushBody }: { title: string; aside?: ReactNode; children: ReactNode; id?: string; icon: ReactNode; flushBody?: boolean }) {
   return (
-    <section id={id} className="scroll-mt-24">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <SectionTitle>{title}</SectionTitle>
-        {aside ? <span className="t-caption">{aside}</span> : null}
-      </div>
-      <div className="mt-4">{children}</div>
-    </section>
+    <Panel id={id} className="scroll-mt-40">
+      <PanelHeader icon={icon} title={title} description={aside} />
+      <div className={flushBody ? "-mt-5" : "px-6 pb-6"}>{children}</div>
+    </Panel>
+  );
+}
+
+function SideCard({ title, icon, actions, children, note }: { title: string; icon: ReactNode; actions?: ReactNode; children: ReactNode; note?: string }) {
+  return (
+    <Panel>
+      <PanelHeader icon={icon} title={title} description={note} actions={actions} className="mb-4 py-3.5" />
+      <div className="px-5 pb-5 sm:px-6">{children}</div>
+    </Panel>
   );
 }
 
@@ -92,13 +99,12 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
   const submitted = r.referenceNo !== null;
   const dialogRequest = { id: r.id, title: r.title, referenceNo: r.referenceNo };
 
-  const facts: [string, ReactNode][] = [
-    ["الحالة", r.status.name],
-    ["تاريخ التقديم", r.submittedAt ? formatHijri(r.submittedAt) : "لم يُقدَّم بعد"],
-    ["مهلة المراجعة", slaText(r, now)],
+  const facts: [string, ReactNode, ReactNode][] = [
+    ["تاريخ التقديم", r.submittedAt ? formatHijri(r.submittedAt) : "لم يُقدَّم بعد", <CalendarDays key="i" strokeWidth={1.75} />],
+    ["مهلة المراجعة", slaText(r, now), <Clock key="i" strokeWidth={1.75} />],
   ];
-  if (isStaff) facts.push(["المشرف", r.assignment?.supervisor?.name ?? "لم يُسند بعد"]);
-  facts.push(["فحص الاكتمال", r.completeness ? (r.completeness.passed ? "مكتمل" : "غير مكتمل") : "لم يُجرَ بعد"]);
+  if (isStaff) facts.push(["المشرف", r.assignment?.supervisor?.name ?? "لم يُسند بعد", <UserRound key="i" strokeWidth={1.75} />]);
+  facts.push(["فحص الاكتمال", r.completeness ? (r.completeness.passed ? "مكتمل" : "غير مكتمل") : "لم يُجرَ بعد", <ClipboardCheck key="i" strokeWidth={1.75} />]);
 
   return (
     <>
@@ -106,7 +112,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
         compact
         eyebrow={
           <span className="flex flex-wrap items-center gap-2">
-            <Link href={listHref} className="hover:text-on-band hover:underline">
+            <Link href={listHref} className="hover:underline">
               {listLabel}
             </Link>
             <span aria-hidden="true">/</span>
@@ -114,16 +120,31 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
           </span>
         }
         title={r.title || "طلب بلا عنوان"}
+        actions={
+          <StatusText tone={r.status.tone} className="px-3 py-1 text-sm">
+            {r.status.name}
+          </StatusText>
+        }
         lead={`${isStaff ? `${r.association.name} · ` : ""}${toArabicDigits(r.program.number)}. ${r.program.name}`}
         figures={
-          <dl className="flex flex-wrap gap-x-12 gap-y-4 border-t border-white/12 pt-5 text-sm">
-            {facts.map(([k, v]) => (
-              <div key={k}>
-                <dt className="text-on-band-muted">{k}</dt>
-                <dd className="mt-1 font-semibold text-on-band">{v}</dd>
-              </div>
-            ))}
-          </dl>
+          <Panel>
+            <div className="px-4 pb-6 pt-6 sm:px-8">
+              <RequestStepper statusKey={r.status.key} />
+            </div>
+            <dl className={`grid grid-cols-1 border-t border-line sm:grid-cols-2 ${facts.length > 3 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+              {facts.map(([k, v, icon], i) => (
+                <div key={k} className={`flex items-center gap-3 px-6 py-4 ${i > 0 ? "border-t border-line sm:border-t-0 sm:border-s" : ""}`}>
+                  <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-sunken text-ink-muted [&_svg]:size-[18px]">
+                    {icon}
+                  </span>
+                  <span className="min-w-0">
+                    <dt className="text-xs text-ink-subtle">{k}</dt>
+                    <dd className="mt-0.5 truncate text-sm font-semibold text-ink">{v}</dd>
+                  </span>
+                </div>
+              ))}
+            </dl>
+          </Panel>
         }
       />
       <PageBody className={caps.canDecide ? "pb-28 lg:pb-10" : undefined}>
@@ -146,11 +167,11 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
           ) : null}
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <Panel className="flex flex-col gap-12 p-6 lg:p-8">
-            <Section title="وصف الطلب">
+        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_23rem]">
+          <div className="flex min-w-0 flex-col gap-5">
+            <Section title="وصف الطلب" icon={<FileText strokeWidth={1.75} />}>
               {r.description ? <p className="t-body max-w-3xl whitespace-pre-line">{r.description}</p> : <p className="t-body text-ink-subtle">لم يُكتب وصف بعد.</p>}
-              <dl className="mt-6 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+              <dl className="mt-6 grid grid-cols-1 gap-x-8 gap-y-5 rounded-lg border border-line bg-surface-muted p-5 sm:grid-cols-2">
                 <Info label="المبادرة" wide>
                   {toArabicDigits(r.initiative.number)}. {r.initiative.name}
                 </Info>
@@ -164,7 +185,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
             </Section>
 
             {fields.length || r.otherValues.length ? (
-              <Section title="بيانات المبادرة">
+              <Section title="بيانات المبادرة" icon={<ListTree strokeWidth={1.75} />}>
                 <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
                   {fields.map((f) => (
                     <Info key={f.key} label={f.label} wide={f.fieldType === "TEXTAREA"}>
@@ -182,6 +203,8 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
 
             <Section
               title="المتطلبات والمرفقات"
+              icon={<Paperclip strokeWidth={1.75} />}
+              flushBody={attachments.length > 0 || r.otherFiles.length > 0}
               aside={
                 attachments.length
                   ? `${formatNumber(attachments.filter((a) => a.files.length > 0).length)} من ${formatNumber(attachments.length)} مرفقة`
@@ -191,7 +214,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
               {attachments.length === 0 && r.otherFiles.length === 0 ? (
                 <p className="t-body text-sm">لا تتطلب هذه المبادرة مرفقات.</p>
               ) : (
-                <div className="-mx-6 lg:-mx-8">
+                <div>
                   <DataTable caption="المتطلبات والمرفقات" minWidth="36rem">
                     <THead>
                       <Th className="w-56">المتطلب</Th>
@@ -254,7 +277,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
               )}
             </Section>
 
-            <Section title="فحص الاكتمال" aside="فحص آلي بالقواعد">
+            <Section title="فحص الاكتمال" aside="فحص آلي بالقواعد" icon={<ShieldCheck strokeWidth={1.75} />}>
               {!r.completeness ? (
                 <p className="t-body flex items-center gap-2 text-sm">
                   <CircleDashed aria-hidden="true" strokeWidth={1.75} className="size-4 text-ink-subtle" />
@@ -280,7 +303,12 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
               )}
             </Section>
 
-            <Section title="المحادثة" aside={isStaff && caps.canWriteInternal ? "الملاحظات الداخلية لا تظهر للجمعية" : undefined} id="conversation">
+            <Section
+              title="المحادثة"
+              icon={<MessagesSquare strokeWidth={1.75} />}
+              aside={isStaff && caps.canWriteInternal ? "الملاحظات الداخلية لا تظهر للجمعية" : "مع الوحدة الإشرافية"}
+              id="conversation"
+            >
               {submitted ? (
                 <Conversation
                   requestId={r.id}
@@ -295,16 +323,19 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
                 <p className="t-body text-sm">تتاح المحادثة مع الوحدة الإشرافية بعد تقديم الطلب.</p>
               )}
             </Section>
-          </Panel>
+          </div>
 
           {/* The side column stays in view while the main column scrolls; it scrolls on its own when
               taller than the screen, so the «القرار» panel at its top never covers the timeline. */}
-          <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto lg:pb-1">
+          <aside className="flex flex-col gap-5 lg:sticky lg:top-[100px] lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto lg:pb-1 [&>*]:shrink-0">
             {caps.canDecide ? <DecisionPanel request={dialogRequest} /> : null}
 
             {caps.canEdit || caps.canDiscard ? (
               <Panel className="flex flex-col gap-3 p-5">
-                <SectionTitle>إجراءات الطلب</SectionTitle>
+                <div className="mb-1 flex items-center gap-3">
+                  <HeaderIcon icon={<PenLine strokeWidth={1.75} />} tone="gold" />
+                  <h2 className="t-section">إجراءات الطلب</h2>
+                </div>
                 {caps.canEdit ? (
                   <Link href={`/association/requests/${r.id}/edit`} className={buttonClasses("primary", "md", "w-full")}>
                     <PenLine aria-hidden="true" strokeWidth={1.75} />
@@ -316,17 +347,19 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
             ) : null}
 
             {r.assignment ? (
-              <Panel className="p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <SectionTitle>الإسناد</SectionTitle>
-                  {caps.canReassign ? (
+              <SideCard
+                title="الإسناد"
+                icon={<UserRound strokeWidth={1.75} />}
+                actions={
+                  caps.canReassign ? (
                     <ReassignButton
                       request={dialogRequest}
                       supervisors={r.assignment.candidates.map((c) => ({ id: c.id, name: c.name, programIds: [r.program.id], open: c.open }))}
                     />
-                  ) : null}
-                </div>
-                <div className="mt-4 text-sm">
+                  ) : null
+                }
+              >
+                <div className="text-sm">
                   {r.assignment.supervisor ? (
                     <PersonName name={r.assignment.supervisor.name} />
                   ) : (
@@ -349,24 +382,19 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
                     ))}
                   </ol>
                 ) : null}
-              </Panel>
+              </SideCard>
             ) : null}
 
-            <Panel className="p-5">
-              <SectionTitle>مسار الطلب</SectionTitle>
-              <div className="mt-4">
-                <StatusTimeline entries={r.timeline} />
-              </div>
-            </Panel>
+            <SideCard title="مسار الطلب" icon={<History strokeWidth={1.75} />}>
+              <StatusTimeline entries={r.timeline} />
+            </SideCard>
 
             {r.auditTrail ? (
-              <Panel className="p-5">
-                <SectionTitle>سجل الاطلاع والتدقيق</SectionTitle>
-                <p className="t-caption mt-1 ps-4">لمدير النظام ومدير الوحدة فقط.</p>
+              <SideCard title="سجل الاطلاع والتدقيق" icon={<ScrollText strokeWidth={1.75} />} note="لمدير النظام ومدير الوحدة فقط">
                 {r.auditTrail.length === 0 ? (
-                  <p className="t-body mt-3 text-sm">لا توجد قيود بعد.</p>
+                  <p className="t-body text-sm">لا توجد قيود بعد.</p>
                 ) : (
-                  <ol className="mt-4 flex max-h-96 flex-col gap-3 overflow-y-auto">
+                  <ol className="flex max-h-96 flex-col gap-3 overflow-y-auto">
                     {r.auditTrail.map((e) => (
                       <li key={e.id} className="text-sm">
                         <p className="text-ink">{auditActionLabel(e.action)}</p>
@@ -376,7 +404,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
                     ))}
                   </ol>
                 )}
-              </Panel>
+              </SideCard>
             ) : null}
           </aside>
         </div>

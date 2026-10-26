@@ -36,10 +36,10 @@ export function Pagination({
   const first = (page - 1) * pageSize + 1;
   const last = Math.min(total, page * pageSize);
   const href = (n: number) => listHref(path, params, { page: n === 1 ? undefined : n });
-  const cell = "inline-flex size-9 items-center justify-center rounded-sm text-sm";
+  const cell = "inline-flex h-[34px] min-w-[34px] items-center justify-center rounded-sm border px-2 text-sm font-medium transition-colors";
 
   return (
-    <nav aria-label="التنقل بين الصفحات" className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-6 py-3">
+    <nav aria-label="التنقل بين الصفحات" className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-6 py-3.5">
       <p className="t-caption">
         عرض {formatNumber(first)}–{formatNumber(last)} من {formatNumber(total)}
       </p>
@@ -47,18 +47,18 @@ export function Pagination({
         <ul className="flex items-center gap-1">
           <li>
             {page > 1 ? (
-              <Link href={href(page - 1)} className={cn(cell, "text-ink-muted hover:bg-surface-muted")} aria-label="الصفحة السابقة">
+              <Link href={href(page - 1)} className={cn(cell, "border-line bg-surface text-ink-muted hover:border-primary hover:text-primary")} aria-label="الصفحة السابقة">
                 <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4" />
               </Link>
             ) : (
-              <span className={cn(cell, "text-ink-subtle opacity-40")} aria-hidden="true">
+              <span className={cn(cell, "border-line text-ink-subtle opacity-40")} aria-hidden="true">
                 <ChevronRight strokeWidth={1.75} className="size-4" />
               </span>
             )}
           </li>
           {pageNumbers(page, pageCount).map((n, i) =>
             n === null ? (
-              <li key={`gap-${i}`} aria-hidden="true" className={cn(cell, "text-ink-subtle")}>
+              <li key={`gap-${i}`} aria-hidden="true" className={cn(cell, "border-transparent text-ink-subtle")}>
                 …
               </li>
             ) : (
@@ -66,7 +66,7 @@ export function Pagination({
                 <Link
                   href={href(n)}
                   aria-current={n === page ? "page" : undefined}
-                  className={cn(cell, "t-figure", n === page ? "bg-primary text-primary-ink" : "text-ink-muted hover:bg-surface-muted")}
+                  className={cn(cell, "t-figure", n === page ? "border-band bg-band text-band-ink" : "border-line bg-surface text-ink-muted hover:border-primary hover:text-primary")}
                 >
                   {formatNumber(n)}
                 </Link>
@@ -75,11 +75,11 @@ export function Pagination({
           )}
           <li>
             {page < pageCount ? (
-              <Link href={href(page + 1)} className={cn(cell, "text-ink-muted hover:bg-surface-muted")} aria-label="الصفحة التالية">
+              <Link href={href(page + 1)} className={cn(cell, "border-line bg-surface text-ink-muted hover:border-primary hover:text-primary")} aria-label="الصفحة التالية">
                 <ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" />
               </Link>
             ) : (
-              <span className={cn(cell, "text-ink-subtle opacity-40")} aria-hidden="true">
+              <span className={cn(cell, "border-line text-ink-subtle opacity-40")} aria-hidden="true">
                 <ChevronLeft strokeWidth={1.75} className="size-4" />
               </span>
             )}

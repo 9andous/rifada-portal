@@ -16,7 +16,7 @@ export function Select({
       <select
         className={cn(
           "h-10 w-full appearance-none rounded-md border border-line-strong bg-surface ps-3 pe-9 text-sm text-ink",
-          "focus-visible:border-primary focus-visible:outline-2 aria-[invalid=true]:border-danger",
+          "transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/20 aria-[invalid=true]:border-danger",
           "disabled:bg-surface-muted disabled:text-ink-subtle",
         )}
         {...props}
