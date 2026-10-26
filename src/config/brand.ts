@@ -1,17 +1,23 @@
-// The only place logo assets are referenced. This repository ships a neutral placeholder mark;
-// the official logos are private material (docs/ONBOARDING.md). To use them locally, put the files
-// in public/brand/ (never commit them; they are in .gitignore) and update the paths, intrinsic sizes
-// and alt text here.
+// The only place logo assets are referenced. Replace with the official vector files when the
+// Presidency provides them, keeping the intrinsic sizes in step.
 
 export const brand = {
   unitName: "الوحدة الإشرافية على المنظمات غير الربحية بالحرمين الشريفين",
   presidencyName: "رئاسة الشؤون الدينية بالمسجد الحرام والمسجد النبوي",
   productName: "رفادة",
+  systemName: "منصة رفادة",
   logo: {
     /** For light surfaces. */
-    color: { src: "/brand/placeholder-logo-color.png", width: 236, height: 150 },
+    color: { src: "/brand/rifada-logo-color.png", width: 249, height: 288 },
     /** For dark surfaces and dark mode. */
-    white: { src: "/brand/placeholder-logo-white.png", width: 944, height: 600 },
+    white: { src: "/brand/rifada-logo-white.png", width: 249, height: 288 },
     alt: "رفادة",
   },
+  presidencyLogo: {
+    src: "/brand/prh-logo.png",
+    width: 236,
+    height: 150,
+    alt: "رئاسة الشؤون الدينية بالمسجد الحرام والمسجد النبوي",
+  },
+  presidencyUrl: "https://www.prh.gov.sa",
 } as const;

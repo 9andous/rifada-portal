@@ -19,6 +19,7 @@ Scopes: **all** = every record; **own programs** = records in programs assigned 
 | `admin.access` | فتح منطقة إدارة النظام | all | — | — | — |
 | `users.manage` | إنشاء المستخدمين وتعديلهم وتعطيلهم | all | — | — | — |
 | `associations.manage` | إنشاء الجمعيات وحساباتها وتعديلها واستيرادها | all | — | — | — |
+| `registrations.review` | مراجعة طلبات تسجيل الجمعيات واعتمادها أو رفضها | all | — | — | — |
 | `associations.read` | عرض بيانات الجمعيات | all | all | own programs | own association |
 | `taxonomy.manage` | تعديل البرامج والمبادرات والأهداف ومتطلبات المبادرات وأنواع المرفقات | all | — | — | — |
 | `taxonomy.read` | عرض البرامج والمبادرات والأهداف | all | all | all | all |

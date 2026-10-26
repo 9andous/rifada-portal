@@ -30,10 +30,10 @@ export function ThemeToggle({ className, tone = "surface" }: { className?: strin
       type="button"
       onClick={toggle}
       className={cn(
-        "inline-flex size-9 items-center justify-center rounded-sm transition-colors [&_svg]:size-[18px]",
+        "inline-flex size-[42px] items-center justify-center rounded-md transition-colors [&_svg]:size-5",
         tone === "band"
-          ? "text-on-band-muted hover:bg-white/10 hover:text-on-band focus-visible:outline-gold-on-band"
-          : "text-ink-muted hover:bg-surface-muted hover:text-ink",
+          ? "text-band-ink-muted hover:bg-white/10 hover:text-band-ink focus-visible:outline-band-gold"
+          : "text-ink-muted hover:bg-surface-sunken hover:text-ink",
         className,
       )}
       aria-label="تبديل المظهر بين الفاتح والداكن"

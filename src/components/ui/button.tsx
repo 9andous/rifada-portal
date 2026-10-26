@@ -2,23 +2,28 @@ import { Slot } from "radix-ui";
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline" | "onBand";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline" | "gold" | "dark" | "onBand" | "outlineOnBand" | "warning";
 type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-primary text-primary-ink hover:bg-primary-hover shadow-1",
+  primary: "bg-primary text-primary-ink hover:bg-primary-hover",
   secondary: "bg-primary-soft text-primary-soft-ink hover:bg-surface-sunken",
-  outline: "border border-line-strong bg-surface text-ink hover:bg-surface-muted",
-  ghost: "text-ink-muted hover:bg-surface-muted hover:text-ink",
-  danger: "bg-danger text-ink-inverse hover:opacity-90",
-  /** Gold action on the green band. */
-  onBand: "bg-gold-on-band text-band hover:brightness-105 focus-visible:outline-gold-on-band",
+  outline: "border border-line-strong bg-surface text-ink hover:border-primary hover:text-primary",
+  ghost: "text-primary hover:bg-primary-soft",
+  danger: "border border-danger/40 bg-surface text-danger hover:bg-danger-soft",
+  warning: "border border-warning/45 bg-surface text-warning hover:bg-warning-soft",
+  gold: "bg-gold-action text-on-gold-action hover:bg-gold-action-hover",
+  dark: "bg-band text-band-ink hover:bg-band-2",
+  /** Page-head and green-surface actions: the gold button of the design. */
+  onBand: "bg-gold-action text-on-gold-action hover:bg-gold-action-hover",
+  /** Secondary action on green surfaces. */
+  outlineOnBand: "border border-white/25 text-band-ink hover:border-band-gold hover:bg-white/[0.06]",
 };
 
 const sizes: Record<Size, string> = {
-  sm: "h-8 gap-1.5 px-3 text-xs",
-  md: "h-10 gap-2 px-4 text-sm",
-  lg: "h-12 gap-2 px-6 text-base",
+  sm: "h-[34px] gap-1.5 rounded-sm px-3 text-[0.8125rem]",
+  md: "h-[42px] gap-2 rounded-md px-[18px] text-sm",
+  lg: "h-[50px] gap-2 rounded-md px-6 text-base",
 };
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -30,8 +35,8 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function buttonClasses(variant: Variant = "primary", size: Size = "md", className?: string) {
   return cn(
-    "inline-flex shrink-0 items-center justify-center rounded-sm font-semibold whitespace-nowrap transition-colors",
-    "disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
+    "inline-flex shrink-0 items-center justify-center font-semibold whitespace-nowrap transition-colors active:translate-y-px",
+    "disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-[17px] [&_svg]:shrink-0",
     variants[variant],
     sizes[size],
     className,

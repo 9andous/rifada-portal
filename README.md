@@ -86,7 +86,7 @@ database between tests.
 ## Not in this repository
 
 Source documents (the strategy outline, the initiative document and the programmes overview), the
-original design notes and design lab, review screenshots and the official logos (the app ships a neutral placeholder mark) are
+original design notes, design lab and design handoff, and review screenshots are
 private material. See [docs/ONBOARDING.md](docs/ONBOARDING.md#private-material) for how to request them.
 
 ## Security

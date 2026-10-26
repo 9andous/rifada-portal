@@ -5,9 +5,11 @@ non-profit associations serving pilgrims. Arabic-only, RTL, government product. 
 `docs/DECISIONS.md` for why things are the way they are, and `docs/PERMISSIONS.md` for who can do what.
 
 This public repository leaves out private material: the Presidency's source PDFs, the early HTML
-draft, the design lab (`src/app/dev/design-lab`, `docs/design-lab.md`), review screenshots and the
-official logo files (`docs/brand/`, `public/brand/haramain-logo-*`; the app ships a placeholder). References to them in the docs are historical; obtain them
-privately as described in `docs/ONBOARDING.md` and never commit them (they are in `.gitignore`).
+draft, the design lab (`src/app/dev/design-lab`, `docs/design-lab.md`), the design handoff and
+review screenshots. References to them in the docs are historical; obtain them privately as described
+in `docs/ONBOARDING.md` and never commit them (they are in `.gitignore`). The Rifada and Presidency
+logos (`public/brand/`) and the Haramain photographs (`public/images/haramain/`) are committed at the
+owner's request (D-092).
 
 @AGENTS.md
 
@@ -95,14 +97,14 @@ requests list, detail page, bulk actions and decision panel.** Read it before an
   `start-/end-`, `text-start/end`, `border-s/e`). Physical ones fail `npm run lint`.
 - Cairo everywhere (`src/app/fonts.ts`); typographic roles `t-page`, `t-section`, `t-label`,
   `t-body`, `t-figure`, `t-table`, `t-caption`.
-- Sharp 2px corners; only avatars, status dots and radios are round. No pills, no dashed borders.
-- Green band at the top of every app page (`AppShell` navigation plus `<PageBand>` with title and
-  key figures), fading into the ivory page; nothing overlaps it. Cards below it.
+- Handoff radii (buttons and inputs 10, cards 14, hero panels 20). No dashed borders.
+- Shell: gov banner, white header with both logos, green navigation bar, white page head
+  (`<PageBand>`) with key figures as cards below it, then cards on the canvas.
 - **No emoji anywhere.** Icons: Lucide only, `size-4` inline / `size-[18px]` nav / `size-5` states.
 - Colors only through semantic tokens (`bg-surface`, `text-ink-muted`, `bg-primary`, `bg-band`,
-  `text-st-ok`, `bg-chart-3`, ...). Gold (`accent`) is for rules, marks and key figures; gold text
-  only via `accent-ink` or `gold-on-band`. Run `npm run contrast` after any token change.
-- Status is a dot plus text (`<StatusText>`); notices are `<Alert>` (side rule, no tinted banner).
+  `text-band-ink`, `text-st-ok`, `bg-chart-3`, ...). Gold (`accent`) is for rules and marks; gold
+  text only via `accent-ink` or `band-gold`. Run `npm run contrast` after any token change.
+- Status is a dot plus text (`<StatusText>`); notices are `<Alert>` (soft tint, 4px side rule).
 - Numbers through `formatNumber`/`toArabicDigits`; references through `<RefNumber>`; dates through
   `<DateDisplay>` (Hijri first, Gregorian smaller, Asia/Riyadh time zone). Store numbers plainly and
   dates in UTC.

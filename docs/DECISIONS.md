@@ -694,3 +694,66 @@ were checked present. Rule since then (CLAUDE.md): no raw recursive deletes on c
 or on `.next`; use `scripts/safe-remove.mjs`, which unlinks every link without following it before
 deleting and refuses paths outside its `--root`, the project folder and real `node_modules` folders
 (tested in `tests/unit/safe-remove.test.ts`).
+
+**D-092 Design handoff v2 replaces direction C (2026-10-25, owner's request).** The Presidency's
+reviewer approved the design handoff (`design_handoff_rifada_platform`, private), aligned with
+prh.gov.sa, and the owner asked for it across the whole platform, with a public home page that
+carries the Presidency's strategy. Choices made with the owner:
+- **Scope:** the whole platform. The token names stayed and only their values changed, so screens
+  built in Phases 1 to 3 pick up the palette without edits. The shell was rebuilt (gov banner, white
+  header with both logos, green navigation bar with icons and a role call-to-action, white page head,
+  footer) and so was the login. `PageBand` keeps its name and API: `.page-head` remaps the on-band
+  colours to ink inside it, and `.band-scope` restores them on green elements, so content written for
+  the former green band needed no rewrite. Key figures moved below the head as cards.
+- **Font:** Cairo is kept (the handoff's IBM Plex Sans Arabic was not adopted).
+- **Logos and photographs are committed.** The handoff's Rifada and Presidency logos are in
+  `public/brand/` and the placeholder marks are removed. The Haramain photographs on the home page
+  come from the strategy outline (`public/images/haramain/`). The official vector logos are still
+  to be requested.
+- **Leadership statements** on the home page are text with name and title, without portraits.
+- **Contrast:** handoff colours that fail WCAG AA were darkened slightly (primary `#177a4d`, gold
+  marks `#a38439`, gold button `#8a6f2e`, warning `#985a00`); the chart palette keeps its earlier,
+  colour-blind-checked values.
+- **Home page content** comes from the database (SiteContent vision and mission, core values,
+  strategic objectives, available programmes with available-initiative counts), so the unit's edits
+  show without a release. The initiative texts and the leadership statements are fixed copy in
+  `src/config/initiative.ts`. The handoff's sample contact details, social buttons and page-feedback
+  bar were left out, because they would be invented or non-functional.
+
+**D-093 Interior redesign and leadership portraits (2026-10-26, owner's request).** The owner found
+the first pass of the handoff too plain inside the platform and asked for a richer interface, and
+for the leadership portraits on the home page (reversing the text-only choice of D-092). Changes:
+card headers with icon tiles and a hairline, status as pills, key-figure cards with icons and
+links, quick actions on every dashboard, breadcrumbs from the navigation, the arch empty state,
+the request stepper and per-section cards on the request page, programme cards on the new-request
+page and a step guide beside the request form, and tinted timeline icons. Content stays real: every
+figure and list comes from the database, quick actions point to existing routes only. Portraits of
+the Custodian of the Two Holy Mosques, the Crown Prince and the President of Religious Affairs are
+taken from the strategy outline. Fixed on the way: the request page's side column let its cards
+shrink, which collapsed the decision panel (`[&>*]:shrink-0`). Lightning CSS dropped a
+`:has(table)` rule, so the header-to-table rule uses a `data-table` attribute instead.
+
+**D-094 Association self-registration (2026-10-26, owner's request).** Associations can apply from
+the public site (`/register`), in a five-step journey: welcome (what joining means, what to
+prepare), association data (name, license number of the National Center for Non-Profit Sector,
+classification from the initiative document, region, city, contact), fields of work (the
+Presidency's available programmes), the officer and the account (username and password chosen by
+the applicant), and the values pledge with a summary. Each step shows a Haramain photograph and a
+line of the strategy (vision, objectives 5 and 1, the values التعاون and تعظيم الحرمين).
+- **Nothing is created before approval.** An application is an `AssociationRegistration` row
+  (status PENDING). The super admin reviews it (`registrations.review`, `/admin/registrations`);
+  approval creates the association, its officer account and the audit entries in one transaction,
+  re-checking that the license, username, email and national ID are still free. Rejection needs a
+  reason, which the applicant sees.
+- **The password** is hashed with argon2 at submission and stored only as a hash; approval moves the
+  hash to the credential account (`createUserWithPasswordHash`, `mustChangePassword` false, as the
+  applicant chose it), and any decision clears it from the application. Snapshots in the audit log
+  carry an explicit field list (no hash, no national ID).
+- **Abuse limits:** five submissions per hour and twenty status lookups per fifteen minutes per
+  client (in-memory limiter, same caveat as the other limits), a honeypot field, server-side
+  validation of everything (the step checks in the browser are a convenience).
+- **Status tracking** (`/register/status`) needs the reference (random, `JM-` and eight characters,
+  not sequential) together with the license number; it shows the status, the dates, the reason when
+  rejected and the username when approved.
+- Entry points: the login page (a gold «جمعية جديدة؟» card and a tracking link), the public header,
+  the home hero and closing band, and the footer.

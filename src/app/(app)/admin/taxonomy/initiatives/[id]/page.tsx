@@ -122,7 +122,7 @@ async function InitiativeTabs({
               }}
             />
             <aside className="flex flex-col gap-4">
-              <PanelHeader title="الحالة" className="px-0 pt-0" />
+              <PanelHeader title="الحالة" flush />
               <StateMark state={initiative.state} kind="initiative" />
               <StateActions
                 noun="initiative"

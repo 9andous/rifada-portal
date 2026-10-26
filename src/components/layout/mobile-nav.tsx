@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { activeNavHref, UNAVAILABLE_HINT, type NavItem } from "@/config/nav";
 import { cn } from "@/lib/cn";
+import { NavIcon } from "./nav-icon";
 
 /** Navigation drawer for widths where the band cannot fit every item (tablet and below). */
 export function MobileNav({ items, root, roleLabel }: { items: NavItem[]; root: string; roleLabel: string }) {
@@ -18,14 +19,14 @@ export function MobileNav({ items, root, roleLabel }: { items: NavItem[]; root: 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger
-        className="inline-flex size-9 items-center justify-center rounded-sm text-on-band-muted hover:bg-white/10 hover:text-on-band focus-visible:outline-gold-on-band lg:hidden [&_svg]:size-5"
+        className="inline-flex size-[42px] items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink lg:hidden [&_svg]:size-5"
         aria-label="فتح القائمة"
       >
         <Menu aria-hidden="true" />
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--overlay)]" />
-        <Dialog.Content className="fixed inset-y-0 start-0 z-50 flex w-72 flex-col bg-band text-on-band shadow-3 focus:outline-none">
+        <Dialog.Content className="band-scope fixed inset-y-0 start-0 z-50 flex w-72 flex-col bg-band text-band-ink shadow-3 focus:outline-none">
           <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
             <Dialog.Title className="text-sm font-semibold">{roleLabel}</Dialog.Title>
             <Dialog.Close
@@ -46,14 +47,16 @@ export function MobileNav({ items, root, roleLabel }: { items: NavItem[]; root: 
                       href={item.href}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "flex items-center gap-3 border-s-2 px-4 py-3 text-[0.9375rem]",
-                        active ? "border-gold-on-band bg-white/5 font-bold" : "border-transparent text-on-band-muted hover:text-on-band",
+                        "flex items-center gap-3 rounded-e-md border-s-4 px-4 py-3 text-[0.9375rem] [&_svg]:size-[18px]",
+                        active ? "border-band-gold bg-white/[0.06] font-bold" : "border-transparent text-band-ink-muted hover:text-band-ink",
                       )}
                     >
+                      <NavIcon name={item.icon} />
                       {item.label}
                     </Link>
                   ) : (
-                    <span aria-disabled="true" title={UNAVAILABLE_HINT} className="flex border-s-2 border-transparent px-4 py-3 text-[0.9375rem] text-on-band-muted/60">
+                    <span aria-disabled="true" title={UNAVAILABLE_HINT} className="flex items-center gap-3 border-s-4 border-transparent px-4 py-3 text-[0.9375rem] text-band-ink/45 [&_svg]:size-[18px]">
+                      <NavIcon name={item.icon} />
                       {item.label}
                     </span>
                   )}

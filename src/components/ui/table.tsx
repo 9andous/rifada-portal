@@ -1,10 +1,10 @@
 import type { HTMLAttributes, ReactNode, TdHTMLAttributes, ThHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-/** Data table in a card: raised header row, hairline row separators, tabular digits. */
+/** Data table in a card: raised header row between hairlines, row hover, tabular digits. */
 export function DataTable({ caption, children, minWidth = "48rem" }: { caption: string; children: ReactNode; minWidth?: string }) {
   return (
-    <div className="overflow-x-auto">
+    <div data-table="" className="overflow-x-auto">
       <table className="t-table w-full border-collapse" style={{ minWidth }}>
         <caption className="sr-only">{caption}</caption>
         {children}
@@ -15,22 +15,22 @@ export function DataTable({ caption, children, minWidth = "48rem" }: { caption: 
 
 export function THead({ children }: { children: ReactNode }) {
   return (
-    <thead className="bg-surface-muted">
+    <thead className="border-y border-line bg-surface-muted">
       <tr>{children}</tr>
     </thead>
   );
 }
 
 export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th scope="col" className={cn("t-label py-2.5 text-start first:ps-6 last:pe-6", className)} {...props} />;
+  return <th scope="col" className={cn("whitespace-nowrap py-3 pe-4 text-start text-[0.8125rem] font-semibold text-ink-muted first:ps-6 last:pe-6", className)} {...props} />;
 }
 
 export function Tr({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn("border-b border-line last:border-0 hover:bg-surface-muted/60", className)} {...props} />;
+  return <tr className={cn("border-b border-line/70 transition-colors last:border-0 hover:bg-surface-muted", className)} {...props} />;
 }
 
 export function Td({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn("py-3 pe-4 align-top first:ps-6 last:pe-6", className)} {...props} />;
+  return <td className={cn("py-3.5 pe-4 align-middle first:ps-6 last:pe-6", className)} {...props} />;
 }
 
 /** Class for <SortHeader> so sortable and plain headers line up. */

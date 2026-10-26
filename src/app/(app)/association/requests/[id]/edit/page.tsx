@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Lightbulb } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
+import { FormSteps } from "@/components/requests/form-steps";
 import { DiscardDraftButton } from "@/components/requests/request-actions";
 import { RequestForm } from "@/components/requests/request-form";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
 import { buttonClasses } from "@/components/ui/button";
 import { RefNumber } from "@/components/ui/ref-number";
-import { Alert, Panel } from "@/components/ui/surface";
+import { Alert, Panel, StatusText } from "@/components/ui/surface";
 import { acceptedGroups } from "@/lib/completeness";
 import { arabicList, toArabicDigits } from "@/lib/format";
 import { acceptAttribute } from "@/lib/uploads";
@@ -56,7 +57,7 @@ export default async function EditRequestPage({ params }: PageProps<"/associatio
         compact
         eyebrow={
           <span className="flex flex-wrap items-center gap-2">
-            <Link href="/association/requests" className="hover:text-on-band hover:underline">
+            <Link href="/association/requests" className="hover:underline">
               طلباتي
             </Link>
             <span aria-hidden="true">/</span>
@@ -66,14 +67,14 @@ export default async function EditRequestPage({ params }: PageProps<"/associatio
         title={returned ? "تعديل الطلب وإعادة تقديمه" : "بيانات الطلب"}
         lead={`${toArabicDigits(request.program.number)}. ${request.program.name} · المبادرة ${toArabicDigits(request.initiative.number)}. ${request.initiative.name}`}
         actions={
-          <Link href={back} className={buttonClasses("onBand")}>
+          <Link href={back} className={buttonClasses("outline")}>
             <ArrowRight strokeWidth={1.75} aria-hidden="true" />
             عرض الطلب
           </Link>
         }
       />
       <PageBody>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <Panel className="p-6 lg:p-8">
             {returned ? (
               <Alert tone="warning" title="أُعيد الطلب إليكم للتعديل" className="mb-8">
@@ -109,19 +110,19 @@ export default async function EditRequestPage({ params }: PageProps<"/associatio
               })}
             />
           </Panel>
-          <aside className="flex flex-col gap-6">
-            <Panel className="p-5">
-              <p className="t-label">الحالة</p>
-              <p className="mt-1 text-sm font-semibold text-ink">{request.status.name}</p>
-              <p className="t-caption mt-3">
-                تُحفظ الملفات فور رفعها. احفظوا البيانات بزر «حفظ المسودة»، ثم قدّموا الطلب عند اكتماله؛ وسيعرض النظام ما ينقص إن وُجد.
-              </p>
-              {request.capabilities.canDiscard ? (
-                <div className="mt-4">
-                  <DiscardDraftButton requestId={id} title={request.title} />
-                </div>
-              ) : null}
-            </Panel>
+          <aside className="flex flex-col gap-5 lg:sticky lg:top-[100px]">
+            <FormSteps current={1} icon={<Lightbulb strokeWidth={1.75} />}>
+              <span className="mb-2 flex items-center justify-between gap-2">
+                <span className="font-semibold text-ink">حالة الطلب</span>
+                <StatusText tone={request.status.tone}>{request.status.name}</StatusText>
+              </span>
+              تُحفظ الملفات فور رفعها. احفظوا البيانات بزر «حفظ المسودة»، ثم قدّموا الطلب عند اكتماله؛ وسيعرض النظام ما ينقص إن وُجد.
+            </FormSteps>
+            {request.capabilities.canDiscard ? (
+              <Panel className="p-5">
+                <DiscardDraftButton requestId={id} title={request.title} />
+              </Panel>
+            ) : null}
           </aside>
         </div>
       </PageBody>

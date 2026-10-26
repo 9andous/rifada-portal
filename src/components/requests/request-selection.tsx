@@ -65,8 +65,8 @@ export function RequestSelection({
   return (
     <Ctx.Provider value={value}>
       {chosen.length > 0 ? (
-        <div role="region" aria-label="الإجراءات الجماعية" className="flex flex-wrap items-center gap-3 border-y border-line bg-surface-sunken px-6 py-3">
-          <span className="text-sm font-semibold text-ink">{requestsPhrase(chosen.length)} محددة</span>
+        <div role="region" aria-label="الإجراءات الجماعية" className="flex flex-wrap items-center gap-3 border-y border-primary-soft bg-primary-soft/50 px-6 py-3">
+          <span className="text-sm font-semibold text-primary">{requestsPhrase(chosen.length)} محددة</span>
           {tooMany ? <span className="text-xs text-st-bad">الحد الأقصى للإجراء الجماعي {requestsPhrase(max)}.</span> : null}
           <div className="ms-auto flex flex-wrap items-center gap-2">
             <Button size="sm" onClick={() => value.openDecision("approve", chosen)} disabled={tooMany}>

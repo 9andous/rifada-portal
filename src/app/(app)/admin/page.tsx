@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { History } from "lucide-react";
+import { Building2, History, Layers, ScrollText, Settings, Target, UserPlus, Users } from "lucide-react";
+import { QuickActions } from "@/components/dashboard/quick-actions";
+import { Avatar } from "@/components/ui/avatar";
 import { BandDate } from "@/components/dashboard/band-date";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
+import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
 import { Panel, PanelHeader } from "@/components/ui/surface";
 import { auditActionLabel } from "@/lib/audit-labels";
@@ -43,24 +46,33 @@ export default async function AdminDashboard() {
         figures={
           <BandFigures
             items={[
-              { label: "المستخدمون النشطون", value: formatNumber(totalUsers), caption: "في جميع الأدوار" },
-              { label: "الجمعيات النشطة", value: formatNumber(associations), caption: "حساب واحد لكل جمعية" },
-              { label: "البرامج", value: formatNumber(programs), caption: `المبادرات: ${formatNumber(initiatives)}` },
-              { label: "الأهداف الإستراتيجية", value: formatNumber(objectives), caption: "من إستراتيجية الرئاسة" },
+              { label: "المستخدمون النشطون", value: formatNumber(totalUsers), caption: "في جميع الأدوار", icon: <Users strokeWidth={1.75} />, href: "/admin/users" },
+              { label: "الجمعيات النشطة", value: formatNumber(associations), caption: "حساب واحد لكل جمعية", icon: <Building2 strokeWidth={1.75} />, href: "/admin/associations" },
+              { label: "البرامج", value: formatNumber(programs), caption: `المبادرات: ${formatNumber(initiatives)}`, icon: <Layers strokeWidth={1.75} />, tone: "gold", href: "/admin/taxonomy" },
+              { label: "الأهداف الإستراتيجية", value: formatNumber(objectives), caption: "من إستراتيجية الرئاسة", icon: <Target strokeWidth={1.75} />, tone: "gold", href: "/admin/taxonomy/objectives" },
             ]}
           />
         }
       />
-      <PageBody>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.4fr]">
+      <PageBody className="flex flex-col gap-5">
+        <QuickActions
+          items={[
+            { label: "إضافة مستخدم", hint: "حساب جديد بدور محدد", href: "/admin/users/new", icon: <UserPlus strokeWidth={1.75} /> },
+            { label: "إضافة جمعية", hint: "ملف الجمعية ومسؤولها", href: "/admin/associations/new", icon: <Building2 strokeWidth={1.75} /> },
+            { label: "البرامج والمبادرات", hint: "البرامج والمتطلبات", href: "/admin/taxonomy", icon: <Layers strokeWidth={1.75} />, tone: "gold" },
+            { label: "الإعدادات", hint: "المهل والحالات والقيود", href: "/admin/settings", icon: <Settings strokeWidth={1.75} />, tone: "gold" },
+            { label: "سجل التدقيق", hint: "كل العمليات المسجلة", href: "/admin/audit", icon: <ScrollText strokeWidth={1.75} />, tone: "gold" },
+          ]}
+        />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.4fr]">
           <Panel>
-            <PanelHeader title="المستخدمون حسب الدور" />
+            <PanelHeader icon={<Users strokeWidth={1.75} />} title="المستخدمون حسب الدور" description="الحسابات النشطة" />
             <ul className="flex flex-col gap-4 px-6 pb-6">
               {ROLES.map((role) => (
                 <li key={role} className="grid grid-cols-[8rem_1fr_2.5rem] items-center gap-4 text-sm">
                   <span className="text-ink-muted">{ROLE_LABELS[role]}</span>
-                  <span className="h-2 rounded-sm bg-chart-track">
-                    <span className="block h-2 rounded-sm bg-chart-1" style={{ width: `${(roleCount(role) / maxRole) * 100}%` }} />
+                  <span className="h-2.5 overflow-hidden rounded-full bg-chart-track">
+                    <span className="block h-full rounded-full bg-chart-1" style={{ width: `${(roleCount(role) / maxRole) * 100}%` }} />
                   </span>
                   <span className="t-figure text-end">{formatNumber(roleCount(role))}</span>
                 </li>
@@ -70,17 +82,18 @@ export default async function AdminDashboard() {
 
           <Panel>
             <PanelHeader
+              icon={<History strokeWidth={1.75} />}
               title="آخر العمليات المسجلة"
               description="من سجل التدقيق"
               actions={
-                <Link href="/admin/audit" className="text-primary hover:underline">
+                <Link href="/admin/audit" className={buttonClasses("outline", "sm")}>
                   السجل كاملًا
                 </Link>
               }
             />
             {recentAudit.length === 0 ? (
-              <div className="flex items-start gap-4 px-6 pb-6 pt-2">
-                <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-surface-sunken text-ink-muted [&_svg]:size-5">
+              <div className="mx-6 mb-6 flex items-start gap-4 rounded-lg border border-line bg-surface-muted p-4">
+                <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-md bg-surface-sunken text-ink-muted [&_svg]:size-5">
                   <History strokeWidth={1.75} />
                 </span>
                 <div>
@@ -89,13 +102,11 @@ export default async function AdminDashboard() {
                 </div>
               </div>
             ) : (
-              <ul className="px-6 pb-3">
+              <ul className="-mt-5">
                 {recentAudit.map((entry) => (
-                  <li key={entry.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line py-3 text-sm last:border-0">
+                  <li key={entry.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line/70 px-6 py-3 text-sm last:border-0 hover:bg-surface-muted">
                     <span className="flex items-center gap-3">
-                      <span aria-hidden="true" className="flex size-7 items-center justify-center rounded-full bg-surface-sunken text-xs font-bold text-ink-muted">
-                        {(entry.actor?.name ?? "ن").trim().charAt(0)}
-                      </span>
+                      <Avatar name={entry.actor?.name ?? "النظام"} size="sm" />
                       <span>
                         <span className="font-semibold">{entry.actor?.name ?? "النظام"}</span>
                         <span className="mx-2 text-ink-subtle">·</span>

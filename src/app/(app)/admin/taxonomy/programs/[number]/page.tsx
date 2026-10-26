@@ -122,7 +122,7 @@ async function ProgramTabs({ user, program, path, searchParams }: { user: Curren
               }}
             />
             <aside className="flex flex-col gap-4">
-              <PanelHeader title="الحالة" className="px-0 pt-0" />
+              <PanelHeader title="الحالة" flush />
               <StateMark state={program.state} kind="program" />
               {program.sourceNote ? <p className="t-caption whitespace-pre-line">{program.sourceNote}</p> : null}
               <StateActions

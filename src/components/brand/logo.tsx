@@ -10,27 +10,33 @@ type LogoProps = {
   priority?: boolean;
 };
 
+/** The Rifada mark (ogee arch, gold diamonds). */
 export function Logo({ tone = "auto", height = 48, className, priority }: LogoProps) {
   const { color, white, alt } = brand.logo;
   const width = Math.round((color.width / color.height) * height);
 
   if (tone === "onDark") {
-    return (
-      <Image src={white.src} alt={alt} width={width} height={height} priority={priority} className={className} />
-    );
+    return <Image src={white.src} alt={alt} width={width} height={height} priority={priority} className={className} />;
   }
 
   return (
-    <span className={cn("inline-flex", className)}>
+    <span className={cn("inline-flex shrink-0", className)}>
       <Image src={color.src} alt={alt} width={width} height={height} priority={priority} className="dark:hidden" />
-      <Image
-        src={white.src}
-        alt={alt}
-        width={width}
-        height={height}
-        priority={priority}
-        className="hidden dark:block"
-      />
+      <Image src={white.src} alt={alt} width={width} height={height} priority={priority} className="hidden dark:block" />
+    </span>
+  );
+}
+
+/**
+ * The Presidency's mark. The file is a full-colour logo for light backgrounds, so in dark mode it
+ * sits on a white plate rather than being recoloured.
+ */
+export function PresidencyLogo({ height = 54, className, priority }: { height?: number; className?: string; priority?: boolean }) {
+  const { src, width: w, height: h, alt } = brand.presidencyLogo;
+  const width = Math.round((w / h) * height);
+  return (
+    <span className={cn("inline-flex shrink-0 dark:rounded-sm dark:bg-white dark:px-1.5 dark:py-0.5", className)}>
+      <Image src={src} alt={alt} width={width} height={height} priority={priority} />
     </span>
   );
 }

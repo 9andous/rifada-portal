@@ -5,7 +5,6 @@ import { DateDisplay } from "@/components/ui/date-display";
 import { RefNumber } from "@/components/ui/ref-number";
 import { StatusText } from "@/components/ui/surface";
 import { DataTable, Td, Tr } from "@/components/ui/table";
-import { cn } from "@/lib/cn";
 import { toArabicDigits } from "@/lib/format";
 import type { RequestRow } from "@/server/services/requests/read";
 import type { SupervisorChoice } from "./decision-dialog";
@@ -39,10 +38,10 @@ export function RequestsTable({
   const selectable = rows.filter((r) => r.decidable).map((r) => ({ id: r.id, title: r.title, referenceNo: r.referenceNo }));
   const table = (
     <DataTable caption="قائمة الطلبات" minWidth="56rem">
-      <thead className="bg-surface-muted">
+      <thead className="border-y border-line bg-surface-muted">
         <tr>
           {bulk.enabled ? (
-            <th scope="col" className="w-10 py-2.5 ps-6">
+            <th scope="col" className="w-10 py-3 ps-6">
               <SelectAllCheckbox />
             </th>
           ) : null}
@@ -62,7 +61,7 @@ export function RequestsTable({
                 {r.title || "طلب بلا عنوان"}
               </Link>
               <span className="t-caption mt-0.5 flex flex-wrap items-center gap-x-2">
-                {r.referenceNo ? <RefNumber value={r.referenceNo} /> : <span>مسودة</span>}
+                {r.referenceNo ? <RefNumber value={r.referenceNo} className="font-semibold text-primary" /> : <span>مسودة</span>}
                 {showAssociation ? (
                   <>
                     <span aria-hidden="true">·</span>
@@ -83,14 +82,14 @@ export function RequestsTable({
               <StatusText tone={r.status.tone}>{r.status.name}</StatusText>
             </Td>
             {showSupervisor ? (
-              <Td>{r.supervisor ? <PersonName name={r.supervisor.name} muted={!r.supervisor.isActive} /> : <span className="text-ink-subtle">لم يُسند بعد</span>}</Td>
+              <Td>{r.supervisor ? <PersonName name={r.supervisor.name} muted={!r.supervisor.isActive} /> : <span className="whitespace-nowrap text-ink-subtle">لم يُسند بعد</span>}</Td>
             ) : null}
             <Td className="min-w-[9.5rem]">{r.submittedAt ? <DateDisplay date={r.submittedAt} /> : <span className="text-ink-subtle">—</span>}</Td>
             <Td className="min-w-[9.5rem]">
               {r.slaDueAt && SLA_KEYS.includes(r.status.key) ? (
-                <span className={cn("inline-flex flex-col", r.overdue && "text-st-bad")}>
-                  <DateDisplay date={r.slaDueAt} />
-                  {r.overdue ? <span className="text-xs font-semibold">متأخر</span> : null}
+                <span className="inline-flex flex-col items-start gap-1">
+                  <DateDisplay date={r.slaDueAt} className={r.overdue ? "text-st-bad" : undefined} />
+                  {r.overdue ? <StatusText tone="bad">متأخر</StatusText> : null}
                 </span>
               ) : (
                 <span className="text-ink-subtle">—</span>

@@ -50,9 +50,9 @@ The following are deliberately **not** in this repository (see `.gitignore`):
 - the colleague's early HTML draft that was used for information architecture ideas only;
 - the design-lab route and its notes (three visual directions compared before the design step);
 - review screenshots for each phase;
-- the Presidency's logo files. The app ships a neutral placeholder mark in `public/brand/`; to use
-  the official logos locally, put the files there and update `src/config/brand.ts` (paths, sizes,
-  alt text). Never commit them; `public/brand/haramain-logo-*` is in `.gitignore`.
+- the design handoff (`design_handoff_rifada_platform`, the approved prototype behind docs/DESIGN.md);
+- the official vector logos. The repository ships raster logos in `public/brand/` (committed at the
+  owner's request, D-092); replace them through `src/config/brand.ts` when the vectors arrive.
 
 To obtain any of them, ask the project owner through a private channel (for example a private
 message to the repository owner on GitHub). Do not commit them to this repository.

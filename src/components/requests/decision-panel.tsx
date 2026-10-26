@@ -1,18 +1,18 @@
 "use client";
 
-import { Check, RotateCcw, X } from "lucide-react";
+import { Check, Gavel, RotateCcw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
-import { SectionTitle } from "@/components/ui/surface";
+import { HeaderIcon } from "@/components/ui/surface";
 import type { Decision } from "@/lib/requests";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
 import { DecisionDialog, type DialogRequest } from "./decision-dialog";
 
-const CHOICES: { decision: Decision; label: string; icon: ReactNode; variant: "primary" | "outline" | "danger" }[] = [
+const CHOICES: { decision: Decision; label: string; icon: ReactNode; variant: "primary" | "warning" | "danger" }[] = [
   { decision: "approve", label: "اعتماد", icon: <Check aria-hidden="true" strokeWidth={1.75} />, variant: "primary" },
-  { decision: "return", label: "إعادة للتعديل", icon: <RotateCcw aria-hidden="true" strokeWidth={1.75} />, variant: "outline" },
+  { decision: "return", label: "إعادة للتعديل", icon: <RotateCcw aria-hidden="true" strokeWidth={1.75} />, variant: "warning" },
   { decision: "reject", label: "رفض", icon: <X aria-hidden="true" strokeWidth={1.75} />, variant: "danger" },
 ];
 
@@ -29,12 +29,16 @@ export function DecisionPanel({ request }: { request: DialogRequest }) {
 
   return (
     <>
-      <section aria-labelledby="decision-title" className="hidden rounded-sm border border-line bg-surface p-5 shadow-1 lg:block">
-        <SectionTitle as="h2">
-          <span id="decision-title">القرار</span>
-        </SectionTitle>
-        <p className="t-caption mt-1 ps-4">يُبلَّغ مسؤول الجمعية بالقرار وسببه.</p>
-        <Field id="panel-reason" label="السبب" hint="مطلوب عند الإعادة للتعديل والرفض." className="mt-4">
+      <section aria-labelledby="decision-title" className="hidden overflow-hidden rounded-xl border-2 border-primary/30 bg-surface shadow-2 lg:block">
+        <div className="flex items-center gap-3 border-b border-line bg-primary-soft/50 px-5 py-3.5">
+          <HeaderIcon icon={<Gavel strokeWidth={1.75} />} />
+          <div>
+            <h2 id="decision-title" className="t-section">القرار</h2>
+            <p className="text-xs text-ink-subtle">يُبلَّغ مسؤول الجمعية بالقرار وسببه.</p>
+          </div>
+        </div>
+        <div className="p-5">
+        <Field id="panel-reason" label="السبب" hint="مطلوب عند الإعادة للتعديل والرفض.">
           <Textarea id="panel-reason" rows={4} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={REQUEST_LIMITS.reason} />
         </Field>
         <div className="mt-4 flex flex-col gap-2">
@@ -45,11 +49,13 @@ export function DecisionPanel({ request }: { request: DialogRequest }) {
             </Button>
           ))}
         </div>
+        <p className="t-caption mt-3">القرار نهائي ويُسجَّل باسمك في سجل الطلب.</p>
+        </div>
       </section>
 
       {/* Tablet and phone: a fixed bar at the bottom of the screen; the reason is entered in the dialog. */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface px-4 py-3 shadow-3 lg:hidden" role="region" aria-label="القرار">
-        <div className="mx-auto flex max-w-[1280px] items-center gap-2">
+        <div className="mx-auto flex max-w-[1360px] items-center gap-2">
           <span className="t-label me-auto">القرار</span>
           {CHOICES.map((c) => (
             <Button key={c.decision} size="sm" variant={c.variant} onClick={() => open(c.decision)}>

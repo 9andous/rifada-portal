@@ -54,6 +54,11 @@ const pairs = [
   ["ink", "st-review-soft", 4.5],
   ["band", "gold-on-band", 4.5],
   ["ink-muted", "accent-soft", 4.5],
+  ...["brand-ink"].flatMap((fg) => SURFACES.map((bg) => [fg, bg, 4.5])),
+  ["on-gold-action", "gold-action", 4.5],
+  ["on-gold-action", "gold-action-hover", 4.5],
+  ...["band-ink", "band-ink-muted", "band-gold"].map((fg) => [fg, "band-deep", 4.5]),
+  ["primary", "primary-soft", 4.5],
   // Non-text (WCAG 1.4.11): accents, focus rings, chart marks.
   ["accent", "surface", 3],
   ["accent", "canvas", 3],

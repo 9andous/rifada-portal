@@ -25,6 +25,10 @@ export const PERMISSIONS = {
     description: "إنشاء الجمعيات وحساباتها وتعديلها واستيرادها",
     grants: { SUPER_ADMIN: "all" },
   },
+  "registrations.review": {
+    description: "مراجعة طلبات تسجيل الجمعيات واعتمادها أو رفضها",
+    grants: { SUPER_ADMIN: "all" },
+  },
   "associations.read": {
     description: "عرض بيانات الجمعيات",
     grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "programs", ASSOCIATION_OFFICER: "own" },

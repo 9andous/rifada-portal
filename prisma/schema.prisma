@@ -59,6 +59,7 @@ model User {
   uploadedVersions     AttachmentVersion[]
   settingsUpdated      Setting[]
   templateFiles        TemplateFile[]
+  reviewedRegistrations AssociationRegistration[] @relation("RegistrationReviewer")
 
   @@index([role])
   @@map("users")
@@ -132,8 +133,9 @@ model Association {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  officer  User?
-  requests Request[]
+  officer      User?
+  requests     Request[]
+  registration AssociationRegistration?
 
   @@map("associations")
 }
@@ -656,6 +658,55 @@ model Setting {
   updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("settings")
+}
+
+// ---------------------------------------------------------------------------
+// Association self-registration (D-094): a public application reviewed by the super admin.
+// Approval creates the association and its officer account; the password hash chosen by the
+// applicant is moved to the credential account and cleared here on any decision.
+// ---------------------------------------------------------------------------
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model AssociationRegistration {
+  id                String             @id @default(cuid())
+  referenceNo       String             @unique
+  status            RegistrationStatus @default(PENDING)
+  name              String
+  licenseNumber     String
+  classification    String
+  region            String
+  city              String
+  foundedYear       Int?
+  contactPhone      String
+  contactEmail      String?
+  website           String?
+  programNumbers    Int[]
+  officerName       String
+  officerUsername   String
+  officerEmail      String?
+  officerPhone      String
+  officerNationalId String?
+  passwordHash      String?
+  pledgeAcceptedAt  DateTime
+  decisionNote      String?
+  reviewedById      String?
+  reviewedAt        DateTime?
+  associationId     String?            @unique
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  reviewedBy  User?        @relation("RegistrationReviewer", fields: [reviewedById], references: [id])
+  association Association? @relation(fields: [associationId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([licenseNumber])
+  @@index([officerUsername])
+  @@map("association_registrations")
 }
 
 model SiteContent {

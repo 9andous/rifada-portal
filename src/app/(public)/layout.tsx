@@ -1,4 +1,5 @@
-import { PublicFooter, PublicHeader } from "@/components/layout/public-header";
+import { PublicHeader } from "@/components/layout/public-header";
+import { SiteFooter } from "@/components/layout/site-footer";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,7 +8,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <main id="main" className="flex flex-1 flex-col">
         {children}
       </main>
-      <PublicFooter />
+      <SiteFooter />
     </>
   );
 }

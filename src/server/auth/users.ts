@@ -48,6 +48,29 @@ export async function createUserWithPassword(client: Client, input: NewUser) {
   return user;
 }
 
+/**
+ * Creates a user whose credential holds an argon2 hash made earlier, e.g. the password an
+ * association chose when registering, hashed at submission and kept until approval (D-094).
+ */
+export async function createUserWithPasswordHash(client: Client, input: Omit<NewUser, "password"> & { passwordHash: string }) {
+  const username = input.username.trim().toLowerCase();
+  const user = await client.user.create({
+    data: {
+      username,
+      name: input.name,
+      email: input.email?.trim().toLowerCase() || placeholderEmail(username),
+      phone: input.phone?.trim() || null,
+      role: input.role,
+      associationId: input.associationId ?? null,
+      nationalId: input.nationalId ?? null,
+      mustChangePassword: input.mustChangePassword ?? false,
+      isDemo: input.isDemo ?? false,
+    },
+  });
+  await client.account.create({ data: { userId: user.id, accountId: user.id, providerId: "credential", password: input.passwordHash } });
+  return user;
+}
+
 /** Replaces the credential password hash (creating the credential account if missing). */
 export async function setCredentialPassword(client: Client, userId: string, password: string) {
   const digest = await hashPassword(password);
