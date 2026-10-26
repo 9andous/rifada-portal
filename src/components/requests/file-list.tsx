@@ -16,7 +16,7 @@ export function FileItem({ requestId, file, actions }: { requestId: string; file
         {current ? (
           <a href={fileHref(requestId, current.id)} className="inline-flex min-w-0 items-center gap-1.5 font-semibold text-ink hover:text-primary hover:underline" download>
             <bdi className="truncate">{current.fileName}</bdi>
-            <Download aria-hidden="true" strokeWidth={1.75} className="size-3.5 shrink-0" />
+            <Download aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0" />
             <span className="sr-only">تنزيل</span>
           </a>
         ) : (

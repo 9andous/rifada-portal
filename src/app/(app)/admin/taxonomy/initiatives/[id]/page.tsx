@@ -56,7 +56,7 @@ export default async function AdminInitiativePage({ params, searchParams }: Page
           <BandFigures
             items={[
               { label: "الأهداف المرتبطة", value: formatNumber(initiative.linkedObjectives.length), caption: "من سبعة أهداف" },
-              { label: "الحقول الخاصة", value: formatNumber(requirements.fields.length), emphasis: true },
+              { label: "الحقول الخاصة", value: formatNumber(requirements.fields.length) },
               { label: "المرفقات المطلوبة", value: formatNumber(requirements.attachments.length) },
             ]}
           />

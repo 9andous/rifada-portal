@@ -36,7 +36,7 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 export function buttonClasses(variant: Variant = "primary", size: Size = "md", className?: string) {
   return cn(
     "inline-flex shrink-0 items-center justify-center font-semibold whitespace-nowrap transition-colors active:translate-y-px",
-    "disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-[17px] [&_svg]:shrink-0",
+    "disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
     variants[variant],
     sizes[size],
     className,

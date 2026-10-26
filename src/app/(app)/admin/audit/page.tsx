@@ -39,7 +39,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
         figures={
           <BandFigures
             items={[
-              { label: "العمليات المسجلة", value: formatNumber(total), emphasis: true },
+              { label: "العمليات المسجلة", value: formatNumber(total) },
               { label: "آخر ٢٤ ساعة", value: formatNumber(lastDay) },
               { label: "المنفّذون", value: formatNumber(actors), caption: "حسابات نفّذت عمليات" },
             ]}

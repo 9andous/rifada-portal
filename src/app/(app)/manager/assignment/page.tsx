@@ -48,7 +48,7 @@ export default async function AssignmentPage() {
         figures={
           <BandFigures
             items={[
-              { label: "غير مسندة", value: formatNumber(overview.unassigned.length), emphasis: overview.unassigned.length > 0, caption: "طلبات مفتوحة بلا مشرف" },
+              { label: "غير مسندة", value: formatNumber(overview.unassigned.length), attention: overview.unassigned.length > 0 && "warn", caption: "طلبات مفتوحة بلا مشرف" },
               { label: "لدى حسابات معطلة", value: formatNumber(overview.inactiveAssigned.length), caption: "تحتاج إلى إعادة إسناد" },
               { label: "المشرفون النشطون", value: formatNumber(supervisors.length) },
               { label: "برامج بلا مشرف", value: formatNumber(programsWithoutSupervisor.length), caption: "تبقى طلباتها غير مسندة" },

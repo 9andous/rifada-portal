@@ -48,7 +48,7 @@ export default async function SettingsPage() {
         figures={
           <BandFigures
             items={[
-              { label: "مهلة المراجعة", value: formatNumber(values["sla.workingDays"]), unit: countUnit(values["sla.workingDays"], DAY_UNIT), emphasis: true },
+              { label: "مهلة المراجعة", value: formatNumber(values["sla.workingDays"]), unit: countUnit(values["sla.workingDays"], DAY_UNIT) },
               { label: "حجم الملف الأقصى", value: formatNumber(values["uploads.maxFileMb"]), unit: "ميغابايت" },
               { label: "حد الإجراء الجماعي", value: formatNumber(values["bulk.maxItems"]), unit: countUnit(values["bulk.maxItems"], REQUEST_UNIT) },
               { label: "المبادرات للزوار", value: values["public.showInitiatives"] ? "معروضة" : "مخفية" },

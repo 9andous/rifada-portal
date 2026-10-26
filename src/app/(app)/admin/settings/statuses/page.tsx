@@ -27,7 +27,7 @@ export default async function StatusesPage() {
           <BandFigures
             items={[
               { label: "الحالات", value: formatNumber(lifecycle.statuses.length), caption: "ثابتة" },
-              { label: "الانتقالات", value: formatNumber(lifecycle.transitions.length), emphasis: true },
+              { label: "الانتقالات", value: formatNumber(lifecycle.transitions.length) },
               { label: "التلقائية", value: formatNumber(automatic), caption: "ينفذها النظام" },
             ]}
           />

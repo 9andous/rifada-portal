@@ -16,7 +16,7 @@ export function TaxonomyNav({ active, base }: { active: TaxonomySection; base: "
       ? [{ key: "review", label: "مراجعة الاستخراج", href: `${base}/review` }]
       : [{ key: "lifecycle", label: "دورة حياة الطلب", href: `${base}/lifecycle` }]),
   ];
-  return <TabNav items={items} active={active} label="أقسام البرامج والمبادرات" className="mb-6 rounded-sm border bg-surface shadow-1" />;
+  return <TabNav items={items} active={active} label="أقسام البرامج والمبادرات" className="mb-6 overflow-hidden rounded-xl border bg-surface shadow-1" />;
 }
 
 /** Dot plus text for «نشط/موقوف/مؤرشف»; programs masculine, initiatives feminine. */

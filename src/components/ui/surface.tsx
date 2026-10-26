@@ -11,45 +11,32 @@ export function Panel({ className, ...props }: HTMLAttributes<HTMLElement>) {
 export function SectionTitle({ children, as: Tag = "h2", className }: { children: ReactNode; as?: "h2" | "h3"; className?: string }) {
   return (
     <Tag className={cn("t-section flex items-center gap-2.5", className)}>
-      <span aria-hidden="true" className="size-1.5 shrink-0 rotate-45 bg-accent" />
+      <span aria-hidden="true" className="size-2 shrink-0 rotate-45 bg-accent" />
       {children}
     </Tag>
   );
 }
 
-/** Icon tile of a card header: soft green square, or a gold diamond when the card has no icon. */
-export function HeaderIcon({ icon, tone = "green" }: { icon?: ReactNode; tone?: "green" | "gold" }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-[9px] border [&_svg]:size-[18px]",
-        tone === "gold" ? "border-accent/25 bg-accent-soft text-accent-ink" : "border-primary-soft bg-primary-soft/60 text-primary",
-      )}
-    >
-      {icon ?? <span className="size-2 rotate-45 bg-accent" />}
-    </span>
-  );
+/** Gold diamond of a card header, centred on the first line of a `t-section` title. */
+export function HeaderDiamond() {
+  return <span aria-hidden="true" className="mt-[9px] size-2 shrink-0 rotate-45 bg-accent" />;
 }
 
 /**
- * Card header (design handoff `.ch`): icon tile, title and subtitle, tools at the end, and a
- * hairline under it. `flush` drops the padding and the hairline for headings inside a padded box.
+ * Card header (docs/DESIGN.md: Card header): gold diamond, title and subtitle, tools at the end,
+ * and a hairline under it. `flush` drops the padding and the hairline for headings inside a
+ * padded box.
  */
 export function PanelHeader({
   title,
   description,
   actions,
-  icon,
-  tone,
   flush,
   className,
 }: {
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
-  icon?: ReactNode;
-  tone?: "green" | "gold";
   flush?: boolean;
   className?: string;
 }) {
@@ -65,8 +52,8 @@ export function PanelHeader({
     );
   }
   return (
-    <header className={cn("panel-head mb-5 flex items-center gap-3 border-b border-line px-5 py-4 sm:px-6", className)}>
-      <HeaderIcon icon={icon} tone={tone} />
+    <header className={cn("panel-head mb-5 flex items-start gap-3 border-b border-line px-5 py-4 sm:px-6", className)}>
+      <HeaderDiamond />
       <div className="min-w-0 flex-1">
         <h2 className="t-section leading-snug">{title}</h2>
         {description ? <p className="mt-0.5 text-[0.8125rem] text-ink-subtle">{description}</p> : null}

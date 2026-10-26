@@ -59,7 +59,7 @@ export default async function AdminProgramPage({ params, searchParams }: PagePro
         figures={
           <BandFigures
             items={[
-              { label: "المبادرات", value: formatNumber(program.activeInitiatives), emphasis: true, caption: `المؤرشفة: ${formatNumber(program.archivedInitiatives)}` },
+              { label: "المبادرات", value: formatNumber(program.activeInitiatives), caption: `المؤرشفة: ${formatNumber(program.archivedInitiatives)}` },
               { label: "الأهداف", value: formatNumber(program.goals.filter((g) => !g.archivedAt).length) },
               { label: "ترتيب العرض", value: formatNumber(program.sortOrder) },
             ]}

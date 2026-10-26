@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheck, CircleX, Hourglass, LogIn, SearchCheck } from "lucide-react";
+import { CircleCheck, CircleX, Hourglass, LogIn } from "lucide-react";
 import Link from "next/link";
 import { ArchOutline, Diamond } from "@/components/brand/arch";
 import { GeometricPattern } from "@/components/brand/geometric-pattern";
@@ -43,9 +43,7 @@ export function RegistrationStatusLookup() {
       <div className="mx-auto grid w-full max-w-[1100px] items-start gap-6 px-4 py-10 sm:px-8 lg:grid-cols-[1fr_1.1fr]">
         <form onSubmit={onSubmit} noValidate className="rounded-2xl border border-line bg-surface p-6 shadow-2 sm:p-8">
           <div className="mb-6 flex items-center gap-3">
-            <span className="flex size-11 items-center justify-center rounded-md bg-primary-soft text-primary">
-              <SearchCheck aria-hidden="true" className="size-[22px]" strokeWidth={1.75} />
-            </span>
+            <span aria-hidden="true" className="size-2 shrink-0 rotate-45 bg-accent" />
             <h2 className="text-lg font-bold text-brand-ink">بيانات الطلب</h2>
           </div>
           {state.message ? (
@@ -117,7 +115,7 @@ export function RegistrationStatusLookup() {
           ) : (
             <div className="flex h-full flex-col items-center justify-center py-10 text-center">
               <span className="flex size-14 items-center justify-center rounded-full bg-accent-soft text-accent-ink">
-                <Hourglass aria-hidden="true" className="size-6" strokeWidth={1.75} />
+                <Hourglass aria-hidden="true" className="size-5" strokeWidth={1.75} />
               </span>
               <p className="mt-4 font-bold text-ink">تظهر هنا حالة الطلب</p>
               <p className="mt-1 max-w-sm text-sm leading-relaxed text-ink-muted">قيد المراجعة، أو معتمد مع رابط الدخول، أو مرفوض مع السبب.</p>

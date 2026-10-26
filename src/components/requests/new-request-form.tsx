@@ -46,9 +46,9 @@ export function NewRequestForm({ programs }: { programs: ProgramChoice[] }) {
               <label
                 key={p.id}
                 className={cn(
-                  "relative flex cursor-pointer items-start gap-3 rounded-lg border bg-surface p-3.5 transition-[border-color,background-color,box-shadow]",
-                  "has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus",
-                  selected ? "border-primary bg-primary-soft/50 shadow-[inset_0_0_0_1px_var(--primary)]" : "border-line hover:border-line-strong hover:bg-surface-muted",
+                  "relative flex cursor-pointer items-start gap-3 rounded-lg border bg-surface p-3.5 transition-[border-color,background-color,box-shadow,translate]",
+                  "has-[:focus-visible]:outline-3 has-[:focus-visible]:-outline-offset-3 has-[:focus-visible]:outline-focus",
+                  selected ? "border-primary bg-primary-soft/50 shadow-[inset_0_0_0_1px_var(--primary)]" : "card-link border-line",
                 )}
               >
                 <input
@@ -62,7 +62,7 @@ export function NewRequestForm({ programs }: { programs: ProgramChoice[] }) {
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "flex size-11 shrink-0 items-center justify-center rounded-md [&_svg]:size-[22px]",
+                    "flex size-11 shrink-0 items-center justify-center rounded-md [&_svg]:size-5",
                     selected ? "bg-primary text-primary-ink" : "bg-primary-soft text-primary",
                   )}
                 >
@@ -75,7 +75,7 @@ export function NewRequestForm({ programs }: { programs: ProgramChoice[] }) {
                 </span>
                 {selected ? (
                   <span aria-hidden="true" className="absolute end-3 top-3 flex size-5 items-center justify-center rounded-full bg-primary text-primary-ink">
-                    <Check className="size-3.5" strokeWidth={3} />
+                    <Check aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
                   </span>
                 ) : null}
               </label>

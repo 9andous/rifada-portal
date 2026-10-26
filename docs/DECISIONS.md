@@ -757,3 +757,72 @@ line of the strategy (vision, objectives 5 and 1, the values التعاون and 
   rejected and the username when approved.
 - Entry points: the login page (a gold «جمعية جديدة؟» card and a tracking link), the public header,
   the home hero and closing band, and the footer.
+
+**D-095 Upgrade of the handoff design: cards, key figures, icons, navigation, logos, timeline
+(2026-10-26, owner's request, branch `my-design-changes`).** The owner kept the handoff design
+(D-092) as the base and asked for it to be upgraded, not replaced: the key-figure tiles looked
+generic, cards drifted apart (radius, border, shadow, hover, motion, focus, header), icons were
+inconsistent, the navigation bar was cramped and the two logos crowded each other. Options were
+rendered on a temporary page (light and dark, later deleted) and chosen by the owner:
+- **Key figures:** identical white tiles with label, figure and caption; no icon tiles, no featured
+  green tile, no arch watermark. Colour only for attention (`attention: "bad" | "warn"`, only
+  while the count is above zero); `emphasis` and the label-to-icon map (`figure-icons.tsx`) were
+  removed. The request list status filters use the same tile; selected = gold top bar and green
+  border.
+- **Interactive cards** (`.card-link`): border green in light and gold in dark, `shadow-2`, 1px
+  lift; focus ring inside the card. Applied to linked key figures, list filters, programme choice
+  cards and the login registration card. Cards that are not links lost their hover.
+- **Motion:** one 200ms ease-out for all transitions (Tailwind's default now points at the token);
+  staggered page entry; everything off under `prefers-reduced-motion` except loading spinners.
+- **Shadows** made visibly distinct in three levels; dark mode adds a faint top light.
+- **Focus ring:** `--focus` is green in light (`#177a4d`, 5.35:1 on white) and stays gold in dark.
+- **Card headers:** one style, the gold diamond and a hairline; icon tiles removed from every card
+  header (about fifty) and from the six hand-made headers.
+- **Radii:** outliers moved onto the scale (login registration card 14, tab bars 14, icon tiles 10).
+- **Shortcut tiles** (`QuickActions`) removed from the four dashboards; the navigation and the gold
+  call-to-action already lead to the same routes.
+- **Icons:** none removed for their own sake; one icon per concept (requests Inbox, templates and
+  documents FileStack, users UsersRound, adding a user UserRoundPlus, assignment UserRoundCheck,
+  registrations ClipboardList, reports ChartColumn), sizes 16/18/20 by role (14 only beside
+  captions), one 1.75 stroke set globally on `svg.lucide`.
+- **Navigation bar:** 64px, 16px semibold labels, active fill plus a full-width gold bar, disabled
+  items at 60% white with a not-allowed cursor, 44px call-to-action; icons hide from 1024 to 1279px
+  so the super admin's seven items fit (measured with no overflow at 1024, 1280, 1366, 1440 and
+  1920px for all roles).
+- **Logos (option A):** the Rifada identity leads at the header start; the Presidency's logo sits
+  on the far side after the user tools with a hairline and clear space, on a padded white plate in
+  dark mode, hidden below 640px. A class conflict had kept it visible on phones; it is now wrapped.
+- **Timeline:** one shared diamond timeline (`src/components/ui/timeline.tsx`, from direction C)
+  for «مسار الطلب», «خطوات الطلب» (done green, current gold, upcoming grey) and «دليل التقديم» (all
+  grey); the form guide's help text is a flat note with a gold side rule.
+- **Kept as they were:** the palette and radii scale (the ivory, sharp-cornered look was shown and
+  not adopted), the Arabic-Indic zero of the digit face (redrawn lozenges were shown and declined),
+  and the boxes inside cards.
+- **Not verified on screen:** the super admin pages and the request detail page, because the dev
+  database's super admin password differs from `.env` and the database has no requests; the owner
+  chose not to change data. Both use the shared components checked elsewhere.
+- **Follow-ups after the owner's review on a wide screen (same day):**
+  - **Full-width top:** the gov banner, header and navigation bar span the whole screen; page
+    content stays at 1360px (option B of two rendered layouts; A, everything at 1600px, was not
+    chosen).
+  - **Sticky header and navigation:** on signed-in pages the white header and the green bar stick
+    together; sticky side columns moved to `lg:top-[168px]` and anchors to `lg:scroll-mt-44`. The
+    nav focus ring stays keyboard-only (verified: a mouse click does not show it).
+  - **Hover on every card:** `.card-hover` (border green in light, gold in dark) on all cards,
+    `.card-hover-band` on green surfaces, `.card-link` adds lift and shadow on clickable cards.
+    **Bug fixed:** the card hover rules sat in Tailwind's components layer, where each card's own
+    `border-line` and `shadow-1` utilities overrode them, so the hover of the first pass never
+    showed. They now sit outside the layers. Verified by hovering every card in both themes.
+  - **Home page:** all seven objectives share the gold border; the programmes section, «كيف يعمل
+    الإشراف الفني» and the closing band were removed with their links; the President's word is a
+    soft gold card with the arch. The contrast script now also checks `ink-subtle`, `ink` and
+    `brand-ink` on `accent-soft`.
+  - **Not done here:** a logo or photo per account in place of the initial in the user chip needs
+    a schema field, an upload screen and permissions, so it is left for its own task.
+- **Third review (same day):** the page head now spans the full width like the header, while key
+  figures and cards stay centred at 1360px (the owner accepted that their edges no longer align
+  with the title). Hover was narrowed again: only clickable cards (`.card-link`) and key-figure
+  tiles (`.card-hover`) react; information cards stay still, and `.card-hover-band` was removed.
+  On the home page «مراحل التنفيذ» was removed (and `INITIATIVE.phases` with it). The public
+  header's section links follow the page order with a new first link «القيادة» to the leadership
+  section, spread across the header from 1280px; the footer uses the same order.

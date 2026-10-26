@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, CalendarClock, ChartColumn, CircleCheck, Clock, FileText, Layers, ListChecks, UsersRound } from "lucide-react";
+import { ArrowLeft, CircleCheck, Inbox, Layers, UsersRound } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
@@ -63,7 +63,7 @@ export function StatusDistributionCard({ rows, href }: { rows: StatusRow[]; href
   const total = rows.reduce((n, r) => n + r.count, 0);
   return (
     <Panel className="flex flex-col">
-      <PanelHeader icon={<ChartColumn strokeWidth={1.75} />} title="توزيع الطلبات حسب الحالة" description={requestsPhrase(total)} />
+      <PanelHeader title="توزيع الطلبات حسب الحالة" description={requestsPhrase(total)} />
       <div className="flex-1 px-6 pb-5">
         <div
           role="img"
@@ -99,7 +99,7 @@ export function MonthlyCard({ months }: { months: MonthBucket[] }) {
   const total = months.reduce((n, m) => n + m.count, 0);
   return (
     <Panel className="flex flex-col">
-      <PanelHeader icon={<CalendarClock strokeWidth={1.75} />} title="الطلبات الواردة شهريًا" description="آخر ستة أشهر هجرية" />
+      <PanelHeader title="الطلبات الواردة شهريًا" description="آخر ستة أشهر هجرية" />
       <div className="flex-1 px-6 pb-5">
         <div className="flex h-44 items-end gap-3 border-b border-line-strong" role="img" aria-label={months.map((m) => `${m.name}: ${formatNumber(m.count)}`).join("، ")}>
           {months.map((m, i) => {
@@ -132,7 +132,7 @@ export function ProgramsCard({ rows }: { rows: ProgramRow[] }) {
   const max = Math.max(1, ...rows.map((r) => r.count));
   return (
     <Panel className="flex flex-col">
-      <PanelHeader icon={<Layers strokeWidth={1.75} />} title="الطلبات حسب البرنامج" description="برامج الرئاسة السبعة" />
+      <PanelHeader title="الطلبات حسب البرنامج" description="برامج الرئاسة السبعة" />
       {rows.length === 0 ? (
         <CardEmpty icon={<Layers strokeWidth={1.75} />} title="لم تُحمَّل البرامج والمبادرات بعد">
           تُحمَّل برامج الرئاسة السبعة ومبادراتها ضمن البيانات المرجعية، وتظهر هنا بعدها أعداد الطلبات لكل برنامج.
@@ -160,7 +160,6 @@ export function WorkloadCard({ rows, unassigned, assignHref }: { rows: WorkloadR
   return (
     <Panel>
       <PanelHeader
-        icon={<UsersRound strokeWidth={1.75} />}
         title="عبء العمل على المشرفين"
         description={`طلبات مفتوحة غير مسندة: ${formatNumber(unassigned)}`}
         actions={
@@ -228,8 +227,6 @@ export function OverdueCard({ rows, total, slaDays, now, hrefBase }: { rows: Ove
   return (
     <Panel className="flex flex-col">
       <PanelHeader
-        icon={<Clock strokeWidth={1.75} />}
-        tone={rows.length ? "gold" : "green"}
         title="طلبات تجاوزت مهلة المراجعة"
         description={`المهلة ${daysPhrase(slaDays)} عمل من تاريخ التقديم`}
         actions={total > rows.length ? <span className="t-caption">يُعرض {formatNumber(rows.length)} من {formatNumber(total)}</span> : null}
@@ -298,7 +295,6 @@ export function RecentRequestsCard({
   return (
     <Panel className="flex flex-col">
       <PanelHeader
-        icon={<ListChecks strokeWidth={1.75} />}
         title={title}
         description={total ? `أحدث ${formatNumber(rows.length)} من ${formatNumber(total)}` : undefined}
         actions={
@@ -317,7 +313,7 @@ export function RecentRequestsCard({
             <li key={r.id} className="border-b border-line/70 last:border-0">
               <Link href={`${hrefBase}/${r.id}`} className="group flex items-center gap-3.5 px-6 py-3.5 transition-colors hover:bg-surface-muted">
                 <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary [&_svg]:size-5">
-                  <FileText strokeWidth={1.75} />
+                  <Inbox strokeWidth={1.75} />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-ink group-hover:text-primary">{r.title || "طلب بلا عنوان"}</span>

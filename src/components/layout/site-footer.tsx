@@ -8,11 +8,11 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
   {
     title: "عن المنصة",
     links: [
-      { label: "مبادرة الإشراف الفني", href: "/#initiative" },
+      { label: "القيادة", href: "/#leadership" },
       { label: "الرؤية والرسالة", href: "/#vision" },
       { label: "القيم", href: "/#values" },
       { label: "الأهداف الاستراتيجية", href: "/#objectives" },
-      { label: "برامج الرئاسة", href: "/#programs" },
+      { label: "مبادرة الإشراف الفني", href: "/#initiative" },
     ],
   },
   {
@@ -22,7 +22,6 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
       { label: "متابعة طلب التسجيل", href: "/register/status" },
       { label: "تسجيل الدخول", href: "/login" },
       { label: "استعادة كلمة المرور", href: "/forgot-password" },
-      { label: "كيف يعمل الإشراف", href: "/#how" },
     ],
   },
   {

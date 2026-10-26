@@ -46,7 +46,7 @@ export default async function ManagerProgramPage({ params, searchParams }: PageP
         figures={
           <BandFigures
             items={[
-              { label: "المبادرات", value: formatNumber(program.activeInitiatives), emphasis: true },
+              { label: "المبادرات", value: formatNumber(program.activeInitiatives) },
               { label: "الأهداف", value: formatNumber(program.goals.length) },
             ]}
           />

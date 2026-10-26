@@ -6,7 +6,7 @@ export function SettingsTabs({ active }: { active: "general" | "statuses" }) {
     <TabNav
       label="أقسام الإعدادات"
       active={active}
-      className="mb-6 rounded-sm border bg-surface shadow-1"
+      className="mb-6 overflow-hidden rounded-xl border bg-surface shadow-1"
       items={[
         { key: "general", label: "الإعدادات العامة", href: "/admin/settings" },
         { key: "statuses", label: "حالات الطلبات", href: "/admin/settings/statuses" },

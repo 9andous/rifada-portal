@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { CircleCheck, FileText, FolderOpen, Inbox, ListChecks, Undo2 } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { BandDate } from "@/components/dashboard/band-date";
 import { OverdueCard, RecentRequestsCard, StatusDistributionCard } from "@/components/dashboard/cards";
-import { QuickActions } from "@/components/dashboard/quick-actions";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { EmptyState } from "@/components/states/states";
@@ -15,7 +14,6 @@ import { getSetting } from "@/server/settings/read";
 
 export const metadata: Metadata = { title: "قائمة أعمالي" };
 
-const ICON = { strokeWidth: 1.75 } as const;
 
 export default async function SupervisorDashboard() {
   const user = await requireUser();
@@ -38,18 +36,16 @@ export default async function SupervisorDashboard() {
         figures={
           <BandFigures
             items={[
-              { label: "إجمالي الطلبات", value: formatNumber(overview.total), caption: "في برامجي", icon: <Inbox {...ICON} />, href: "/supervisor/requests" },
+              { label: "إجمالي الطلبات", value: formatNumber(overview.total), caption: "في برامجي", href: "/supervisor/requests" },
               {
                 label: "قيد المراجعة",
                 value: formatNumber(overview.underReview),
                 caption: "بانتظار قرارك",
-                icon: <FileText {...ICON} />,
-                tone: "info",
-                emphasis: overview.underReview > 0,
+                attention: overview.underReview > 0 && "warn",
                 href: "/supervisor/queue",
               },
-              { label: "معادة للتعديل", value: formatNumber(overview.returned), caption: "بانتظار ردّ الجمعية", icon: <Undo2 {...ICON} />, tone: "warn" },
-              { label: "معتمدة", value: formatNumber(overview.approved), caption: "منذ إسناد البرامج", icon: <CircleCheck {...ICON} />, tone: "ok" },
+              { label: "معادة للتعديل", value: formatNumber(overview.returned), caption: "بانتظار ردّ الجمعية" },
+              { label: "معتمدة", value: formatNumber(overview.approved), caption: "منذ إسناد البرامج" },
             ]}
           />
         }
@@ -60,14 +56,6 @@ export default async function SupervisorDashboard() {
             لن تظهر لك أي طلبات حتى يسند إليك مدير النظام برنامجًا واحدًا على الأقل.
           </Alert>
         ) : null}
-
-        <QuickActions
-          items={[
-            { label: "قائمة أعمالي", hint: "الطلبات المسندة إليك", href: "/supervisor/queue", icon: <ListChecks {...ICON} /> },
-            { label: "جميع الطلبات", hint: "كل طلبات برامجك", href: "/supervisor/requests", icon: <Inbox {...ICON} /> },
-            { label: "النماذج", hint: "النماذج المعتمدة للجمعيات", href: "/supervisor/templates", icon: <FolderOpen {...ICON} />, tone: "gold" },
-          ]}
-        />
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr]">
           <RecentRequestsCard

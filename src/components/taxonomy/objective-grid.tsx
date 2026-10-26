@@ -24,7 +24,7 @@ export function ObjectiveCells({ linked, uncertain = [] }: { linked: readonly nu
       <td key={n} className={cn("px-0 py-2 text-center", isUncertain && "bg-st-warn-soft outline-2 -outline-offset-2 outline-st-warn")}>
         {isLinked ? (
           <span className="inline-flex size-5 items-center justify-center rounded-sm bg-primary-soft text-primary-soft-ink print:border print:border-ink">
-            <Check strokeWidth={2.5} className="size-3.5" aria-hidden="true" />
+            <Check strokeWidth={1.75} className="size-3.5" aria-hidden="true" />
             <span className="sr-only">مرتبطة بالهدف {toArabicDigits(n)}</span>
           </span>
         ) : (

@@ -36,7 +36,7 @@ export default async function AdminTemplatesPage({ searchParams }: PageProps<"/a
         figures={
           <BandFigures
             items={[
-              { label: "المنشورة", value: formatNumber(figures.published), emphasis: true, caption: "تظهر لكل من يسجل الدخول" },
+              { label: "المنشورة", value: formatNumber(figures.published), caption: "تظهر لكل من يسجل الدخول" },
               { label: "غير المنشورة", value: formatNumber(figures.unpublished) },
               { label: "المؤرشفة", value: formatNumber(figures.archived) },
             ]}

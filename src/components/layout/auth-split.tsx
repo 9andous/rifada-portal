@@ -71,7 +71,7 @@ export function AuthSplit({
           <ul className="relative mt-auto grid grid-cols-3 gap-3 pt-10">
             {FEATURES.map(({ icon: Icon, title: t, text }) => (
               <li key={t} className="rounded-xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
-                <span className="mb-3 flex size-10 items-center justify-center rounded-[10px] bg-band-gold/15 text-band-gold">
+                <span className="mb-3 flex size-10 items-center justify-center rounded-md bg-band-gold/15 text-band-gold">
                   <Icon aria-hidden="true" className="size-5" />
                 </span>
                 <span className="block text-sm font-bold">{t}</span>

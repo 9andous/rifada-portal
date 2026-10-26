@@ -28,7 +28,7 @@ export default async function ManagerTaxonomyPage({ searchParams }: PageProps<"/
           <BandFigures
             items={[
               { label: "البرامج", value: formatNumber(figures.programs) },
-              { label: "المبادرات", value: formatNumber(figures.initiatives), emphasis: true },
+              { label: "المبادرات", value: formatNumber(figures.initiatives) },
               { label: "روابط الأهداف", value: formatNumber(figures.links) },
               { label: "متطلبات المبادرات", value: formatNumber(figures.requirements) },
             ]}

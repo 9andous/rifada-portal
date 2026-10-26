@@ -72,7 +72,7 @@ export function RequestForm({
 
   return (
     <form id="request-form" onSubmit={onSubmit} noValidate className="flex flex-col">
-      <div ref={notice} className="scroll-mt-6" />
+      <div ref={notice} className="scroll-mt-24 lg:scroll-mt-44" />
       {missing.length ? (
         <Alert tone="danger" title={submitState.message}>
           <ul className="mt-1 flex list-disc flex-col gap-1 ps-5">

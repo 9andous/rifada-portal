@@ -1,11 +1,11 @@
 "use client";
 
-import { Check, Gavel, RotateCcw, X } from "lucide-react";
+import { Check, RotateCcw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
-import { HeaderIcon } from "@/components/ui/surface";
+import { HeaderDiamond } from "@/components/ui/surface";
 import type { Decision } from "@/lib/requests";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
 import { DecisionDialog, type DialogRequest } from "./decision-dialog";
@@ -30,8 +30,8 @@ export function DecisionPanel({ request }: { request: DialogRequest }) {
   return (
     <>
       <section aria-labelledby="decision-title" className="hidden overflow-hidden rounded-xl border-2 border-primary/30 bg-surface shadow-2 lg:block">
-        <div className="flex items-center gap-3 border-b border-line bg-primary-soft/50 px-5 py-3.5">
-          <HeaderIcon icon={<Gavel strokeWidth={1.75} />} />
+        <div className="flex items-start gap-3 border-b border-line bg-primary-soft/50 px-5 py-3.5">
+          <HeaderDiamond />
           <div>
             <h2 id="decision-title" className="t-section">القرار</h2>
             <p className="text-xs text-ink-subtle">يُبلَّغ مسؤول الجمعية بالقرار وسببه.</p>

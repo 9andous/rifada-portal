@@ -81,12 +81,19 @@
   --chart-6: #8a7a5c;
   --chart-track: #eef1ef;
 
-  --focus: #9c7e36;
+  /* Focus ring and interactive-card hover border: green in light, gold in dark (D-095). */
+  --focus: #177a4d;
   --overlay: rgb(3 40 26 / 0.45);
 
-  --shadow-1: 0 1px 2px rgb(16 24 20 / 0.05);
-  --shadow-2: 0 1px 2px rgb(16 24 20 / 0.04), 0 6px 18px -8px rgb(7 77 49 / 0.16);
+  /* Elevation in three distinct steps: 1 cards and key figures, 2 standalone forms and hovered
+     cards, 3 dialogs and menus. */
+  --shadow-1: 0 1px 3px rgb(16 24 20 / 0.1), 0 1px 2px rgb(16 24 20 / 0.06);
+  --shadow-2: 0 4px 8px -2px rgb(16 24 20 / 0.08), 0 16px 32px -12px rgb(7 77 49 / 0.3);
   --shadow-3: 0 18px 40px -16px rgb(0 0 0 / 0.25);
+
+  /* One motion for every hover and focus change; off under prefers-reduced-motion. */
+  --motion-duration: 200ms;
+  --motion-ease: cubic-bezier(0, 0, 0.2, 1);
 
   --pattern-stroke: rgb(7 77 49 / 0.07);
 
@@ -154,8 +161,9 @@
   --focus: #d8c48f;
   --overlay: rgb(0 0 0 / 0.6);
 
-  --shadow-1: 0 1px 0 rgb(0 0 0 / 0.3);
-  --shadow-2: 0 8px 24px -12px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.02);
+  /* A drop shadow alone does not show on a dark surface, so levels 1 and 2 add a faint top light. */
+  --shadow-1: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.6);
+  --shadow-2: inset 0 1px 0 rgb(255 255 255 / 0.09), 0 0 0 1px rgb(255 255 255 / 0.04), 0 18px 36px -12px rgb(0 0 0 / 0.95);
   --shadow-3: 0 18px 40px -20px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.03);
 
   --pattern-stroke: rgb(216 196 143 / 0.06);

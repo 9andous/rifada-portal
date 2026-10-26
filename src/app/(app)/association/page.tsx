@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpenCheck, CircleCheck, FilePlus2, FileText, FolderOpen, Inbox, Undo2 } from "lucide-react";
+import { FilePlus2 } from "lucide-react";
 import { BandDate } from "@/components/dashboard/band-date";
 import { RecentRequestsCard } from "@/components/dashboard/cards";
-import { QuickActions } from "@/components/dashboard/quick-actions";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { RequestStepper } from "@/components/requests/request-stepper";
@@ -11,15 +10,15 @@ import { EmptyState } from "@/components/states/states";
 import { buttonClasses } from "@/components/ui/button";
 import { RefNumber } from "@/components/ui/ref-number";
 import { Alert, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
+import { Timeline, TimelineItem, TimelineText, TimelineTitle } from "@/components/ui/timeline";
 import { SUPERVISION_STEPS } from "@/config/initiative";
-import { formatNumber, greeting, toArabicDigits } from "@/lib/format";
+import { formatNumber, greeting } from "@/lib/format";
 import { requireUser } from "@/server/auth/session";
 import { getOverview } from "@/server/services/dashboard";
 import { listRequests, parseRequestListParams } from "@/server/services/requests/read";
 
 export const metadata: Metadata = { title: "طلباتي" };
 
-const ICON = { strokeWidth: 1.75 } as const;
 
 export default async function AssociationDashboard() {
   const user = await requireUser();
@@ -53,20 +52,17 @@ export default async function AssociationDashboard() {
                 label: "الطلبات المقدَّمة",
                 value: formatNumber(overview.total),
                 caption: overview.drafts ? `مسودات غير مقدَّمة: ${formatNumber(overview.drafts)}` : "لا توجد مسودات",
-                icon: <Inbox {...ICON} />,
                 href: "/association/requests",
               },
-              { label: "قيد المراجعة", value: formatNumber(overview.underReview), caption: "لدى الوحدة الإشرافية", icon: <FileText {...ICON} />, tone: "info" },
+              { label: "قيد المراجعة", value: formatNumber(overview.underReview), caption: "لدى الوحدة الإشرافية" },
               {
                 label: "معادة للتعديل",
                 value: formatNumber(overview.returned),
                 caption: "بانتظار تعديلكم",
-                icon: <Undo2 {...ICON} />,
-                tone: "warn",
-                emphasis: overview.returned > 0,
+                attention: overview.returned > 0 && "warn",
                 href: "/association/requests?status=RETURNED",
               },
-              { label: "معتمدة", value: formatNumber(overview.approved), caption: "منذ تسجيل الجمعية", icon: <CircleCheck {...ICON} />, tone: "ok" },
+              { label: "معتمدة", value: formatNumber(overview.approved), caption: "منذ تسجيل الجمعية" },
             ]}
           />
         }
@@ -86,19 +82,9 @@ export default async function AssociationDashboard() {
           </Alert>
         ) : null}
 
-        <QuickActions
-          items={[
-            { label: "طلب جديد", hint: "تقديم برنامج أو مشروع", href: "/association/requests/new", icon: <FilePlus2 {...ICON} /> },
-            { label: "طلباتي", hint: "الطلبات والمسودات", href: "/association/requests", icon: <FileText {...ICON} /> },
-            { label: "المستندات", hint: "النماذج المعتمدة للتنزيل", href: "/association/documents", icon: <FolderOpen {...ICON} />, tone: "gold" },
-            { label: "دليل التقديم", hint: "مراحل الطلب حتى القرار", href: "#guide", icon: <BookOpenCheck {...ICON} />, tone: "gold" },
-          ]}
-        />
-
         {latest && latest.status.key !== "DRAFT" ? (
           <Panel>
             <PanelHeader
-              icon={<FileText strokeWidth={1.75} />}
               title="آخر طلب مقدَّم"
               description={
                 <span className="flex flex-wrap items-center gap-x-2">
@@ -143,20 +129,16 @@ export default async function AssociationDashboard() {
               />
             }
           />
-          <Panel id="guide" className="scroll-mt-40">
-            <PanelHeader icon={<BookOpenCheck strokeWidth={1.75} />} tone="gold" title="دليل التقديم" description="رحلة الطلب في المنصة" />
-            <ol className="flex flex-col px-6 pb-6">
-              {SUPERVISION_STEPS.map((s, i) => (
-                <li key={s.title} className="relative flex gap-3.5 pb-5 last:pb-0">
-                  {i < SUPERVISION_STEPS.length - 1 ? <span aria-hidden="true" className="absolute start-[15px] top-9 h-[calc(100%-2.25rem)] w-0.5 bg-line" /> : null}
-                  <span className="t-figure flex size-8 shrink-0 items-center justify-center rounded-full bg-band text-sm text-band-gold">{toArabicDigits(i + 1)}</span>
-                  <span>
-                    <span className="block text-sm font-bold text-ink">{s.title}</span>
-                    <span className="mt-0.5 block text-[0.8125rem] leading-relaxed text-ink-muted">{s.text}</span>
-                  </span>
-                </li>
+          <Panel id="guide" className="scroll-mt-28 lg:scroll-mt-44">
+            <PanelHeader title="دليل التقديم" description="رحلة الطلب في المنصة" />
+            <Timeline className="px-6 pb-6">
+              {SUPERVISION_STEPS.map((s) => (
+                <TimelineItem key={s.title}>
+                  <TimelineTitle>{s.title}</TimelineTitle>
+                  <TimelineText>{s.text}</TimelineText>
+                </TimelineItem>
               ))}
-            </ol>
+            </Timeline>
           </Panel>
         </div>
       </PageBody>

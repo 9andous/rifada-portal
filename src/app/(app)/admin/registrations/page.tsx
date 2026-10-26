@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { CircleCheck, CircleX, Hourglass, UserPlus } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -43,9 +43,9 @@ export default async function RegistrationsPage({ searchParams }: PageProps<"/ad
         figures={
           <BandFigures
             items={[
-              { label: "قيد المراجعة", value: formatNumber(counts.PENDING), icon: <Hourglass strokeWidth={1.75} />, caption: "بانتظار القرار" },
-              { label: "المعتمدة", value: formatNumber(counts.APPROVED), icon: <CircleCheck strokeWidth={1.75} />, tone: "ok" },
-              { label: "المرفوضة", value: formatNumber(counts.REJECTED), icon: <CircleX strokeWidth={1.75} />, tone: "bad" },
+              { label: "قيد المراجعة", value: formatNumber(counts.PENDING), attention: counts.PENDING > 0 && "warn", caption: "بانتظار القرار" },
+              { label: "المعتمدة", value: formatNumber(counts.APPROVED) },
+              { label: "المرفوضة", value: formatNumber(counts.REJECTED) },
             ]}
           />
         }
@@ -67,7 +67,7 @@ async function RegistrationsList({ user, counts, searchParams }: { user: Current
 
   return (
     <Panel>
-      <PanelHeader icon={<UserPlus strokeWidth={1.75} />} title="الطلبات" description={`عدد النتائج: ${formatNumber(page.total)}`} className="mb-0!" />
+      <PanelHeader title="الطلبات" description={`عدد النتائج: ${formatNumber(page.total)}`} className="mb-0!" />
       <TabNav
         label="حالة الطلب"
         active={status}
@@ -76,7 +76,7 @@ async function RegistrationsList({ user, counts, searchParams }: { user: Current
       {page.items.length === 0 ? (
         <EmptyState
           variant="inline"
-          icon={<UserPlus strokeWidth={1.75} />}
+          icon={<ClipboardList strokeWidth={1.75} />}
           title={status === "PENDING" ? "لا توجد طلبات بانتظار المراجعة" : "لا توجد طلبات في هذه القائمة"}
           description="تظهر هنا طلبات الجمعيات التي تسجّل من صفحة «تسجيل جمعية» في الموقع العام."
         />

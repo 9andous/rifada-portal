@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Lightbulb } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { FormSteps } from "@/components/requests/form-steps";
@@ -110,8 +110,8 @@ export default async function EditRequestPage({ params }: PageProps<"/associatio
               })}
             />
           </Panel>
-          <aside className="flex flex-col gap-5 lg:sticky lg:top-[100px]">
-            <FormSteps current={1} icon={<Lightbulb strokeWidth={1.75} />}>
+          <aside className="flex flex-col gap-5 lg:sticky lg:top-[168px]">
+            <FormSteps current={1}>
               <span className="mb-2 flex items-center justify-between gap-2">
                 <span className="font-semibold text-ink">حالة الطلب</span>
                 <StatusText tone={request.status.tone}>{request.status.name}</StatusText>

@@ -29,39 +29,43 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
   return (
     <div className="flex min-h-dvh flex-col">
       <GovBar />
-      <SiteHeader
-        href={root}
-        leading={
-          // The drawer reads the URL; on dynamic routes it is unknown while prerendering.
-          <Suspense fallback={<span aria-hidden="true" className="size-[42px] lg:hidden" />}>
-            <MobileNav items={NAV[role]} root={root} roleLabel={ROLE_LABELS[role]} />
+      {/* The white header and the green navigation bar stay at the top together on scroll. */}
+      <div data-print="hide" className="sticky top-0 z-30">
+        <SiteHeader
+          sticky={false}
+          href={root}
+          leading={
+            // The drawer reads the URL; on dynamic routes it is unknown while prerendering.
+            <Suspense fallback={<span aria-hidden="true" className="size-[42px] lg:hidden" />}>
+              <MobileNav items={NAV[role]} root={root} roleLabel={ROLE_LABELS[role]} />
+            </Suspense>
+          }
+        >
+          <ThemeToggle />
+          <HeaderDivider />
+          <Suspense fallback={<span className="mx-2 h-[46px] w-40 animate-pulse rounded-lg bg-surface-sunken" />}>
+            <UserChip />
           </Suspense>
-        }
-      >
-        <ThemeToggle />
-        <HeaderDivider />
-        <Suspense fallback={<span className="mx-2 h-[46px] w-40 animate-pulse rounded-lg bg-surface-sunken" />}>
-          <UserChip />
-        </Suspense>
-        <SignOutButton />
-      </SiteHeader>
+          <SignOutButton />
+        </SiteHeader>
 
-      <nav data-print="hide" aria-label="التنقل الرئيسي" className="band-scope relative hidden overflow-hidden bg-band text-band-ink lg:block">
-        <GeometricPattern size={56} />
-        <div className="relative mx-auto flex h-14 max-w-[1360px] items-stretch gap-4 px-8">
-          <Suspense fallback={<TopNavView items={NAV[role]} root={root} pathname={null} className="h-full" />}>
-            <TopNav items={NAV[role]} root={root} className="h-full" />
-          </Suspense>
-          {cta?.href ? (
-            <div className="ms-auto flex items-center">
-              <Link href={cta.href} className={buttonClasses("gold", "md", "h-[38px]!")}>
-                <NavIcon name={cta.icon} />
-                {cta.label}
-              </Link>
-            </div>
-          ) : null}
-        </div>
-      </nav>
+        <nav data-print="hide" aria-label="التنقل الرئيسي" className="band-scope relative hidden overflow-hidden bg-band text-band-ink lg:block">
+          <GeometricPattern size={56} />
+          <div className="relative flex h-16 items-stretch gap-4 px-8">
+            <Suspense fallback={<TopNavView items={NAV[role]} root={root} pathname={null} className="h-full" />}>
+              <TopNav items={NAV[role]} root={root} className="h-full" />
+            </Suspense>
+            {cta?.href ? (
+              <div className="ms-auto flex items-center">
+                <Link href={cta.href} className={buttonClasses("gold", "lg", "h-11! px-5 text-[0.9375rem] xl:text-base")}>
+                  <NavIcon name={cta.icon} />
+                  {cta.label}
+                </Link>
+              </div>
+            ) : null}
+          </div>
+        </nav>
+      </div>
 
       <main id="main" className="flex flex-1 flex-col">
         <Suspense fallback={<PageSkeleton />}>
@@ -106,7 +110,7 @@ async function UserChip() {
 
 /** Content area below the page head. */
 export function PageBody({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={`fade-up mx-auto w-full max-w-[1360px] flex-1 px-4 pb-16 pt-6 sm:px-8 ${className ?? ""}`}>{children}</div>;
+  return <div className={`fade-up fade-up-2 mx-auto w-full max-w-[1360px] flex-1 px-4 pb-16 pt-6 sm:px-8 ${className ?? ""}`}>{children}</div>;
 }
 
 /** Head skeleton shared by page and list loading states. */
@@ -114,7 +118,7 @@ export function HeadSkeleton({ figures = 4, compact }: { figures?: number; compa
   return (
     <>
       <div className="border-b border-line bg-surface">
-        <div className={`mx-auto max-w-[1360px] px-4 sm:px-8 ${compact ? "pb-5 pt-5" : "pb-6 pt-7"}`}>
+        <div className={`px-4 sm:px-8 ${compact ? "pb-5 pt-5" : "pb-6 pt-7"}`}>
           <span className="block h-4 w-40 animate-pulse rounded-sm bg-surface-sunken" />
           <span className="mt-3 block h-9 w-80 max-w-full animate-pulse rounded-sm bg-surface-sunken" />
         </div>

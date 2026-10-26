@@ -99,7 +99,7 @@ export function LoginForm() {
           className="flex w-full items-center gap-3.5 rounded-lg border-[1.5px] border-primary bg-primary-soft/60 px-4 py-3.5 text-start transition-colors hover:bg-primary-soft"
         >
           <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-ink">
-            <Fingerprint aria-hidden="true" className="size-6" />
+            <Fingerprint aria-hidden="true" strokeWidth={1.75} className="size-5" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block font-bold text-brand-ink">الدخول عبر النفاذ الوطني الموحد</span>

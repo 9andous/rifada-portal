@@ -47,15 +47,15 @@ export function MobileNav({ items, root, roleLabel }: { items: NavItem[]; root: 
                       href={item.href}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "flex items-center gap-3 rounded-e-md border-s-4 px-4 py-3 text-[0.9375rem] [&_svg]:size-[18px]",
-                        active ? "border-band-gold bg-white/[0.06] font-bold" : "border-transparent text-band-ink-muted hover:text-band-ink",
+                        "flex items-center gap-3 rounded-e-md border-s-4 px-4 py-3.5 text-base font-semibold [&_svg]:size-[18px]",
+                        active ? "border-band-gold bg-white/10 font-bold" : "border-transparent text-band-ink/85 hover:bg-white/[0.06] hover:text-band-ink",
                       )}
                     >
                       <NavIcon name={item.icon} />
                       {item.label}
                     </Link>
                   ) : (
-                    <span aria-disabled="true" title={UNAVAILABLE_HINT} className="flex items-center gap-3 border-s-4 border-transparent px-4 py-3 text-[0.9375rem] text-band-ink/45 [&_svg]:size-[18px]">
+                    <span aria-disabled="true" title={UNAVAILABLE_HINT} className="flex cursor-not-allowed items-center gap-3 border-s-4 border-transparent px-4 py-3.5 text-base font-semibold text-band-ink/60 [&_svg]:size-[18px]">
                       <NavIcon name={item.icon} />
                       {item.label}
                     </span>

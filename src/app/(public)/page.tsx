@@ -1,14 +1,11 @@
 import { Suspense } from "react";
 import {
-  ClosingCta,
   HeroFigures,
   HeroFiguresSkeleton,
   HomeHero,
-  HowSection,
   InitiativeSection,
   LeadershipSection,
   ObjectivesSection,
-  ProgramsSection,
   StrategySkeleton,
   ValuesSection,
   VisionSection,
@@ -16,7 +13,8 @@ import {
 import { getPublicHome } from "@/server/services/public-site";
 
 // Public home page (docs/ROADMAP.md Phase 5): the Presidency's strategy (vision, mission, values,
-// objectives, programmes) from the database, the supervision initiative, and the login entry.
+// objectives) from the database and the supervision initiative. The programmes, «كيف يعمل الإشراف
+// الفني» and the closing band were removed at the owner's request (D-095).
 export default function HomePage() {
   const home = getPublicHome();
   return (
@@ -33,8 +31,6 @@ export default function HomePage() {
         <StrategySections home={home} />
       </Suspense>
       <InitiativeSection />
-      <HowSection />
-      <ClosingCta />
     </>
   );
 }
@@ -50,7 +46,6 @@ async function StrategySections({ home }: { home: ReturnType<typeof getPublicHom
       <VisionSection home={data} />
       <ValuesSection home={data} />
       <ObjectivesSection home={data} />
-      <ProgramsSection home={data} />
     </>
   );
 }

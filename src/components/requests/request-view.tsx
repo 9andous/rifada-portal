@@ -1,4 +1,4 @@
-import { CalendarDays, CircleCheck, CircleDashed, ClipboardCheck, Clock, FileText, History, ListTree, MessagesSquare, Paperclip, PenLine, ScrollText, ShieldCheck, UserRound } from "lucide-react";
+import { CalendarDays, CircleCheck, CircleDashed, ClipboardCheck, Clock, PenLine, UserRound } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PageBody } from "@/components/layout/app-shell";
@@ -7,7 +7,7 @@ import { PersonName } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
 import { RefNumber } from "@/components/ui/ref-number";
-import { Alert, HeaderIcon, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
+import { Alert, HeaderDiamond, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { DataTable, THead, Td, Th, Tr } from "@/components/ui/table";
 import { auditActionLabel } from "@/lib/audit-labels";
 import { acceptedGroups } from "@/lib/completeness";
@@ -36,19 +36,19 @@ function slaText(r: RequestDetail, now: Date): string {
   return `متأخر ${DAY_UNIT(Math.max(1, workingDaysBetween(r.slaDueAt, now)))}`;
 }
 
-function Section({ title, aside, children, id, icon, flushBody }: { title: string; aside?: ReactNode; children: ReactNode; id?: string; icon: ReactNode; flushBody?: boolean }) {
+function Section({ title, aside, children, id, flushBody }: { title: string; aside?: ReactNode; children: ReactNode; id?: string; flushBody?: boolean }) {
   return (
-    <Panel id={id} className="scroll-mt-40">
-      <PanelHeader icon={icon} title={title} description={aside} />
+    <Panel id={id} className="scroll-mt-28 lg:scroll-mt-44">
+      <PanelHeader title={title} description={aside} />
       <div className={flushBody ? "-mt-5" : "px-6 pb-6"}>{children}</div>
     </Panel>
   );
 }
 
-function SideCard({ title, icon, actions, children, note }: { title: string; icon: ReactNode; actions?: ReactNode; children: ReactNode; note?: string }) {
+function SideCard({ title, actions, children, note }: { title: string; actions?: ReactNode; children: ReactNode; note?: string }) {
   return (
     <Panel>
-      <PanelHeader icon={icon} title={title} description={note} actions={actions} className="mb-4 py-3.5" />
+      <PanelHeader title={title} description={note} actions={actions} className="mb-4 py-3.5" />
       <div className="px-5 pb-5 sm:px-6">{children}</div>
     </Panel>
   );
@@ -169,7 +169,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
 
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_23rem]">
           <div className="flex min-w-0 flex-col gap-5">
-            <Section title="وصف الطلب" icon={<FileText strokeWidth={1.75} />}>
+            <Section title="وصف الطلب">
               {r.description ? <p className="t-body max-w-3xl whitespace-pre-line">{r.description}</p> : <p className="t-body text-ink-subtle">لم يُكتب وصف بعد.</p>}
               <dl className="mt-6 grid grid-cols-1 gap-x-8 gap-y-5 rounded-lg border border-line bg-surface-muted p-5 sm:grid-cols-2">
                 <Info label="المبادرة" wide>
@@ -185,7 +185,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
             </Section>
 
             {fields.length || r.otherValues.length ? (
-              <Section title="بيانات المبادرة" icon={<ListTree strokeWidth={1.75} />}>
+              <Section title="بيانات المبادرة">
                 <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
                   {fields.map((f) => (
                     <Info key={f.key} label={f.label} wide={f.fieldType === "TEXTAREA"}>
@@ -203,7 +203,6 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
 
             <Section
               title="المتطلبات والمرفقات"
-              icon={<Paperclip strokeWidth={1.75} />}
               flushBody={attachments.length > 0 || r.otherFiles.length > 0}
               aside={
                 attachments.length
@@ -277,7 +276,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
               )}
             </Section>
 
-            <Section title="فحص الاكتمال" aside="فحص آلي بالقواعد" icon={<ShieldCheck strokeWidth={1.75} />}>
+            <Section title="فحص الاكتمال" aside="فحص آلي بالقواعد">
               {!r.completeness ? (
                 <p className="t-body flex items-center gap-2 text-sm">
                   <CircleDashed aria-hidden="true" strokeWidth={1.75} className="size-4 text-ink-subtle" />
@@ -305,7 +304,6 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
 
             <Section
               title="المحادثة"
-              icon={<MessagesSquare strokeWidth={1.75} />}
               aside={isStaff && caps.canWriteInternal ? "الملاحظات الداخلية لا تظهر للجمعية" : "مع الوحدة الإشرافية"}
               id="conversation"
             >
@@ -327,13 +325,13 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
 
           {/* The side column stays in view while the main column scrolls; it scrolls on its own when
               taller than the screen, so the «القرار» panel at its top never covers the timeline. */}
-          <aside className="flex flex-col gap-5 lg:sticky lg:top-[100px] lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto lg:pb-1 [&>*]:shrink-0">
+          <aside className="flex flex-col gap-5 lg:sticky lg:top-[168px] lg:max-h-[calc(100vh-11.5rem)] lg:self-start lg:overflow-y-auto lg:pb-1 [&>*]:shrink-0">
             {caps.canDecide ? <DecisionPanel request={dialogRequest} /> : null}
 
             {caps.canEdit || caps.canDiscard ? (
               <Panel className="flex flex-col gap-3 p-5">
-                <div className="mb-1 flex items-center gap-3">
-                  <HeaderIcon icon={<PenLine strokeWidth={1.75} />} tone="gold" />
+                <div className="mb-1 flex items-start gap-3">
+                  <HeaderDiamond />
                   <h2 className="t-section">إجراءات الطلب</h2>
                 </div>
                 {caps.canEdit ? (
@@ -349,7 +347,6 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
             {r.assignment ? (
               <SideCard
                 title="الإسناد"
-                icon={<UserRound strokeWidth={1.75} />}
                 actions={
                   caps.canReassign ? (
                     <ReassignButton
@@ -385,12 +382,12 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
               </SideCard>
             ) : null}
 
-            <SideCard title="مسار الطلب" icon={<History strokeWidth={1.75} />}>
+            <SideCard title="مسار الطلب">
               <StatusTimeline entries={r.timeline} />
             </SideCard>
 
             {r.auditTrail ? (
-              <SideCard title="سجل الاطلاع والتدقيق" icon={<ScrollText strokeWidth={1.75} />} note="لمدير النظام ومدير الوحدة فقط">
+              <SideCard title="سجل الاطلاع والتدقيق" note="لمدير النظام ومدير الوحدة فقط">
                 {r.auditTrail.length === 0 ? (
                   <p className="t-body text-sm">لا توجد قيود بعد.</p>
                 ) : (

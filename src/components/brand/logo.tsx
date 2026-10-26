@@ -29,13 +29,14 @@ export function Logo({ tone = "auto", height = 48, className, priority }: LogoPr
 
 /**
  * The Presidency's mark. The file is a full-colour logo for light backgrounds, so in dark mode it
- * sits on a white plate rather than being recoloured.
+ * sits on a white plate rather than being recoloured; the plate's padding is the mark's clear
+ * space, with a hairline so it reads as a deliberate tile.
  */
 export function PresidencyLogo({ height = 54, className, priority }: { height?: number; className?: string; priority?: boolean }) {
   const { src, width: w, height: h, alt } = brand.presidencyLogo;
   const width = Math.round((w / h) * height);
   return (
-    <span className={cn("inline-flex shrink-0 dark:rounded-sm dark:bg-white dark:px-1.5 dark:py-0.5", className)}>
+    <span className={cn("inline-flex shrink-0 dark:rounded-md dark:bg-white dark:p-2 dark:ring-1 dark:ring-line-strong", className)}>
       <Image src={src} alt={alt} width={width} height={height} priority={priority} />
     </span>
   );

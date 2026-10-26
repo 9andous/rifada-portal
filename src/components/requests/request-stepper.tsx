@@ -56,7 +56,7 @@ export function RequestStepper({ statusKey, className }: { statusKey: string; cl
                       : "border-line-strong bg-surface text-ink-subtle",
               )}
             >
-              {bad ? <X aria-hidden="true" strokeWidth={2.5} /> : isDone ? <Check aria-hidden="true" strokeWidth={2.5} /> : toArabicDigits(i + 1)}
+              {bad ? <X aria-hidden="true" strokeWidth={1.75} /> : isDone ? <Check aria-hidden="true" strokeWidth={1.75} /> : toArabicDigits(i + 1)}
             </span>
             <span className={cn("text-[0.8125rem] leading-snug", isCurrent ? "font-bold text-ink" : isDone ? "font-medium text-ink-muted" : "text-ink-subtle")}>
               {i === 2 && p.returned ? "معاد للتعديل" : i === 3 && p.done ? (p.rejected ? "مرفوض" : "معتمد") : s.title}

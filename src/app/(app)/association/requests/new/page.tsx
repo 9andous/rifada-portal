@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Layers, Lightbulb } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { FormSteps } from "@/components/requests/form-steps";
@@ -24,7 +23,7 @@ export default async function NewRequestPage() {
       <PageBody>
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <Panel>
-            <PanelHeader icon={<Layers strokeWidth={1.75} />} title="البرنامج والمبادرة" description="الخطوة الأولى من طلب جديد" />
+            <PanelHeader title="البرنامج والمبادرة" description="الخطوة الأولى من طلب جديد" />
             <div className="px-6 pb-6">
               {!associationActive ? (
                 <Alert tone="warning" title="حساب الجمعية غير نشط">
@@ -37,7 +36,7 @@ export default async function NewRequestPage() {
               )}
             </div>
           </Panel>
-          <FormSteps current={0} icon={<Lightbulb strokeWidth={1.75} />}>
+          <FormSteps current={0}>
             اختاروا المبادرة الأقرب إلى برنامجكم أو مشروعكم؛ فمتطلبات الطلب ومرفقاته تُحدَّد حسب المبادرة، ويُسند الطلب إلى مشرف البرنامج المختص.
           </FormSteps>
         </div>

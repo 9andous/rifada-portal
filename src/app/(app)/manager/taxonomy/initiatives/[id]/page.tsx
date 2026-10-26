@@ -43,7 +43,7 @@ export default async function ManagerInitiativePage({ params }: PageProps<"/mana
           <BandFigures
             items={[
               { label: "الأهداف المرتبطة", value: formatNumber(initiative.linkedObjectives.length), caption: "من سبعة أهداف" },
-              { label: "الحقول الخاصة", value: formatNumber(requirements.fields.length), emphasis: true },
+              { label: "الحقول الخاصة", value: formatNumber(requirements.fields.length) },
               { label: "المرفقات المطلوبة", value: formatNumber(requirements.attachments.length) },
             ]}
           />
@@ -73,7 +73,7 @@ export default async function ManagerInitiativePage({ params }: PageProps<"/mana
                 const linked = initiative.linkedObjectives.includes(o.number);
                 return (
                   <li key={o.number} className={cn("grid grid-cols-[1.25rem_1.5rem_1fr] items-start gap-2 text-sm", !linked && "text-ink-subtle")}>
-                    <span aria-hidden="true">{linked ? <Check strokeWidth={2.25} className="mt-0.5 size-4 text-primary" /> : null}</span>
+                    <span aria-hidden="true">{linked ? <Check strokeWidth={1.75} className="mt-0.5 size-4 text-primary" /> : null}</span>
                     <span className="t-figure text-accent-ink">{toArabicDigits(o.number)}</span>
                     <span>
                       {o.title}

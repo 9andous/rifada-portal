@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { UserPlus } from "lucide-react";
+import { UserRoundPlus } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -39,7 +39,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
         lead="حسابات فريق الوحدة ومسؤولي الجمعيات: الإنشاء والتعديل والتعطيل وإصدار كلمات مرور مؤقتة."
         actions={
           <Link href="/admin/users/new" className={buttonClasses("onBand")}>
-            <UserPlus strokeWidth={1.75} aria-hidden="true" />
+            <UserRoundPlus strokeWidth={1.75} aria-hidden="true" />
             مستخدم جديد
           </Link>
         }
@@ -47,7 +47,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
           <BandFigures
             items={[
               { label: "الحسابات", value: formatNumber(figures.total), caption: "في جميع الأدوار" },
-              { label: "النشطة", value: formatNumber(figures.active), emphasis: true },
+              { label: "النشطة", value: formatNumber(figures.active) },
               { label: "المعطلة", value: formatNumber(figures.inactive) },
               { label: "المشرفون النشطون", value: formatNumber(figures.byRole.SUPERVISOR) },
               { label: "مسؤولو الجمعيات النشطون", value: formatNumber(figures.byRole.ASSOCIATION_OFFICER) },

@@ -74,6 +74,10 @@
   --shadow-2: var(--shadow-2);
   --shadow-3: var(--shadow-3);
 
+  /* Every transition-* utility uses the shared motion (tokens.css). */
+  --default-transition-duration: var(--motion-duration);
+  --default-transition-timing-function: var(--motion-ease);
+
   --font-sans: var(--font-cairo-digits), var(--font-cairo-arabic), var(--font-cairo-latin), system-ui, sans-serif;
   --font-display: var(--font-sans);
 }
@@ -134,9 +138,33 @@
     outline-offset: 2px;
   }
 
+  /* One line weight for every Lucide icon (docs/DESIGN.md: Principles), whatever a component
+     passes; sizes follow the role: 16 in text and buttons, 18 in navigation and card headers,
+     20 in tiles and page states (14 only beside 12–13px captions). */
+  svg.lucide {
+    stroke-width: 1.75;
+  }
+
   ::selection {
     background: var(--accent-soft);
     color: var(--ink);
+  }
+
+  /* Reduced motion: no transitions, animations or hover lifts. Spinners keep turning, because
+     they are the only sign that something is still loading. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    *:not(.animate-spin),
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
   }
 }
 
@@ -192,15 +220,23 @@
     mask-repeat: no-repeat;
   }
 
-  /* Content fades up on page entry (300ms), except for users who ask for reduced motion. */
+  /* Content fades up on page entry (300ms), staggered: head, then key figures (-1), then the
+     body (-2). Off for users who ask for reduced motion. */
   .fade-up {
-    animation: fade-up 0.3s ease both;
+    animation: fade-up 0.3s var(--motion-ease) both;
+  }
+  .fade-up-1 {
+    animation-delay: 70ms;
+  }
+  .fade-up-2 {
+    animation-delay: 140ms;
   }
   @media (prefers-reduced-motion: reduce) {
     .fade-up {
       animation: none;
     }
   }
+
 
   .t-page {
     font-size: 2rem;
@@ -242,6 +278,51 @@
     font-size: 0.75rem;
     line-height: 1.55;
     color: var(--ink-subtle);
+  }
+}
+
+/*
+ * Card hover states sit outside the layers on purpose: unlayered rules win over Tailwind's
+ * utilities, so a card's own border-line or shadow-1 class cannot cancel the hover.
+ */
+/* Key-figure tiles (docs/DESIGN.md: Interactive cards): on hover the border turns green in
+   light and gold in dark, with no lift or shadow change unless the tile is also a .card-link.
+   Information cards do not react to hover. */
+.card-hover {
+  transition-property: border-color, box-shadow, background-color, translate;
+  transition-duration: var(--motion-duration);
+  transition-timing-function: var(--motion-ease);
+}
+.card-hover:hover {
+  border-color: var(--primary);
+}
+[data-theme="dark"] .card-hover:hover {
+  border-color: var(--accent);
+}
+
+/* Interactive card (docs/DESIGN.md: Cards and content): every card that is a link or a
+   selectable option. Hover: border green in light and gold in dark, raised shadow, 1px lift.
+   Keyboard focus draws the ring inside the card. */
+.card-link {
+  transition-property: border-color, box-shadow, background-color, translate;
+  transition-duration: var(--motion-duration);
+  transition-timing-function: var(--motion-ease);
+}
+.card-link:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-2);
+  translate: 0 -1px;
+}
+[data-theme="dark"] .card-link:hover {
+  border-color: var(--accent);
+}
+.card-link:focus-visible,
+.card-link :focus-visible {
+  outline-offset: -3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-link:hover {
+    translate: none;
   }
 }
 

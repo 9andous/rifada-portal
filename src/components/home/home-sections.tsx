@@ -1,38 +1,24 @@
 import {
   ArrowLeft,
-  BadgeCheck,
-  ClipboardCheck,
-  SearchCheck,
-  Send,
   CircleCheck,
   Compass,
   Eye,
   LogIn,
   Quote,
   Target,
-  type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArchOutline, Diamond } from "@/components/brand/arch";
 import { GeometricPattern } from "@/components/brand/geometric-pattern";
-import { Logo } from "@/components/brand/logo";
-import { ProgramIcon } from "@/components/brand/program-icon";
 import { buttonClasses } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/surface";
 import { brand } from "@/config/brand";
-import { INITIATIVE, LEADERSHIP_QUOTES, PRESIDENT_WORD, STRATEGY_MOTTO, SUPERVISION_STEPS } from "@/config/initiative";
+import { INITIATIVE, LEADERSHIP_QUOTES, PRESIDENT_WORD, STRATEGY_MOTTO } from "@/config/initiative";
 import { cn } from "@/lib/cn";
 import { formatNumber, toArabicDigits } from "@/lib/format";
 import type { PublicHome } from "@/server/services/public-site";
-
-const STEP_ICONS: Record<(typeof SUPERVISION_STEPS)[number]["icon"], LucideIcon> = {
-  send: Send,
-  check: ClipboardCheck,
-  review: SearchCheck,
-  decision: BadgeCheck,
-};
 
 const WRAP = "mx-auto w-full max-w-[1360px] px-4 sm:px-8";
 
@@ -154,7 +140,7 @@ function Portrait({ src, alt, size, tone }: { src: string; alt: string; size: nu
 
 export function LeadershipSection() {
   return (
-    <section aria-labelledby="leadership-title" className="relative overflow-hidden border-b border-line bg-surface">
+    <section aria-labelledby="leadership-title" id="leadership" className="relative scroll-mt-28 overflow-hidden border-b border-line bg-surface">
       <div className={cn(WRAP, "py-16")}>
         <div className="flex flex-col items-center text-center">
           <p className="flex items-center gap-2 text-sm font-medium text-accent-ink">
@@ -197,8 +183,9 @@ export function LeadershipSection() {
           })}
         </div>
 
-        <figure className="relative mt-5 flex flex-col items-center gap-6 overflow-hidden rounded-2xl border border-line bg-surface p-7 shadow-1 md:flex-row md:items-start md:gap-8 md:p-8">
-          <span aria-hidden="true" className="absolute inset-y-0 start-0 w-1.5 bg-accent" />
+        {/* Soft gold card with the arch of the two leadership cards above it. */}
+        <figure className="relative mt-5 flex flex-col items-center gap-6 overflow-hidden rounded-2xl border border-accent/35 bg-accent-soft p-7 shadow-1 md:flex-row md:items-start md:gap-8 md:p-8">
+          <ArchOutline strokeWidth={5} className="absolute -bottom-12 end-6 w-32 text-accent opacity-20" />
           <Portrait src={PRESIDENT_WORD.image} alt={`${PRESIDENT_WORD.honorific} ${PRESIDENT_WORD.name}`} size={112} tone="surface" />
           <div className="min-w-0 text-center md:text-start">
             <p className="flex items-center justify-center gap-2 text-sm font-semibold text-accent-ink md:justify-start">
@@ -242,7 +229,7 @@ export function VisionSection({ home }: { home: PublicHome }) {
                 <Image src={image} alt={alt} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
                 <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-band-deep/85 to-transparent" />
                 <h3 className="absolute bottom-4 start-5 flex items-center gap-2.5 text-xl font-bold text-white">
-                  <span className="flex size-9 items-center justify-center rounded-[9px] bg-band-gold/25 text-band-gold backdrop-blur-sm">
+                  <span className="flex size-9 items-center justify-center rounded-md bg-band-gold/25 text-band-gold backdrop-blur-sm">
                     <Icon aria-hidden="true" className="size-5" />
                   </span>
                   {title}
@@ -316,11 +303,11 @@ export function ObjectivesSection({ home }: { home: PublicHome }) {
                 key={o.number}
                 className={cn(
                   "flex flex-col rounded-lg border p-5",
-                  link ? "border-band-gold/40 bg-white/[0.08]" : "border-white/10 bg-white/[0.04]",
+                  "border-band-gold/40 bg-white/[0.08]",
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="flex size-10 items-center justify-center rounded-[9px] bg-band-gold/15 text-band-gold">
+                  <span className="flex size-10 items-center justify-center rounded-md bg-band-gold/15 text-band-gold">
                     <span className="t-figure text-lg">{toArabicDigits(o.number)}</span>
                   </span>
                   {link ? (
@@ -336,42 +323,6 @@ export function ObjectivesSection({ home }: { home: PublicHome }) {
             );
           })}
         </ol>
-      </div>
-    </section>
-  );
-}
-
-/* ───────── Programmes ───────── */
-
-export function ProgramsSection({ home }: { home: PublicHome }) {
-  if (home.programs.length === 0) return null;
-  return (
-    <section aria-labelledby="programs-title" id="programs" className="scroll-mt-28">
-      <div className={cn(WRAP, "py-16")}>
-        <SectionHead
-          id="programs-title"
-          eyebrow="مجالات العمل"
-          title="برامج الرئاسة"
-          lead="تقدّم الجمعيات برامجها ومشروعاتها ضمن هذه البرامج ومبادراتها، فيكون كل طلب مرتبطًا بمبادرة محددة وبالأهداف الاستراتيجية التي تخدمها."
-        />
-        <ul className="mt-8 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-          {home.programs.map((p) => {
-            return (
-              <li key={p.number} className="group flex items-start gap-3.5 rounded-xl border border-line bg-surface p-5 shadow-1 transition-[border-color,box-shadow,transform] hover:-translate-y-px hover:border-primary hover:shadow-2">
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
-                  <ProgramIcon number={p.number} className="size-6" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-accent-ink">البرنامج {toArabicDigits(p.number)}</p>
-                  <h3 className="mt-0.5 font-bold leading-snug text-ink">{p.name}</h3>
-                  <p className="mt-2 text-[0.8125rem] text-ink-subtle">
-                    {p.initiativeCount > 0 ? `${formatNumber(p.initiativeCount)} مبادرة` : "لا توجد مبادرات متاحة حاليًا"}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
       </div>
     </section>
   );
@@ -429,32 +380,6 @@ export function InitiativeSection() {
           </div>
         </div>
 
-        <div className="mt-14">
-          <h3 className="flex items-center gap-2 text-lg font-bold text-brand-ink">
-            <Diamond />
-            مراحل التنفيذ
-          </h3>
-          <ol className="mt-6 grid gap-6 md:grid-cols-4">
-            {INITIATIVE.phases.map((p, i) => (
-              <li key={p.title} className="relative">
-                {i < INITIATIVE.phases.length - 1 ? (
-                  <span aria-hidden="true" className="absolute start-12 top-[18px] hidden h-0.5 w-[calc(100%-1.5rem)] bg-line md:block" />
-                ) : null}
-                <span
-                  className={cn(
-                    "t-figure relative flex size-9 items-center justify-center rounded-full border-2 text-sm",
-                    i === 0 ? "border-primary bg-primary text-primary-ink" : "border-accent bg-accent-soft text-accent-ink",
-                  )}
-                >
-                  {toArabicDigits(i + 1)}
-                </span>
-                <p className="mt-3 font-bold text-ink">{p.title}</p>
-                <p className="mt-1 text-sm leading-[1.8] text-ink-muted">{p.text}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-
         <div className="mt-12 grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-line bg-canvas p-5">
             <p className="text-sm font-bold text-accent-ink">المستفيدون</p>
@@ -463,65 +388,6 @@ export function InitiativeSection() {
           <div className="rounded-xl border border-line bg-canvas p-5">
             <p className="text-sm font-bold text-accent-ink">الأثر المتوقع</p>
             <p className="mt-1.5 text-sm leading-[1.85] text-ink-muted">{INITIATIVE.impact}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ───────── How supervision works ───────── */
-
-export function HowSection() {
-  return (
-    <section aria-labelledby="how-title" id="how" className="scroll-mt-28">
-      <div className={cn(WRAP, "py-16")}>
-        <SectionHead id="how-title" eyebrow="رحلة الطلب" title="كيف يعمل الإشراف الفني" lead="دورة عمل واحدة واضحة لكل طلب، من التقديم حتى القرار، مسجلة ومؤرشفة في المنصة." />
-        <ol className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {SUPERVISION_STEPS.map((s, i) => {
-            const Icon = STEP_ICONS[s.icon];
-            return (
-              <li key={s.title} className="relative rounded-xl border border-line bg-surface p-6 shadow-1">
-                <span className="t-figure absolute end-5 top-4 text-[2.75rem] leading-none text-accent/25">{toArabicDigits(i + 1)}</span>
-                <span className="flex size-11 items-center justify-center rounded-md bg-band text-band-gold">
-                  <Icon aria-hidden="true" className="size-[22px]" strokeWidth={1.75} />
-                </span>
-                <h3 className="mt-4 text-[1.0625rem] font-bold text-brand-ink">{s.title}</h3>
-                <p className="mt-1.5 text-sm leading-[1.85] text-ink-muted">{s.text}</p>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-    </section>
-  );
-}
-
-/* ───────── Closing call to action ───────── */
-
-export function ClosingCta() {
-  return (
-    <section aria-labelledby="cta-title" className={cn(WRAP, "pb-16")}>
-      <div className="band-scope relative overflow-hidden rounded-2xl bg-band px-8 py-10 text-band-ink md:px-12">
-        <GeometricPattern size={72} />
-        <ArchOutline strokeWidth={5} className="absolute -bottom-20 end-6 w-56 text-band-gold/20" />
-        <div className="relative flex flex-wrap items-center justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <Logo tone="onDark" height={84} className="hidden sm:block" />
-            <div>
-              <h2 id="cta-title" className="text-2xl font-bold">الجمعيات المعتمدة في خدمة قاصدي الحرمين الشريفين</h2>
-              <p className="mt-2 max-w-xl text-band-ink-muted">سجّلوا جمعيتكم لتنضم إلى منظومة خدمة قاصدي الحرمين الشريفين، أو ادخلوا بحساباتكم لتقديم طلباتكم ومتابعتها.</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/register" className={buttonClasses("gold", "lg")}>
-              سجّلوا جمعيتكم
-              <ArrowLeft aria-hidden="true" />
-            </Link>
-            <Link href="/login" className={buttonClasses("outlineOnBand", "lg")}>
-              <LogIn aria-hidden="true" />
-              الدخول إلى المنصة
-            </Link>
           </div>
         </div>
       </div>

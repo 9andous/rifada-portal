@@ -43,7 +43,7 @@ export function RegistrationSuccess({ referenceNo, vision }: { referenceNo: stri
               <path d={ARCH_INNER_PATH} stroke="currentColor" strokeWidth="3" opacity="0.5" />
             </svg>
             <span className="relative mt-7 flex size-11 items-center justify-center rounded-full bg-band-gold text-band">
-              <Check aria-hidden="true" className="size-6" strokeWidth={3} />
+              <Check aria-hidden="true" className="size-5" strokeWidth={1.75} />
             </span>
           </div>
           <h1 id="done-title" className="relative mt-5 text-[1.875rem] font-bold">

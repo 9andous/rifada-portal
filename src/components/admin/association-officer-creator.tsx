@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { UserPlus } from "lucide-react";
+import { UserRoundPlus } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/form-bits";
@@ -56,7 +56,7 @@ export function AssociationOfficerCreator({
       <Card>
         <p className="t-body text-sm">لا يوجد حساب مسؤول لهذه الجمعية بعد؛ لن تتمكن الجمعية من الدخول وتقديم طلباتها حتى يُنشأ.</p>
         <Button variant="primary" className="self-start" onClick={() => setOpen(true)}>
-          <UserPlus aria-hidden="true" strokeWidth={1.75} />
+          <UserRoundPlus aria-hidden="true" strokeWidth={1.75} />
           إنشاء حساب مسؤول
         </Button>
       </Card>

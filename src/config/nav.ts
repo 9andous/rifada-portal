@@ -7,6 +7,8 @@ import type { Role } from "@/server/authz/roles";
 export type NavIcon =
   | "home"
   | "users"
+  | "addUser"
+  | "registrations"
   | "building"
   | "layers"
   | "settings"
@@ -27,7 +29,7 @@ export const NAV: Record<Role, NavItem[]> = {
     { label: "الرئيسية", href: "/admin", icon: "home" },
     { label: "المستخدمون", href: "/admin/users", icon: "users" },
     { label: "الجمعيات", href: "/admin/associations", icon: "building" },
-    { label: "طلبات التسجيل", href: "/admin/registrations", icon: "assign" },
+    { label: "طلبات التسجيل", href: "/admin/registrations", icon: "registrations" },
     { label: "البرامج والمبادرات", href: "/admin/taxonomy", icon: "layers" },
     { label: "الإعدادات", href: "/admin/settings", icon: "settings" },
     { label: "سجل التدقيق", href: "/admin/audit", icon: "audit" },
@@ -59,7 +61,7 @@ export const NAV: Record<Role, NavItem[]> = {
 
 /** The gold call-to-action at the end of the navigation bar, per role. */
 export const NAV_CTA: Partial<Record<Role, NavItem>> = {
-  SUPER_ADMIN: { label: "إضافة مستخدم", href: "/admin/users/new", icon: "users" },
+  SUPER_ADMIN: { label: "إضافة مستخدم", href: "/admin/users/new", icon: "addUser" },
   UNIT_MANAGER: { label: "إسناد الطلبات", href: "/manager/assignment", icon: "assign" },
   SUPERVISOR: { label: "قائمة أعمالي", href: "/supervisor/queue", icon: "queue" },
   ASSOCIATION_OFFICER: { label: "تقديم طلب جديد", href: "/association/requests/new", icon: "newRequest" },

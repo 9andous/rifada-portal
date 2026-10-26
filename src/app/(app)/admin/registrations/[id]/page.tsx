@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Building2, ClipboardList, Gavel, HeartHandshake, UserRound } from "lucide-react";
+import { ArrowRight, Building2, HeartHandshake } from "lucide-react";
 import type { ReactNode } from "react";
 import { ProgramIcon } from "@/components/brand/program-icon";
 import { PageBody } from "@/components/layout/app-shell";
@@ -10,7 +10,7 @@ import { RegistrationDecision } from "@/components/registration/registration-dec
 import { ForbiddenPage } from "@/components/states/forbidden-page";
 import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
-import { Alert, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
+import { Alert, HeaderDiamond, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { toArabicDigits } from "@/lib/format";
 import { REGISTRATION_STATUS } from "@/lib/registrations";
 import { approveRegistrationAction, rejectRegistrationAction } from "@/server/actions/registration";
@@ -67,7 +67,7 @@ export default async function RegistrationPage({ params }: PageProps<"/admin/reg
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="flex min-w-0 flex-col gap-5">
             <Panel>
-              <PanelHeader icon={<Building2 strokeWidth={1.75} />} title="بيانات الجمعية" />
+              <PanelHeader title="بيانات الجمعية" />
               <dl className="grid gap-x-8 gap-y-5 px-6 pb-6 sm:grid-cols-2">
                 <Info label="اسم الجمعية">{r.name}</Info>
                 <Info label="رقم الترخيص">{toArabicDigits(r.licenseNumber)}</Info>
@@ -92,7 +92,7 @@ export default async function RegistrationPage({ params }: PageProps<"/admin/reg
             </Panel>
 
             <Panel>
-              <PanelHeader icon={<ClipboardList strokeWidth={1.75} />} title="مجالات العمل" description="برامج الرئاسة التي اختارتها الجمعية" />
+              <PanelHeader title="مجالات العمل" description="برامج الرئاسة التي اختارتها الجمعية" />
               <ul className="grid gap-3 px-6 pb-6 sm:grid-cols-2">
                 {r.programs.map((p) => (
                   <li key={p.number} className="flex items-center gap-3 rounded-lg border border-line bg-surface-muted p-3">
@@ -109,7 +109,7 @@ export default async function RegistrationPage({ params }: PageProps<"/admin/reg
             </Panel>
 
             <Panel>
-              <PanelHeader icon={<UserRound strokeWidth={1.75} />} title="مسؤول الجمعية والحساب" />
+              <PanelHeader title="مسؤول الجمعية والحساب" />
               <dl className="grid gap-x-8 gap-y-5 px-6 pb-6 sm:grid-cols-2">
                 <Info label="الاسم">{r.officerName}</Info>
                 <Info label="رقم الهوية">{r.officerNationalId ? toArabicDigits(r.officerNationalId) : null}</Info>
@@ -126,12 +126,10 @@ export default async function RegistrationPage({ params }: PageProps<"/admin/reg
             </Panel>
           </div>
 
-          <aside className="flex flex-col gap-5 lg:sticky lg:top-[100px]">
+          <aside className="flex flex-col gap-5 lg:sticky lg:top-[168px]">
             <Panel className="overflow-hidden">
-              <div className="flex items-center gap-3 border-b border-line bg-primary-soft/50 px-5 py-3.5">
-                <span className="flex size-9 items-center justify-center rounded-[9px] bg-surface text-primary [&_svg]:size-[18px]">
-                  <Gavel strokeWidth={1.75} aria-hidden="true" />
-                </span>
+              <div className="flex items-start gap-3 border-b border-line bg-primary-soft/50 px-5 py-3.5">
+                <HeaderDiamond />
                 <h2 className="t-section">القرار</h2>
               </div>
               <div className="p-5">

@@ -8,7 +8,7 @@ import { NavIcon } from "./nav-icon";
 
 type TopNavProps = { items: NavItem[]; root: string; className?: string };
 
-/** Primary navigation on the green bar. Active item: white text and a 4px gold bar underneath. */
+/** Primary navigation on the green bar. Active item: white text on a lighter fill and a 4px gold bar underneath. */
 export function TopNav(props: TopNavProps) {
   return <TopNavView {...props} pathname={usePathname()} />;
 }
@@ -24,11 +24,14 @@ export function TopNavView({ items, root, className, pathname }: TopNavProps & {
       <ul className="flex h-full items-stretch gap-0.5">
         {items.map((item) => {
           const active = Boolean(item.href) && item.href === activeHref;
-          const base = "relative flex h-full items-center gap-2.5 whitespace-nowrap px-4 text-[0.9375rem] font-medium transition-colors [&_svg]:size-[18px]";
+          // 16px semibold labels on a 64px bar; from 1024 to 1279px the icons hide and the padding
+          // tightens so seven items and the call-to-action still fit on one line.
+          const base =
+            "relative flex h-full items-center gap-2.5 whitespace-nowrap px-3 text-[0.9375rem] font-semibold transition-colors xl:px-4 xl:text-base 2xl:px-5 [&_svg]:hidden [&_svg]:size-[18px] xl:[&_svg]:block";
           if (!item.href) {
             return (
               <li key={item.label}>
-                <span aria-disabled="true" title={UNAVAILABLE_HINT} className={cn(base, "cursor-default text-band-ink/45")}>
+                <span aria-disabled="true" title={UNAVAILABLE_HINT} className={cn(base, "cursor-not-allowed text-band-ink/60")}>
                   <NavIcon name={item.icon} />
                   {item.label}
                 </span>
@@ -43,12 +46,12 @@ export function TopNavView({ items, root, className, pathname }: TopNavProps & {
                 className={cn(
                   base,
                   "focus-visible:outline-band-gold focus-visible:-outline-offset-4",
-                  active ? "text-band-ink" : "text-band-ink/80 hover:bg-white/[0.06] hover:text-band-ink",
+                  active ? "bg-white/10 text-band-ink" : "text-band-ink/85 hover:bg-white/[0.06] hover:text-band-ink",
                 )}
               >
                 <NavIcon name={item.icon} />
                 {item.label}
-                {active ? <span aria-hidden="true" className="absolute inset-x-3.5 bottom-0 h-1 rounded-t bg-band-gold" /> : null}
+                {active ? <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1 bg-band-gold" /> : null}
               </Link>
             </li>
           );

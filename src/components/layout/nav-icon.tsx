@@ -1,36 +1,41 @@
 import {
-  BarChart3,
   Building2,
+  ChartColumn,
+  ClipboardList,
   FilePlus2,
-  FileText,
-  FolderOpen,
+  FileStack,
   House,
   Inbox,
   Layers,
   ListChecks,
   ScrollText,
   Settings,
-  UserPlus,
-  Users,
+  UserRoundCheck,
+  UserRoundPlus,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import type { NavIcon as NavIconName } from "@/config/nav";
 
+// One icon per concept across the platform (D-095): requests are always Inbox, templates and
+// documents FileStack, assignment UserRoundCheck, adding a user UserRoundPlus.
 const ICONS: Record<NavIconName, LucideIcon> = {
   home: House,
-  users: Users,
+  users: UsersRound,
+  addUser: UserRoundPlus,
+  registrations: ClipboardList,
   building: Building2,
   layers: Layers,
   settings: Settings,
   audit: ScrollText,
   inbox: Inbox,
-  assign: UserPlus,
-  chart: BarChart3,
+  assign: UserRoundCheck,
+  chart: ChartColumn,
   queue: ListChecks,
-  templates: FileText,
-  requests: FileText,
+  templates: FileStack,
+  requests: Inbox,
   newRequest: FilePlus2,
-  folder: FolderOpen,
+  folder: FileStack,
 };
 
 export function NavIcon({ name, className }: { name: NavIconName; className?: string }) {

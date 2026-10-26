@@ -53,7 +53,7 @@ export default async function TaxonomyReviewPage() {
               { label: "المبادرات", value: formatNumber(initiativeCount), caption: `المتوقع ${formatNumber(143)}` },
               { label: "روابط الأهداف", value: formatNumber(review.linkCount), caption: "علامات الاختيار في الجداول" },
               { label: "الخلايا المقروءة", value: formatNumber(review.cellsRead), caption: "قراءتان لكل خلية" },
-              { label: "خلايا غير مؤكدة", value: formatNumber(uncertainCells.length), emphasis: true, caption: "تحتاج تحققًا من المصدر" },
+              { label: "خلايا غير مؤكدة", value: formatNumber(uncertainCells.length), attention: uncertainCells.length > 0 && "warn", caption: "تحتاج تحققًا من المصدر" },
             ]}
           />
         }

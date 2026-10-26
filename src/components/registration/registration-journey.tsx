@@ -150,7 +150,7 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
               <span aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-band via-band/40 to-transparent" />
             </div>
             <div className="relative -mt-10 px-6 pb-6">
-              <span className="flex size-14 items-center justify-center rounded-xl border-4 border-band bg-band-gold text-band [&_svg]:size-6">
+              <span className="flex size-14 items-center justify-center rounded-xl border-4 border-band bg-band-gold text-band [&_svg]:size-5">
                 <current.icon aria-hidden="true" strokeWidth={1.75} />
               </span>
               <p className="mt-4 text-xs font-medium text-band-gold">{asides[step].label}</p>
@@ -180,7 +180,7 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                       i < step ? "border-primary bg-primary text-primary-ink" : i === step ? "border-accent bg-accent-soft text-accent-ink" : "border-line-strong text-ink-subtle",
                     )}
                   >
-                    {i < step ? <Check aria-hidden="true" className="size-4" strokeWidth={2.5} /> : toArabicDigits(i + 1)}
+                    {i < step ? <Check aria-hidden="true" className="size-4" strokeWidth={1.75} /> : toArabicDigits(i + 1)}
                   </span>
                   <span className="min-w-0">
                     <span className={cn("block text-sm", i === step ? "font-bold text-ink" : "text-ink-muted")}>{s.title}</span>
@@ -198,10 +198,8 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
             <input id="website_confirm" name="website_confirm" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
           </div>
 
-          <header className="flex items-center gap-3 border-b border-line px-6 py-5 sm:px-8">
-            <span className="flex size-11 items-center justify-center rounded-md bg-primary-soft text-primary [&_svg]:size-[22px]">
-              <current.icon aria-hidden="true" strokeWidth={1.75} />
-            </span>
+          <header className="flex items-end gap-3 border-b border-line px-6 py-5 sm:px-8">
+            <span aria-hidden="true" className="mb-[11px] size-2 shrink-0 rotate-45 bg-accent" />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-accent-ink">
                 الخطوة {toArabicDigits(step + 1)} من {toArabicDigits(STEPS.length)}
@@ -247,7 +245,7 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                 <ul className="mt-3 grid gap-2 text-sm text-ink-muted sm:grid-cols-2">
                   {["رقم ترخيص الجمعية من المركز الوطني لتنمية القطاع غير الربحي", "بيانات التواصل الرسمية للجمعية", "بيانات مسؤول الجمعية الذي يدير حسابها", "برامج الرئاسة التي تعمل جمعيتكم في مجالها"].map((t) => (
                     <li key={t} className="flex gap-2">
-                      <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={2.5} />
+                      <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={1.75} />
                       {t}
                     </li>
                   ))}
@@ -301,9 +299,9 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                       <label
                         key={p.number}
                         className={cn(
-                          "relative flex cursor-pointer items-start gap-3 rounded-lg border p-3.5 transition-[border-color,background-color]",
-                          "has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus",
-                          on ? "border-primary bg-primary-soft/50 shadow-[inset_0_0_0_1px_var(--primary)]" : "border-line hover:border-line-strong hover:bg-surface-muted",
+                          "relative flex cursor-pointer items-start gap-3 rounded-lg border bg-surface p-3.5 transition-[border-color,background-color,box-shadow,translate]",
+                          "has-[:focus-visible]:outline-3 has-[:focus-visible]:-outline-offset-3 has-[:focus-visible]:outline-focus",
+                          on ? "border-primary bg-primary-soft/50 shadow-[inset_0_0_0_1px_var(--primary)]" : "card-link border-line",
                         )}
                       >
                         <input
@@ -314,7 +312,7 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                           onChange={() => setChosen((c) => (on ? c.filter((n) => n !== p.number) : [...c, p.number]))}
                           className="sr-only"
                         />
-                        <span aria-hidden="true" className={cn("flex size-11 shrink-0 items-center justify-center rounded-md [&_svg]:size-[22px]", on ? "bg-primary text-primary-ink" : "bg-primary-soft text-primary")}>
+                        <span aria-hidden="true" className={cn("flex size-11 shrink-0 items-center justify-center rounded-md [&_svg]:size-5", on ? "bg-primary text-primary-ink" : "bg-primary-soft text-primary")}>
                           <ProgramIcon number={p.number} />
                         </span>
                         <span className="min-w-0 flex-1">
@@ -323,7 +321,7 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                           <span className="mt-1 block text-xs text-ink-subtle">{formatNumber(p.initiativeCount)} مبادرة</span>
                         </span>
                         <span aria-hidden="true" className={cn("absolute end-3 top-3 flex size-5 items-center justify-center rounded-[5px] border-2", on ? "border-primary bg-primary text-primary-ink" : "border-line-strong")}>
-                          {on ? <Check className="size-3.5" strokeWidth={3} /> : null}
+                          {on ? <Check aria-hidden="true" className="size-3.5" strokeWidth={1.75} /> : null}
                         </span>
                       </label>
                     );

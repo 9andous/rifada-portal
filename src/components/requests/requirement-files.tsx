@@ -71,7 +71,7 @@ export function RequirementFiles({ requestId, requirementKey, label, isRequired,
   ) : null;
 
   return (
-    <div id={`attachment-${requirementKey}`} className={`scroll-mt-24 ${error ? "border-s-2 border-st-bad ps-4" : ""}`}>
+    <div id={`attachment-${requirementKey}`} className={`scroll-mt-24 lg:scroll-mt-44 ${error ? "border-s-2 border-st-bad ps-4" : ""}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-semibold text-ink">
           {label}

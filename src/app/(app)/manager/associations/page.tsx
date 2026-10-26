@@ -27,7 +27,7 @@ export default async function ManagerAssociationsPage({ searchParams }: PageProp
           <BandFigures
             items={[
               { label: "الجمعيات", value: formatNumber(figures.total) },
-              { label: "النشطة", value: formatNumber(figures.active), emphasis: true },
+              { label: "النشطة", value: formatNumber(figures.active) },
               { label: "المعطلة", value: formatNumber(figures.inactive) },
               { label: "لها حساب مسؤول", value: formatNumber(figures.withOfficer) },
             ]}

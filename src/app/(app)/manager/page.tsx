@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { Building2, CircleCheck, Clock, FileText, Gauge, Inbox, Layers, FolderOpen, UserPlus, UserX, Workflow } from "lucide-react";
 import { BandDate } from "@/components/dashboard/band-date";
 import { MonthlyCard, OverdueCard, ProgramsCard, StatusDistributionCard, WorkloadCard } from "@/components/dashboard/cards";
-import { QuickActions } from "@/components/dashboard/quick-actions";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { Alert } from "@/components/ui/surface";
@@ -15,7 +13,6 @@ import Link from "next/link";
 
 export const metadata: Metadata = { title: "نظرة عامة على الإشراف" };
 
-const ICON = { strokeWidth: 1.75 } as const;
 
 export default async function ManagerDashboard() {
   const user = await requireUser();
@@ -43,48 +40,37 @@ export default async function ManagerDashboard() {
                 label: "إجمالي الطلبات",
                 value: formatNumber(overview.total),
                 caption: "الطلبات المقدَّمة في جميع البرامج",
-                icon: <Inbox {...ICON} />,
                 href: "/manager/requests",
               },
               {
                 label: "مفتوحة",
                 value: formatNumber(overview.open),
                 caption: `قيد المراجعة ${formatNumber(overview.underReview)} · معادة ${formatNumber(overview.returned)}`,
-                icon: <FileText {...ICON} />,
-                tone: "info",
                 href: "/manager/requests?status=UNDER_REVIEW",
               },
               {
                 label: "متأخرة عن المهلة",
                 value: formatNumber(overview.overdue),
                 caption: `تجاوزت ${daysPhrase(slaDays, "accusative")} عمل`,
-                icon: <Clock {...ICON} />,
-                tone: overview.overdue ? "bad" : "ok",
-                emphasis: overview.overdue > 0,
+                attention: overview.overdue > 0 && "bad",
               },
               {
                 label: "متوسط المعالجة",
                 value: overview.avgHandlingDays === null ? "—" : formatNumber(overview.avgHandlingDays),
                 unit: overview.avgHandlingDays === null ? undefined : "يوم",
                 caption: overview.avgHandlingDays === null ? "لا توجد طلبات منجزة بعد" : "من التقديم إلى القرار",
-                icon: <Gauge {...ICON} />,
-                tone: "gold",
               },
               {
                 label: "نسبة الاعتماد",
                 value: overview.approvalRate === null ? "—" : formatNumber(overview.approvalRate),
                 unit: overview.approvalRate === null ? undefined : "٪",
                 caption: overview.approvalRate === null ? "لا توجد قرارات بعد" : "من الطلبات المبتوت فيها",
-                icon: <CircleCheck {...ICON} />,
-                tone: "ok",
               },
               {
                 label: "غير مسندة",
                 value: formatNumber(overview.unassigned),
                 caption: "طلبات مفتوحة بلا مشرف",
-                icon: <UserX {...ICON} />,
-                tone: overview.unassigned ? "warn" : "green",
-                emphasis: overview.unassigned > 0,
+                attention: overview.unassigned > 0 && "warn",
                 href: "/manager/assignment",
               },
             ]}
@@ -107,17 +93,6 @@ export default async function ManagerDashboard() {
             متأخرة عن المهلة: {formatNumber(overview.overdue)} · غير مسندة: {formatNumber(overview.unassigned)}. تابع المتأخرة مع المشرفين، وأسند ما لا مشرف له.
           </Alert>
         ) : null}
-
-        <QuickActions
-          items={[
-            { label: "إسناد الطلبات", hint: "توزيع الطلبات على المشرفين", href: "/manager/assignment", icon: <UserPlus {...ICON} /> },
-            { label: "جميع الطلبات", hint: "البحث والتصفية والقرار", href: "/manager/requests", icon: <Inbox {...ICON} /> },
-            { label: "الجمعيات", hint: "ملفات الجمعيات وطلباتها", href: "/manager/associations", icon: <Building2 {...ICON} /> },
-            { label: "البرامج والمبادرات", hint: "برامج الرئاسة السبعة", href: "/manager/taxonomy", icon: <Layers {...ICON} />, tone: "gold" },
-            { label: "دورة حياة الطلب", hint: "الحالات والانتقالات", href: "/manager/taxonomy/lifecycle", icon: <Workflow {...ICON} />, tone: "gold" },
-            { label: "النماذج", hint: "نماذج الجمعيات المعتمدة", href: "/manager/taxonomy/templates", icon: <FolderOpen {...ICON} />, tone: "gold" },
-          ]}
-        />
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr]">
           <StatusDistributionCard rows={overview.byStatus} href="/manager/requests" />

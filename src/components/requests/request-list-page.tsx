@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
-import { FilePlus2, ListChecks } from "lucide-react";
+import { FilePlus2 } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
-import { PageBand } from "@/components/layout/page-band";
+import { FIGURE_TILE, FIGURE_VALUE, FigureChevron, PageBand } from "@/components/layout/page-band";
 import { ListSkeleton } from "@/components/states/list-skeleton";
 import { EmptyState } from "@/components/states/states";
 import { buttonClasses } from "@/components/ui/button";
@@ -32,22 +32,23 @@ async function StatusFigures({ user, view, path, searchParams }: { user: Current
   const items = [{ key: undefined as string | undefined, name: "الكل", count: total }, ...shown.map((s) => ({ key: s.key as string | undefined, name: s.name, count: s.count }))];
   return (
     <nav aria-label="تصفية حسب الحالة">
-      <ul className="flex flex-wrap gap-3">
+      <ul className="flex flex-wrap gap-3.5">
         {items.map((s) => {
           const selected = s.key === active;
           return (
-            <li key={s.name}>
+            <li key={s.name} className="min-w-36">
               <Link
                 href={listHref(path, params, { status: s.key, page: undefined })}
                 aria-current={selected ? "true" : undefined}
                 scroll={false}
-                className={cn(
-                  "group block min-w-28 rounded-xl border px-4 py-3 shadow-1 transition-colors",
-                  selected ? "band-scope border-band bg-band" : "border-line bg-surface hover:border-primary",
-                )}
+                className={cn(FIGURE_TILE, "card-link h-full", selected && "border-primary dark:border-accent")}
               >
-                <span className={cn("block text-sm font-medium", selected ? "text-band-ink-muted" : "text-ink-muted")}>{s.name}</span>
-                <span className={cn("t-figure mt-2 block text-[1.75rem] leading-none", selected ? "text-band-ink" : "text-ink")}>{formatNumber(s.count)}</span>
+                {selected ? <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-accent" /> : null}
+                <span className="flex items-center gap-2">
+                  <span className="min-w-0 truncate text-[0.875rem] font-medium text-ink-muted">{s.name}</span>
+                  <FigureChevron />
+                </span>
+                <span className={cn(FIGURE_VALUE, "text-ink")}>{formatNumber(s.count)}</span>
               </Link>
             </li>
           );
@@ -59,9 +60,9 @@ async function StatusFigures({ user, view, path, searchParams }: { user: Current
 
 function FiguresSkeleton() {
   return (
-    <div className="flex flex-wrap gap-3" aria-hidden="true">
+    <div className="flex flex-wrap gap-3.5" aria-hidden="true">
       {[0, 1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className="block h-[78px] w-28 animate-pulse rounded-xl bg-surface-sunken" />
+        <span key={i} className="block h-[86px] w-36 animate-pulse rounded-xl bg-surface-sunken" />
       ))}
     </div>
   );
@@ -147,7 +148,7 @@ async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDesc
 
   return (
     <Panel>
-      <PanelHeader icon={<ListChecks strokeWidth={1.75} />} title="قائمة الطلبات" description={`عدد النتائج: ${formatNumber(page.total)}`} />
+      <PanelHeader title="قائمة الطلبات" description={`عدد النتائج: ${formatNumber(page.total)}`} />
       <ListToolbar
         action={path}
         q={list.q}

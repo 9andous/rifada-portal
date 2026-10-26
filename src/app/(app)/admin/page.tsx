@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Building2, History, Layers, ScrollText, Settings, Target, UserPlus, Users } from "lucide-react";
-import { QuickActions } from "@/components/dashboard/quick-actions";
+import { History } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { BandDate } from "@/components/dashboard/band-date";
 import { PageBody } from "@/components/layout/app-shell";
@@ -46,27 +45,18 @@ export default async function AdminDashboard() {
         figures={
           <BandFigures
             items={[
-              { label: "المستخدمون النشطون", value: formatNumber(totalUsers), caption: "في جميع الأدوار", icon: <Users strokeWidth={1.75} />, href: "/admin/users" },
-              { label: "الجمعيات النشطة", value: formatNumber(associations), caption: "حساب واحد لكل جمعية", icon: <Building2 strokeWidth={1.75} />, href: "/admin/associations" },
-              { label: "البرامج", value: formatNumber(programs), caption: `المبادرات: ${formatNumber(initiatives)}`, icon: <Layers strokeWidth={1.75} />, tone: "gold", href: "/admin/taxonomy" },
-              { label: "الأهداف الإستراتيجية", value: formatNumber(objectives), caption: "من إستراتيجية الرئاسة", icon: <Target strokeWidth={1.75} />, tone: "gold", href: "/admin/taxonomy/objectives" },
+              { label: "المستخدمون النشطون", value: formatNumber(totalUsers), caption: "في جميع الأدوار", href: "/admin/users" },
+              { label: "الجمعيات النشطة", value: formatNumber(associations), caption: "حساب واحد لكل جمعية", href: "/admin/associations" },
+              { label: "البرامج", value: formatNumber(programs), caption: `المبادرات: ${formatNumber(initiatives)}`, href: "/admin/taxonomy" },
+              { label: "الأهداف الإستراتيجية", value: formatNumber(objectives), caption: "من إستراتيجية الرئاسة", href: "/admin/taxonomy/objectives" },
             ]}
           />
         }
       />
       <PageBody className="flex flex-col gap-5">
-        <QuickActions
-          items={[
-            { label: "إضافة مستخدم", hint: "حساب جديد بدور محدد", href: "/admin/users/new", icon: <UserPlus strokeWidth={1.75} /> },
-            { label: "إضافة جمعية", hint: "ملف الجمعية ومسؤولها", href: "/admin/associations/new", icon: <Building2 strokeWidth={1.75} /> },
-            { label: "البرامج والمبادرات", hint: "البرامج والمتطلبات", href: "/admin/taxonomy", icon: <Layers strokeWidth={1.75} />, tone: "gold" },
-            { label: "الإعدادات", hint: "المهل والحالات والقيود", href: "/admin/settings", icon: <Settings strokeWidth={1.75} />, tone: "gold" },
-            { label: "سجل التدقيق", hint: "كل العمليات المسجلة", href: "/admin/audit", icon: <ScrollText strokeWidth={1.75} />, tone: "gold" },
-          ]}
-        />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.4fr]">
           <Panel>
-            <PanelHeader icon={<Users strokeWidth={1.75} />} title="المستخدمون حسب الدور" description="الحسابات النشطة" />
+            <PanelHeader title="المستخدمون حسب الدور" description="الحسابات النشطة" />
             <ul className="flex flex-col gap-4 px-6 pb-6">
               {ROLES.map((role) => (
                 <li key={role} className="grid grid-cols-[8rem_1fr_2.5rem] items-center gap-4 text-sm">
@@ -82,7 +72,6 @@ export default async function AdminDashboard() {
 
           <Panel>
             <PanelHeader
-              icon={<History strokeWidth={1.75} />}
               title="آخر العمليات المسجلة"
               description="من سجل التدقيق"
               actions={

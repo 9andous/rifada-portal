@@ -7,7 +7,8 @@ direction C (Heritage panel) on 2026-10-25 at the owner's request (D-092). Every
 those built in later phases, follows this document.
 
 Decisions here are settled; change them only with the owner's approval. Technical background is in
-`docs/DECISIONS.md` (D-020 onward, D-092 for this design).
+`docs/DECISIONS.md` (D-020 onward, D-092 for this design, D-095 for the upgrade of cards, key
+figures, icons, navigation, logos and timeline).
 
 ## Principles
 
@@ -17,8 +18,15 @@ Decisions here are settled; change them only with the owner's approval. Technica
 - No emoji, no dashed borders, no glassmorphism, no gradient blobs, no stock imagery. Photographs are
   only the Presidency's own photographs of the Two Holy Mosques (`public/images/haramain/`, taken from
   the strategy outline), on public pages.
-- One line-icon set: Lucide, stroke 1.75, sizes `size-4` inline, `size-[18px]` in navigation,
-  `size-5` in state icons. Navigation items carry an icon.
+- One line-icon set: Lucide, stroke 1.75 for every icon (set once in `globals.css` on
+  `svg.lucide`). Sizes by role: 16 (`size-4`) in text and buttons, 18 (`size-[18px]`) in the
+  navigation, 20 (`size-5`) in tiles and page states; 14 (`size-3.5`) only beside 12–13px captions
+  (breadcrumbs, gov banner, footer link, sort arrows). Navigation items carry an icon.
+- **One icon per concept** (`src/components/layout/nav-icon.tsx` and the pages): requests Inbox,
+  templates and documents FileStack, users UsersRound, adding a user UserRoundPlus, assignment
+  UserRoundCheck, registration applications ClipboardList, reports ChartColumn, objectives Target,
+  initiatives Lightbulb. Icons are kept where they help find or understand something (navigation,
+  actions, status, programmes); card headers and key figures carry none.
 - Right-to-left with logical properties only (`ms-/me-/ps-/pe-`, `start/end`, `border-s/e`).
   `npm run lint` rejects physical-direction utilities and emoji.
 
@@ -32,7 +40,7 @@ Decisions here are settled; change them only with the owner's approval. Technica
   feature, so a derived digits-only face, "Rifada Cairo Tabular Digits"
   (`scripts/fonts/build_tabular_digits.py`), puts every digit on one equal, deliberately tight width
   and is stacked before Cairo (approved by the owner). Its ٠ is a filled round dot, the conventional
-  Arabic zero.
+  Arabic zero; a redrawn zero (hollow or filled lozenge) was reviewed and declined (D-095).
 - **Roles** (defined once in `src/app/globals.css`, components layer):
 
   | Class | Use | Size / weight |
@@ -45,18 +53,47 @@ Decisions here are settled; change them only with the owner's approval. Technica
   | `t-table` | Table text | 0.875rem, tabular |
   | `t-caption` | Notes, timestamps, helper text | 0.75rem, `ink-subtle` |
 
-- **Eyebrows and section headings** start with a 7px gold diamond (`<Diamond>`, `<SectionTitle>`).
+- **Eyebrows and section headings** start with a gold diamond (`<Diamond>` 7px in eyebrows;
+  `<SectionTitle>` and card headers 8px, `<HeaderDiamond>`).
 
 ## Shape and elevation
 
 - **Radii** (set once in `globals.css`): `rounded-xs` 4, `rounded-sm` 8 (small buttons, icon
   buttons), `rounded-md` 10 (buttons, inputs), `rounded-lg` 12 (tiles, alerts, menus),
   `rounded-xl` 14 (cards, key figures), `rounded-2xl` 20 (login hero and card, home bands).
-  The header avatar is a rounded square (9px); status dots and radios are round.
-- Elevation is led by hairline borders: `shadow-1` cards, `shadow-2` hover and the login card,
-  `shadow-3` menus and modals.
+  The header avatar is a rounded square (9px); status dots and radios are round. No other values:
+  tab bars sit in 14px cards, icon tiles are 10px, link cards are 14px (D-095).
+- Elevation in three distinct steps (`tokens.css`): `shadow-1` cards and key figures, `shadow-2`
+  standalone forms (login, registration) and hovered cards, `shadow-3` menus and dialogs. Boxes
+  inside cards carry no shadow. In dark mode levels 1 and 2 add a faint top light, because a drop
+  shadow alone does not show on a dark surface.
 - Inputs: 40px (48px on the login form), `line-strong` border; focus turns the border green with a
-  3px ring of 20% green. Focus outline elsewhere: 3px gold, offset 2px.
+  3px ring of 20% green. Focus outline elsewhere: 3px `--focus`, offset 2px; `--focus` is green
+  in light and gold in dark. Interactive cards draw it inside (offset −3px).
+
+## Motion
+
+- One motion for every hover and focus change: 200ms, ease-out (`--motion-duration`,
+  `--motion-ease`; Tailwind's default transition uses them, so every `transition-*` utility
+  follows).
+- Page entry: the head, then the key figures (`.fade-up-1`), then the body (`.fade-up-2`) fade up
+  4px, 70ms apart.
+- `prefers-reduced-motion`: transitions, animations, the page entry and hover lifts are off;
+  loading spinners keep turning.
+
+## Interactive cards
+
+- Every card that is a link or a selectable option uses `.card-link` (`globals.css`): on hover the
+  border turns green in light and gold in dark, the shadow rises to `shadow-2` and the card lifts
+  1px; keyboard focus draws the ring inside the card. A selected option keeps its green border and
+  inset ring and does not lift. Controls (buttons, pagination, table rows) keep their own states.
+- Key-figure tiles that are not links use `.card-hover` (part of `FIGURE_TILE`): on hover only the
+  border changes, green in light and gold in dark. **Every other card does not react to hover**
+  (panels, empty states, tab bars, «القرار», login, registration and home cards): a hover on
+  something that cannot be clicked suggests a link that is not there (owner, D-095).
+- These hover rules sit **outside** the CSS layers in `globals.css` on purpose: Tailwind's
+  utilities (a card's own `border-line`, `shadow-1`) would otherwise override them. Keep them
+  there.
 
 ## Colour
 
@@ -92,13 +129,13 @@ the chart palette kept its earlier colour-blind-checked values.
   icon in the status colour, text in ink.
 - **Dark mode** is designed, not inverted: deep green-black base, lighter greener levels, light green
   primary with dark text, softened status colours. The Presidency's full-colour logo sits on a small
-  white plate in dark mode.
+  white plate in dark mode, padded by its clear space with a hairline.
 
 ## Brand motifs
 
 - **Ogee arch** of the Rifada logo (`<ArchOutline>` in `src/components/brand/arch.tsx`, `.arch-mask`
-  in `globals.css`): faint outline at the end of the page head (7%), on the featured key figure, the
-  login hero and the green home bands; photographs on the home page are framed by it.
+  in `globals.css`): faint outline at the end of the page head (7%), the login hero and the green
+  home bands; photographs on the home page are framed by it. Not on key figures (D-095).
 - **Gold diamond** (`<Diamond>`) as eyebrow and section marker.
 - **Geometric pattern** (`<GeometricPattern>`, khatam lattice, faint gold stroke about 8 to 10%) on
   green surfaces only: navigation bar, login hero, home hero and bands. Never behind body text on
@@ -106,17 +143,30 @@ the chart palette kept its earlier colour-blind-checked values.
 
 ## App shell
 
-From top to bottom (`AppShell`):
+From top to bottom (`AppShell`). The gov banner, header and navigation bar span the **full width
+of the screen** (padding only, no cap), so the logos and the navigation reach the edges on wide
+screens. The page head spans the full width too (title at the start edge, date or actions at the
+end edge); key figures, cards and the footer stay at **1360px**, centred (D-095). On
+signed-in pages the white header and the green bar **stick to the top together** on scroll
+(152px from lg); sticky side columns sit at `lg:top-[168px]` and in-page anchors use
+`lg:scroll-mt-44`. Public, login and registration pages keep only the white header sticky.
 
 1. **Gov banner** (`<GovBar>`, 38px): Saudi flag, «موقع حكومي رسمي تابع لحكومة المملكة العربية
    السعودية», the «كيف تتحقق» toggle opening the gov.sa and HTTPS explanations, and today's Hijri date.
-2. **Header** (`<SiteHeader>`, white, sticky, 84px): the Presidency's logo, a hairline, the Rifada logo
-   and the system name «منصة رفادة» (from xl) at the start; theme toggle, the user chip (rounded-square
-   initial, name, role or association) and sign out at the end. Below lg the drawer button sits at
-   the start.
-3. **Navigation bar** (green, 56px, pattern): icon plus label per item; active item white with a 4px
-   gold bar; unavailable items dimmed and not clickable; the role's gold call-to-action at the end
-   (`NAV_CTA` in `src/config/nav.ts`). Below lg the items move into a green drawer.
+2. **Header** (`<SiteHeader>`, white, sticky, 88px; 72px below sm): the platform's identity leads
+   at the start (Rifada logo 52px and «منصة رفادة» with the unit line, text from lg); theme
+   toggle, the user chip (rounded-square initial, name, role or association) and sign out follow
+   at the end; then a hairline and the Presidency's logo (44px) on the far side with its own
+   clear space, so the two marks do not compete (logo option A, D-095). The Presidency's logo
+   hides below sm. Below lg the drawer button sits at the start. The login and public pages use
+   the same header.
+3. **Navigation bar** (green, 64px, pattern): icon plus 16px semibold label per item, full-height
+   click targets; active item white text on a `white/10` fill with a 4px gold bar across the item;
+   hover a `white/6` fill; unavailable items at 60% white with a not-allowed cursor and a tooltip;
+   the role's 44px gold call-to-action at the end (`NAV_CTA` in `src/config/nav.ts`). From 1024 to
+   1279px the item icons hide and the padding tightens so seven items and the call-to-action fit;
+   full padding from 1536px. Below lg the items move into a green drawer (16px semibold items, the
+   same active fill and gold side rule).
 4. **Page head** and **page body**, then the copyright bar (`<AppFooter>`).
 
 - **Items per role** (short lists; items whose screens arrive in later phases are shown as
@@ -132,30 +182,35 @@ From top to bottom (`AppShell`):
 
 ## Page head
 
-- `<PageBand>` (historical name) is the white page head: eyebrow with a gold diamond, title in brand
-  green, optional lead (max 680px) and actions at the end, and the faint arch at the end. Inside it
+- `<PageBand>` (historical name) is the white page head, full width with side padding: eyebrow
+  with a gold diamond, title in brand green, optional lead (max 680px) and actions at the end, and the faint arch at the end. Inside it
   `.page-head` remaps the on-band colours to ink, so actions and eyebrows written for the former
   green band stay legible; `.band-scope` restores them on green elements inside it.
-- **Key figures** (`<BandFigures>`) follow the head on the canvas as a row of cards (label, large
-  figure, unit, caption); the emphasised one is the featured green card with an arch outline. A
-  percentage with no data shows a dash with a caption.
+- **Key figures** (`<BandFigures>`) follow the head on the canvas as a row of identical white cards
+  (label, large figure, unit, caption). A percentage with no data shows a dash with a caption.
 - List and detail pages use the compact head so data stays above the fold.
 
 ## Cards and content
 
 - Bordered white cards (`<Panel>`, 14px radius, hairline border, `shadow-1`) on the canvas.
-- **Card header** (`<PanelHeader>`, handoff `.ch`): a 36px icon tile (soft green, or gold for
-  guidance and attention; a gold diamond when the card has no icon), title, subtitle and tools at
-  the end, then a hairline. A table placed right after it starts at that hairline
-  (`.panel-head + [data-table]`). `flush` drops padding and hairline for headings inside a padded
-  box. Card footers (dashboard cards) hold a hint and a ghost link.
+- **Card header** (`<PanelHeader>`): one style for every card: an 8px gold diamond
+  (`<HeaderDiamond>`) on the title's first line, title, subtitle and tools at the end, then a
+  hairline. No icon tiles. The request page sections and side cards, «القرار», «إجراءات الطلب»,
+  «خطوات الطلب», the registration form and the status lookup use the same diamond. A table placed
+  right after it starts at that hairline (`.panel-head + [data-table]`). `flush` drops padding and
+  hairline for headings inside a padded box. Card footers (dashboard cards) hold a hint and a
+  ghost link.
 - **Status** is a pill (`<StatusText>`): soft tint of the status colour, a dot and the name.
-- **Key figures** (`<BandFigures>`): icon tile and label, figure, caption; the first card is the
-  featured green card; `href` makes a card a link to the filtered list; `emphasis` turns the tile
-  gold and marks the caption. Icons come from the page or from the label map in
-  `src/components/layout/figure-icons.tsx`.
-- **Quick actions** (`<QuickActions>`): a row of shortcut tiles under the key figures on every
-  dashboard, real routes only.
+- **Key figures** (`<BandFigures>`, `FIGURE_TILE` in `page-band.tsx`): every tile the same white
+  card with the label, the figure (2rem) and a caption; no icon tile, no featured green tile, no
+  arch. Colour only when a figure needs attention (`attention`: `bad` red for overdue, `warn` amber
+  for unassigned, returned, awaiting review or decision, uncertain cells), on the figure and as a
+  dot before the caption, and only while the count is above zero. `href` makes the tile a link to
+  the filtered list (an interactive card; the arrow shows on hover and focus only).
+- **Request list status filters** use the same tile; the selected filter has a gold top bar and a
+  green border (gold in dark).
+- **No quick-action tiles**: the dashboards' shortcut row was removed; the navigation and the gold
+  call-to-action cover those routes (D-095).
 - **Breadcrumbs** are derived from the navigation (`<Breadcrumbs>` inside the page head): home of
   the role, the active item, the current page.
 - **Tables**: header row on `surface-muted` between hairlines, 13px semibold labels, middle-aligned
@@ -207,19 +262,25 @@ Sections in order (`src/app/(public)/page.tsx`, `src/components/home/home-sectio
 2. **Leadership statements**: the statements of the Custodian of the Two Holy Mosques (green card)
    and of the Crown Prince (ivory card) with their portraits in a gold ring and a green arc, as on
    the strategy outline's opening pages, then the opening word of the President of Religious
-   Affairs with his portrait. Portraits come from the strategy outline
+   Affairs with his portrait, on a soft gold card (`accent-soft`, gold border) with the arch in
+   the corner like the two cards above it. Portraits come from the strategy outline
    (`public/images/leadership/`).
 3. **Vision and mission** (database), with photographs of al-Masjid al-Haram and al-Masjid an-Nabawi.
 4. **Values** (database), numbered in gold diamonds, beside the Haram arches photograph.
-5. **Strategic objectives** (database, green band); the four the supervision initiative serves
-   (1, 5, 6, 7) are marked «تخدمه المنصة» with how.
-6. **Programmes** (database, available ones only) with their available-initiative counts.
-7. **The initiative**: introduction, summary, the procedural and technical tracks, the Presidency's
-   supervisory tasks, the four implementation phases, beneficiaries and expected impact
-   (`src/config/initiative.ts`, from the initiative document).
-8. **How supervision works**: the four request steps, then a closing login band and the full footer.
+5. **Strategic objectives** (database, green band): all seven cards share one gold border; the
+   four the supervision initiative serves (1, 5, 6, 7) are marked only by the «تخدمه المنصة» tag
+   with how.
+6. **The initiative**: introduction, summary, the procedural and technical tracks, the Presidency's
+   supervisory tasks, beneficiaries and expected impact
+   (`src/config/initiative.ts`, from the initiative document), then the full footer.
 
-The public header adds in-page section links (lg and up) and a dark «الدخول إلى المنصة» button. The
+The programmes section, «كيف يعمل الإشراف الفني», the closing login band and the initiative's
+«مراحل التنفيذ» were removed at the owner's request (D-095), with their header and footer links.
+
+The public header adds five in-page section links in page order (القيادة، الرؤية والرسالة، القيم،
+الأهداف، المبادرة), spread evenly between the identity and the buttons from 1280px
+(`SiteHeader`'s `middle` slot), and a dark «الدخول إلى المنصة» button. The footer's «عن المنصة»
+links follow the same order. The
 footer (`<SiteFooter>`, `band-deep`) holds the white logo with a short description, links to the home
 sections, the login and password pages and the Presidency's official site, and the copyright bar. No
 invented contact details or social links.
@@ -231,15 +292,26 @@ invented contact details or social links.
   a halo, rejected red) and the key facts in icon cells. Each section (description, initiative
   data, attachments, completeness, conversation) is its own card. The side column holds the
   «القرار» panel (green-bordered, approve green, return amber outline, reject red outline), the
-  assignment, the status timeline (tinted round icons per status, notes in a muted box) and the
-  audit trail.
+  assignment, the status timeline «مسار الطلب» (the shared diamond timeline, latest entry gold) and
+  the audit trail.
 - **New request**: the programmes are selectable cards with their icons (`<ProgramIcon>`) and
   available-initiative counts, then the initiative; beside the form the step guide
-  (`<FormSteps>`), which also accompanies the edit page. The edit form is split into numbered
-  sections with a footer bar for submit and save.
+  «خطوات الطلب» (`<FormSteps>`, the shared timeline: done green, current gold, upcoming grey; no
+  numbers or timestamps), which also accompanies the edit page. Its help text is a flat note with
+  a 2px gold side rule, like internal notes. The edit form is split into numbered sections with a
+  footer bar for submit and save.
+
+## Timeline
+
+- One component (`src/components/ui/timeline.tsx`: `Timeline`, `TimelineItem`, `TimelineTitle`,
+  `TimelineText`): a 1px `line-strong` connector and 10px diamond markers, title as the main line
+  and a smaller muted line beneath, 24px between entries. Markers: `current` gold, `done` green,
+  `muted` grey. Used by «مسار الطلب» (history), «خطوات الطلب» (form guide) and «دليل التقديم» on the
+  association dashboard (all markers grey: information, not progress). Do not build another.
 
 ## Dashboards (design stop 2)
 
+- Shortcut tiles were removed from every dashboard (D-095).
 - **Unit manager:** the page head shows a small time-based greeting (صباح الخير before noon, مساء الخير
   after, Asia/Riyadh time) above the large title «نظرة عامة على الإشراف», the Hijri date, and the
   key figures: إجمالي الطلبات، مفتوحة، متأخرة عن المهلة، متوسط المعالجة، نسبة الاعتماد، غير مسندة,
@@ -247,10 +319,10 @@ invented contact details or social links.
   (last six Hijri months), requests by program, supervisor workload, overdue requests (placed high
   on the page). All numbers from the database; designed empty states for every block.
 - **Super admin, supervisor, association officer:** same shell, page head and card system.
-  Supervisor: quick actions, the queue sorted by nearest deadline, overdue requests, status
-  distribution. Association: «طلب يحتاج إلى تعديلكم» notice when a request is returned, quick
-  actions, the latest submitted request with its stepper, recent requests and the submission
-  guide. Admin: quick actions, users by role, latest audit entries.
+  Supervisor: the queue sorted by nearest deadline, overdue requests, status distribution.
+  Association: «طلب يحتاج إلى تعديلكم» notice when a request is returned, the latest submitted
+  request with its stepper, recent requests and the submission guide «دليل التقديم» (shared
+  timeline). Admin: users by role, latest audit entries.
 
 ## Requests list (Phase 3)
 
@@ -278,7 +350,7 @@ invented contact details or social links.
 - No repeated button row in the header.
 - A sticky «القرار» decision panel in the side column with the three choices and the reason field;
   at tablet width it becomes a fixed bottom bar.
-- Timeline as in C: diamond nodes with the connector line between nodes.
+- Timeline as in C: diamond nodes with the connector line between nodes (the shared timeline).
 - No vertical divider between the timeline and the main column, and no horizontal separator lines
   between description, attachments and conversation; spacing separates them.
 - Conversation is a flat thread (no chat bubbles). Internal notes have a gold side rule and the
@@ -296,12 +368,15 @@ invented contact details or social links.
 | `PageBand`, `BandFigures` | `src/components/layout/page-band.tsx` |
 | `TopNav`, `MobileNav` | `src/components/layout/top-nav.tsx`, `mobile-nav.tsx` |
 | `AuthSplit` | `src/components/layout/auth-split.tsx` |
-| `Panel`, `PanelHeader`, `SectionTitle`, `StatusText`, `Alert`, `Skeleton` | `src/components/ui/surface.tsx` |
+| `Panel`, `PanelHeader`, `HeaderDiamond`, `SectionTitle`, `StatusText`, `Alert`, `Skeleton` | `src/components/ui/surface.tsx` |
+| `Timeline`, `TimelineItem`, `TimelineTitle`, `TimelineText` | `src/components/ui/timeline.tsx` |
+| `FIGURE_TILE`, `FigureChevron` (key-figure tile, also the request list filters) | `src/components/layout/page-band.tsx` |
+| `.card-link`, `.card-hover`, motion, reduced motion, icon stroke | `src/app/globals.css` |
 | `EmptyState`, `ErrorState`, `ForbiddenState` | `src/components/states/states.tsx` |
 | `RefNumber` | `src/components/ui/ref-number.tsx` |
-| `QuickActions`, dashboard cards (`RecentRequestsCard`, `OverdueCard`, ...) | `src/components/dashboard/quick-actions.tsx`, `cards.tsx` |
+| Dashboard cards (`RecentRequestsCard`, `OverdueCard`, ...) | `src/components/dashboard/cards.tsx` |
 | `RequestStepper`, `FormSteps`, `StatusTimeline` | `src/components/requests/request-stepper.tsx`, `form-steps.tsx`, `timeline.tsx` |
-| `Breadcrumbs`, key-figure icons | `src/components/layout/breadcrumbs.tsx`, `figure-icons.tsx` |
+| `Breadcrumbs`, `NavIcon` (the icon per concept) | `src/components/layout/breadcrumbs.tsx`, `nav-icon.tsx` |
 | `ProgramIcon` | `src/components/brand/program-icon.tsx` |
 | `GeometricPattern` | `src/components/brand/geometric-pattern.tsx` |
 | `ObjectiveHeaderCells`, `ObjectiveCells`, `ObjectiveLegend` (7-column objective grid) | `src/components/taxonomy/objective-grid.tsx` |

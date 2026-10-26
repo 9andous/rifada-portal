@@ -24,7 +24,7 @@ export function GovBar() {
   return (
     <div data-print="hide">
       <div className="border-b border-line bg-surface-sunken text-xs text-ink-muted">
-        <div className="mx-auto flex h-[38px] max-w-[1360px] items-center gap-2.5 px-4 sm:px-8">
+        <div className="flex h-[38px] items-center gap-2.5 px-4 sm:px-8">
           <svg aria-hidden="true" width="20" height="14" viewBox="0 0 20 14" className="shrink-0">
             <rect width="20" height="14" rx="2" fill="#006c35" />
             <rect x="5" y="8.6" width="10" height="1" rx=".5" fill="#fff" />
@@ -51,7 +51,7 @@ export function GovBar() {
       </div>
       {open ? (
         <div id="gov-verify" className="fade-up border-b border-line bg-surface">
-          <div className="mx-auto grid max-w-[1360px] gap-6 px-4 py-[18px] sm:px-8 md:grid-cols-2 md:gap-8">
+          <div className="grid gap-6 px-4 py-[18px] sm:px-8 md:grid-cols-2 md:gap-8">
             <VerifyItem icon={<Globe aria-hidden="true" />} title={<>روابط المواقع الرسمية السعودية تنتهي بـ <span dir="ltr">gov.sa</span></>}>
               جميع روابط المواقع الرسمية للجهات الحكومية في المملكة تنتهي بالنطاق <span dir="ltr">gov.sa</span>.
             </VerifyItem>
