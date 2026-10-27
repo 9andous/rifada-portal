@@ -34,7 +34,7 @@ export default async function NewUserPage() {
         }
       />
       <PageBody>
-        <Panel className="max-w-4xl">
+        <Panel className="mx-auto max-w-6xl">
           <PanelHeader title="بيانات الحساب" />
           <div className="px-6 pb-6">
             <UserForm mode="create" action={createUserAction} programs={options.programs} associations={options.associations} />

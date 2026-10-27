@@ -5,6 +5,7 @@ import { ForbiddenState } from "@/components/states/states";
 import { buttonClasses } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/surface";
 import { NAV, NAV_CTA } from "@/config/nav";
+import { initials } from "@/lib/images";
 import { requireRole } from "@/server/auth/session";
 import { ROLE_HOME, ROLE_LABELS, ROLES, type Role } from "@/server/authz/roles";
 import { GovBar } from "./gov-bar";
@@ -95,14 +96,23 @@ async function AreaGuard({ role, children }: { role: Role; children: ReactNode }
 async function UserChip() {
   const user = await requireRole(ROLES);
   if (!user) return null;
+  // When the account's name is its role («مدير النظام»), show the username instead of repeating it.
+  const subtitle = user.associationName ?? ROLE_LABELS[user.role];
   return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-line bg-surface py-[5px] pe-3 ps-[5px]">
-      <span aria-hidden="true" className="flex size-[34px] items-center justify-center rounded-[9px] bg-band font-bold text-band-ink">
-        {user.name.trim().charAt(0)}
+    <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface py-1 pe-3.5 ps-1 shadow-1">
+      <span aria-hidden="true" className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-band text-xs font-bold text-band-gold ring-2 ring-band-gold/40">
+        {user.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a private, signed-in-only image
+          <img src={user.imageUrl} alt="" className="size-full object-cover" />
+        ) : (
+          initials(user.name)
+        )}
       </span>
       <span className="hidden leading-tight sm:block">
-        <span className="block text-sm font-bold text-ink">{user.name}</span>
-        <span className="block text-xs text-ink-subtle">{user.associationName ?? ROLE_LABELS[user.role]}</span>
+        <span className="block max-w-48 truncate text-sm font-bold text-ink">{user.name}</span>
+        <span className="block max-w-48 truncate text-xs text-ink-subtle">
+          {subtitle !== user.name ? subtitle : user.username ? <bdi dir="ltr">@{user.username}</bdi> : null}
+        </span>
       </span>
     </div>
   );

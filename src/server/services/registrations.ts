@@ -67,25 +67,38 @@ type Tx = Prisma.TransactionClient;
 /** The license, username, email and national ID must not belong to an association, account or open application. */
 async function checkFree(
   tx: Tx,
-  v: { licenseNumber: string; username: string; email: string | null; nationalId: string | null },
+  v: { licenseNumber?: string; username?: string; email?: string | null; nationalId?: string | null },
   exceptRegistrationId?: string,
 ): Promise<Result> {
   const notSelf = exceptRegistrationId ? { id: { not: exceptRegistrationId } } : {};
-  if (await tx.association.findFirst({ where: { licenseNumber: v.licenseNumber }, select: { id: true } })) {
-    return fieldRefusal("licenseNumber", MSG.licenseRegistered);
+  if (v.licenseNumber) {
+    if (await tx.association.findFirst({ where: { licenseNumber: v.licenseNumber }, select: { id: true } })) {
+      return fieldRefusal("licenseNumber", MSG.licenseRegistered);
+    }
+    if (await tx.associationRegistration.findFirst({ where: { licenseNumber: v.licenseNumber, status: "PENDING", ...notSelf }, select: { id: true } })) {
+      return fieldRefusal("licenseNumber", MSG.licensePending);
+    }
   }
-  if (await tx.associationRegistration.findFirst({ where: { licenseNumber: v.licenseNumber, status: "PENDING", ...notSelf }, select: { id: true } })) {
-    return fieldRefusal("licenseNumber", MSG.licensePending);
+  if (v.username) {
+    const usernameUsed =
+      (await tx.user.findUnique({ where: { username: v.username }, select: { id: true } })) ??
+      (await tx.associationRegistration.findFirst({ where: { officerUsername: v.username, status: "PENDING", ...notSelf }, select: { id: true } }));
+    if (usernameUsed) return fieldRefusal("username", MSG.usernameTaken);
   }
-  const usernameUsed =
-    (await tx.user.findUnique({ where: { username: v.username }, select: { id: true } })) ??
-    (await tx.associationRegistration.findFirst({ where: { officerUsername: v.username, status: "PENDING", ...notSelf }, select: { id: true } }));
-  if (usernameUsed) return fieldRefusal("username", MSG.usernameTaken);
   if (v.email && (await tx.user.findUnique({ where: { email: v.email }, select: { id: true } }))) return fieldRefusal("officerEmail", MSG.emailTaken);
   if (v.nationalId && (await tx.user.findUnique({ where: { nationalId: v.nationalId }, select: { id: true } }))) {
     return fieldRefusal("officerNationalId", MSG.nationalIdTaken);
   }
   return { ok: true };
+}
+
+/**
+ * Public: the same availability checks as the submission, for the fields of one step, so the
+ * journey reports a registered license or a taken username on the step where it was entered.
+ * The submission still checks everything again.
+ */
+export async function checkRegistrationAvailability(v: { licenseNumber?: string; username?: string; email?: string | null; nationalId?: string | null }): Promise<Result> {
+  return checkFree(db, v);
 }
 
 /** Public: stores a new application. The password is hashed here and never stored in clear. */

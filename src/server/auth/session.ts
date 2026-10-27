@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { imageUrl } from "@/lib/images";
 import { db } from "@/server/db";
 import { isRole, ROLE_HOME, type Role } from "@/server/authz/roles";
 import type { Actor } from "@/server/authz/scope";
@@ -13,6 +14,8 @@ export type CurrentUser = Actor & {
   email: string;
   mustChangePassword: boolean;
   associationName: string | null;
+  /** The user's picture, or for an association officer without one, the association's logo. */
+  imageUrl: string | null;
 };
 
 /** Resolves the signed-in, active user once per request, or null. */
@@ -40,8 +43,9 @@ async function userFromHeaders(requestHeaders: Headers): Promise<{ user: Current
       role: true,
       isActive: true,
       mustChangePassword: true,
+      avatarKey: true,
       associationId: true,
-      association: { select: { name: true } },
+      association: { select: { name: true, logoKey: true } },
       supervisedPrograms: { select: { programId: true } },
     },
   });
@@ -55,6 +59,9 @@ async function userFromHeaders(requestHeaders: Headers): Promise<{ user: Current
     role: user.role,
     associationId: user.associationId,
     associationName: user.association?.name ?? null,
+    imageUrl:
+      imageUrl("user", user.id, user.avatarKey) ??
+      (user.associationId ? imageUrl("association", user.associationId, user.association?.logoKey) : null),
     programIds: user.supervisedPrograms.map((p) => p.programId),
     mustChangePassword: user.mustChangePassword,
   };

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Building2, LogIn } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
 import { GovBar } from "./gov-bar";
+import { SectionLink } from "./section-link";
 import { SiteHeader } from "./site-header";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -26,9 +27,9 @@ export function PublicHeader() {
             <ul className="flex items-center justify-evenly gap-2">
               {SECTIONS.map((s) => (
                 <li key={s.href}>
-                  <Link href={s.href} className="rounded-md px-3 py-2 text-[0.9375rem] font-semibold whitespace-nowrap text-ink-muted transition-colors hover:bg-primary-soft hover:text-primary">
+                  <SectionLink href={s.href} className="rounded-md px-3 py-2 text-[0.9375rem] font-semibold whitespace-nowrap text-ink-muted transition-colors hover:bg-primary-soft hover:text-primary">
                     {s.label}
-                  </Link>
+                  </SectionLink>
                 </li>
               ))}
             </ul>

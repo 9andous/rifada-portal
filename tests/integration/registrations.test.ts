@@ -5,6 +5,7 @@ import type { Role } from "@/server/authz/roles";
 import { ForbiddenError, type Actor } from "@/server/authz/scope";
 import {
   approveRegistration,
+  checkRegistrationAvailability,
   getRegistration,
   listRegistrations,
   lookupRegistration,
@@ -183,5 +184,15 @@ describe("registrations: decisions", () => {
 
     // The license is free again for a corrected application.
     expect((await submitRegistration(application({ licenseNumber: input.licenseNumber }))).ok).toBe(true);
+  });
+});
+
+describe("checking a step before submission", () => {
+  it("reports a license under review and a taken username, and passes free ones", async () => {
+    const { input } = await submitted();
+    expect(await checkRegistrationAvailability({ licenseNumber: input.licenseNumber })).toMatchObject({ ok: false, errors: { licenseNumber: expect.any(String) } });
+    expect(await checkRegistrationAvailability({ username: input.username })).toMatchObject({ ok: false, errors: { username: expect.any(String) } });
+    expect(await checkRegistrationAvailability({ licenseNumber: "99999", username: "free.name" })).toEqual({ ok: true });
+    expect(await checkRegistrationAvailability({})).toEqual({ ok: true });
   });
 });

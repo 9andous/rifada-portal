@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { SupportWidget } from "@/components/layout/support-widget";
 import { themeInitScript } from "@/components/layout/theme-toggle";
 import { brand } from "@/config/brand";
 import { fontVariables } from "./fonts";
@@ -15,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ar" dir="rtl" className={fontVariables} suppressHydrationWarning>
+    <html lang="ar" dir="rtl" className={fontVariables} data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
@@ -27,6 +29,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           الانتقال إلى المحتوى الرئيسي
         </a>
         {children}
+        {/* Reads the path to show only on the public pages; Suspense keeps pages prerenderable. */}
+        <Suspense fallback={null}>
+          <SupportWidget />
+        </Suspense>
       </body>
     </html>
   );

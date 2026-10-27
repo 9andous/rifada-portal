@@ -22,11 +22,12 @@ import type { PublicHome } from "@/server/services/public-site";
 
 const WRAP = "mx-auto w-full max-w-[1360px] px-4 sm:px-8";
 
-function SectionHead({ eyebrow, title, lead, tone = "surface", id }: { eyebrow: string; title: string; lead?: ReactNode; tone?: "surface" | "band"; id: string }) {
+function SectionHead({ eyebrow, title, lead, tone = "surface", align = "start", id }: { eyebrow: string; title: string; lead?: ReactNode; tone?: "surface" | "band"; align?: "start" | "center"; id: string }) {
   const band = tone === "band";
+  const center = align === "center";
   return (
-    <div className="max-w-3xl">
-      <p className={cn("flex items-center gap-2 text-sm font-medium", band ? "text-band-gold" : "text-accent-ink")}>
+    <div className={cn("max-w-3xl", center && "mx-auto text-center")}>
+      <p className={cn("flex items-center gap-2 text-sm font-medium", center && "justify-center", band ? "text-band-gold" : "text-accent-ink")}>
         <Diamond className={band ? "bg-band-gold" : undefined} />
         {eyebrow}
       </p>
@@ -45,8 +46,8 @@ export function HomeHero({ figures }: { figures: ReactNode }) {
     <section aria-labelledby="hero-title" className="band-scope relative overflow-hidden bg-band text-band-ink">
       <GeometricPattern size={96} />
       <div className={cn(WRAP, "relative grid items-center gap-10 py-14 lg:grid-cols-[1.15fr_1fr] lg:py-20")}>
-        <div className="fade-up">
-          <p className="flex items-center gap-2 text-sm font-medium text-band-gold">
+        <div className="fade-up text-center">
+          <p className="flex items-center justify-center gap-2 text-sm font-medium text-band-gold">
             <Diamond className="bg-band-gold" />
             {brand.presidencyName}
           </p>
@@ -54,11 +55,11 @@ export function HomeHero({ figures }: { figures: ReactNode }) {
             {brand.unitName}
           </h1>
           <p className="mt-4 text-xl font-semibold text-band-gold">{STRATEGY_MOTTO}</p>
-          <p className="mt-4 max-w-2xl text-base leading-[1.9] text-band-ink-muted">
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-[1.9] text-band-ink-muted">
             {brand.systemName} هي المنصة الرقمية للإشراف الفني على الجمعيات الخيرية والتطوعية التي تخدم قاصدي الحرمين الشريفين: تُقدَّم
             فيها البرامج والمشروعات ضمن برامج الرئاسة، وتُراجع وتُتابع بإجراءات واضحة وموثّقة.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/login" className={buttonClasses("gold", "lg")}>
               <LogIn aria-hidden="true" />
               الدخول إلى المنصة
@@ -98,9 +99,9 @@ export function HeroFigures({ home }: { home: PublicHome }) {
     { value: home.values.length, label: "قيم مؤسسية" },
   ];
   return (
-    <dl className="grid max-w-2xl grid-cols-2 gap-y-5 border-t border-white/15 pt-6 sm:grid-cols-4">
+    <dl className="mx-auto grid max-w-2xl grid-cols-2 gap-y-5 border-t border-white/15 pt-6 text-center sm:grid-cols-4">
       {items.map((f, i) => (
-        <div key={f.label} className={cn("pe-4", i > 0 && "sm:border-s sm:border-white/15 sm:ps-5")}>
+        <div key={f.label} className={cn("flex flex-col items-center px-3", i > 0 && "sm:border-s sm:border-white/15")}>
           <dd className="t-figure text-[2rem] text-band-ink">{formatNumber(f.value)}</dd>
           <dt className="mt-1.5 text-[0.8125rem] text-band-ink-muted">{f.label}</dt>
         </div>
@@ -111,7 +112,7 @@ export function HeroFigures({ home }: { home: PublicHome }) {
 
 export function HeroFiguresSkeleton() {
   return (
-    <div aria-hidden="true" className="grid max-w-2xl grid-cols-2 gap-5 border-t border-white/15 pt-6 sm:grid-cols-4">
+    <div aria-hidden="true" className="mx-auto grid max-w-2xl grid-cols-2 gap-5 border-t border-white/15 pt-6 sm:grid-cols-4">
       {[0, 1, 2, 3].map((i) => (
         <span key={i} className="block h-16 animate-pulse rounded-sm bg-white/10" />
       ))}
@@ -291,24 +292,25 @@ export function ObjectivesSection({ home }: { home: PublicHome }) {
         <SectionHead
           id="objectives-title"
           tone="band"
+          align="center"
           eyebrow="إلى أين نتجه"
           title="الأهداف الاستراتيجية"
           lead="سبعة أهداف استراتيجية للرئاسة. تخدم مخرجات مبادرة الإشراف الفني أربعة منها مباشرة، وهي المميزة أدناه."
         />
-        <ol className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <ol className="mt-10 flex flex-wrap justify-center gap-4">
           {home.objectives.map((o) => {
             const link = INITIATIVE.objectiveLinks[o.number];
             return (
               <li
                 key={o.number}
                 className={cn(
-                  "flex flex-col rounded-lg border p-5",
+                  "flex w-full flex-col items-center rounded-lg border p-5 text-center md:w-[calc(50%-0.5rem)] xl:w-[calc(25%-0.75rem)]",
                   "border-band-gold/40 bg-white/[0.08]",
                 )}
               >
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col items-center gap-2.5">
                   <span className="flex size-10 items-center justify-center rounded-md bg-band-gold/15 text-band-gold">
-                    <span className="t-figure text-lg">{toArabicDigits(o.number)}</span>
+                    <span className="t-figure text-lg text-band-gold">{toArabicDigits(o.number)}</span>
                   </span>
                   {link ? (
                     <span className="inline-flex items-center gap-1.5 rounded-[6px] bg-band-gold/15 px-2 py-0.5 text-xs font-semibold text-band-gold">

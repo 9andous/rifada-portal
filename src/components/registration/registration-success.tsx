@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ClipboardCheck, Copy, House, KeyRound, SearchCheck } from "lucide-react";
+import { BookmarkCheck, Check, ClipboardCheck, Copy, House, KeyRound, Quote, SearchCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -62,29 +62,44 @@ export function RegistrationSuccess({ referenceNo, vision }: { referenceNo: stri
           <p className="relative mt-2 text-xs text-band-ink-muted" aria-live="polite">
             {copied ? "نُسخ رقم الطلب." : " "}
           </p>
+          <div className="relative mx-auto mt-4 flex max-w-xl flex-col items-center rounded-xl border border-band-gold/50 bg-band/80 px-6 py-4 text-center">
+            <BookmarkCheck aria-hidden="true" className="size-5 text-band-gold" strokeWidth={1.75} />
+            <p className="mt-1.5 text-sm leading-[1.85] text-band-ink">
+              <span className="block text-[0.9375rem] font-bold text-band-gold">احفظوا رقم الطلب</span>
+              تحتاجونه مع رقم ترخيص الجمعية لمتابعة حالة طلبكم في أي وقت من صفحة «متابعة طلب التسجيل». انسخوه أو دوّنوه قبل مغادرة هذه الصفحة.
+            </p>
+          </div>
         </div>
 
         <div className="px-6 py-8 sm:px-10">
-          <h2 className="text-lg font-bold text-brand-ink">ماذا بعد؟</h2>
+          <h2 className="text-center text-lg font-bold text-brand-ink">ماذا بعد؟</h2>
           <ol className="mt-5 grid gap-4 md:grid-cols-3">
             {NEXT.map(({ icon: Icon, title, text }, i) => (
-              <li key={title} className="relative rounded-xl border border-line bg-surface-muted p-5">
-                <span className="t-figure absolute end-4 top-3 text-3xl leading-none text-accent/25">{toArabicDigits(i + 1)}</span>
-                <span className="flex size-10 items-center justify-center rounded-md bg-primary-soft text-primary">
+              <li key={title} className="flex flex-col items-center rounded-xl border border-line bg-surface-muted p-5 text-center">
+                <span className="relative flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary">
                   <Icon aria-hidden="true" className="size-5" strokeWidth={1.75} />
+                  <span className="t-figure absolute -end-2.5 -top-2.5 flex size-8 items-center justify-center rounded-full border-[3px] border-surface-muted bg-primary text-base text-primary-ink">
+                    {toArabicDigits(i + 1)}
+                  </span>
                 </span>
-                <p className="mt-3 font-bold text-ink">{title}</p>
+                <p className="mt-3 font-bold text-ink">
+                  <span className="sr-only">الخطوة {toArabicDigits(i + 1)}: </span>
+                  {title}
+                </p>
                 <p className="mt-1 text-sm leading-relaxed text-ink-muted">{text}</p>
               </li>
             ))}
           </ol>
           {vision ? (
-            <p className="mt-8 border-s-4 border-accent ps-4 text-[0.9375rem] font-semibold leading-[1.9] text-ink">
-              <span className="block text-xs font-medium text-accent-ink">رؤية الرئاسة</span>
-              {vision}
-            </p>
+            <figure className="mx-auto mt-8 max-w-2xl rounded-xl border border-accent/30 bg-accent-soft/50 px-6 py-5 text-center">
+              <figcaption className="text-xs font-medium text-accent-ink">رؤية الرئاسة</figcaption>
+              <blockquote className="mt-2 text-[0.9375rem] font-semibold leading-[1.9] text-ink">
+                <Quote aria-hidden="true" className="mx-auto mb-1 size-4 -scale-x-100 text-accent-ink" />
+                {vision}
+              </blockquote>
+            </figure>
           ) : null}
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/register/status" className={buttonClasses("primary", "lg")}>
               <SearchCheck aria-hidden="true" />
               متابعة حالة الطلب

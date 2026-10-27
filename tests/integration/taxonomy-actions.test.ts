@@ -30,7 +30,7 @@ let tax: Awaited<ReturnType<typeof makeTaxonomy>>;
 function signInAs(role: Role) {
   const key = ({ SUPER_ADMIN: "admin", UNIT_MANAGER: "manager", SUPERVISOR: "supervisor", ASSOCIATION_OFFICER: "officer" } as const)[role];
   const user = ctx.users[key];
-  session.current = { ...ctx.actors[role], name: user.name, username: user.username, email: user.email, mustChangePassword: false, associationName: null };
+  session.current = { ...ctx.actors[role], name: user.name, username: user.username, email: user.email, mustChangePassword: false, associationName: null, imageUrl: null };
 }
 
 function form(values: Record<string, string | string[]>) {

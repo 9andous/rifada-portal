@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { formObject, userFormSchema } from "@/lib/validation/admin";
 import { fieldErrors } from "@/lib/validation/auth";
 import { createUser, resetUserPassword, setUserActive, updateUser } from "@/server/services/admin/users";
+import { applyImageChange, checkImageChange, imageChangeFrom } from "@/server/services/images";
 import { asAdmin, fromRefusal } from "./guard";
 import { INVALID_MESSAGE, type AdminFormState } from "./state";
 
@@ -15,8 +16,13 @@ export async function createUserAction(_: AdminFormState, formData: FormData): P
   return asAdmin(async (user) => {
     const parsed = parseUserForm(formData);
     if (!parsed.success) return { ok: false, message: INVALID_MESSAGE, errors: fieldErrors(parsed.error) };
+    const image = imageChangeFrom(formData);
+    const imageCheck = await checkImageChange(user, image);
+    if (!imageCheck.ok) return fromRefusal(imageCheck);
     const result = await createUser(user, parsed.data);
     if (!result.ok) return fromRefusal(result);
+    // The picture was checked above; storing it follows the account (the picture is optional).
+    await applyImageChange(user, "user", result.userId, image);
     revalidatePath("/admin/users");
     return { ok: true, createdId: result.userId, credentials: { username: result.username, password: result.password } };
   });
@@ -26,8 +32,14 @@ export async function updateUserAction(id: string, _: AdminFormState, formData: 
   return asAdmin(async (user) => {
     const parsed = parseUserForm(formData);
     if (!parsed.success) return { ok: false, message: INVALID_MESSAGE, errors: fieldErrors(parsed.error) };
+    const image = imageChangeFrom(formData);
+    const imageCheck = await checkImageChange(user, image);
+    if (!imageCheck.ok) return fromRefusal(imageCheck);
     const result = await updateUser(user, id, parsed.data);
     if (!result.ok) return fromRefusal(result);
+    const stored = await applyImageChange(user, "user", id, image);
+    if (!stored.ok) return fromRefusal(stored);
+    revalidatePath("/", "layout");
     revalidatePath("/admin/users");
     revalidatePath(`/admin/users/${id}`);
     return { ok: true, message: "حُفظت التغييرات." };

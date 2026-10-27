@@ -2,6 +2,8 @@
 @import "../styles/tokens.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+/* Laptop screens with little height: the sign-in pages drop repeated lines to fit without scrolling. */
+@custom-variant short (@media (max-height: 720px) and (min-width: 64rem));
 
 /* Semantic tokens as Tailwind utilities (bg-surface, text-ink, border-line, bg-band, ...). */
 @theme inline {
@@ -125,6 +127,8 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     font-variant-numeric: tabular-nums;
+    /* Glide to the home sections from the header links (reduced motion turns it off below). */
+    scroll-behavior: smooth;
   }
 
   body {
@@ -218,6 +222,17 @@
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 250' preserveAspectRatio='none'%3E%3Cpath d='M0 250 V118 C0 70 48 50 100 0 C152 50 200 70 200 118 V250 Z'/%3E%3C/svg%3E");
     mask-size: 100% 100%;
     mask-repeat: no-repeat;
+  }
+
+  /* Visible width of the registration page's vision wheel (registration/vision-wheel.tsx); the
+     form beside it is inset by the same amount. Used from xl only. */
+  .wheel-scope {
+    --wheel: 300px;
+  }
+  @media (min-width: 96rem) {
+    .wheel-scope {
+      --wheel: 330px;
+    }
   }
 
   /* Content fades up on page entry (300ms), staggered: head, then key figures (-1), then the

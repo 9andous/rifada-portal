@@ -40,6 +40,7 @@ function signInAs(role: Role) {
     email: user.email,
     mustChangePassword: false,
     associationName: null,
+    imageUrl: null,
   };
 }
 

@@ -41,7 +41,7 @@ beforeEach(async () => {
 });
 
 function signIn(actor: Actor) {
-  session.current = { ...actor, name: "مستخدم", username: "u", email: "u@example.org", mustChangePassword: false, associationName: null };
+  session.current = { ...actor, name: "مستخدم", username: "u", email: "u@example.org", mustChangePassword: false, associationName: null, imageUrl: null };
 }
 
 function form(values: Record<string, string>) {

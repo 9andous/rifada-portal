@@ -45,47 +45,49 @@ const optionalUrl = z
   .nullable()
   .default(null);
 
-export const registrationSchema = z
-  .object({
-    name: z.string().trim().min(3, "أدخل اسم الجمعية كما في الترخيص.").max(150, "اسم الجمعية طويل جدًا."),
-    licenseNumber: z
-      .string()
-      .trim()
-      .transform(toWesternDigits)
-      .pipe(z.string().regex(/^[0-9]{1,10}$/, "رقم الترخيص أرقام فقط، كما في شهادة تسجيل المركز الوطني لتنمية القطاع غير الربحي.")),
-    classification: z.enum(REGISTRATION_CLASSIFICATIONS, { error: "اختر تصنيف الجمعية." }),
-    region: z.enum(SAUDI_REGIONS, { error: "اختر المنطقة." }),
-    city: z.string().trim().min(2, "أدخل المدينة.").max(80, "اسم المدينة طويل جدًا."),
-    foundedYear: z
-      .string()
-      .trim()
-      .transform((v) => (v === "" ? null : Number(toWesternDigits(v))))
-      .refine((v) => v === null || (Number.isInteger(v) && v >= 1300 && v <= 1500), "أدخل سنة التأسيس الهجرية، مثل ١٤٣٥.")
-      .nullable()
-      .default(null),
-    contactPhone: requiredPhone,
-    contactEmail: optionalEmail,
-    website: optionalUrl,
-    programNumbers: z
-      .array(z.coerce.number().int().min(1).max(99))
-      .min(1, "اختاروا برنامجًا واحدًا على الأقل من برامج الرئاسة.")
-      .transform((v) => [...new Set(v)].sort((a, b) => a - b)),
-    officerName: fullNameSchema,
-    officerNationalId: z
-      .string()
-      .trim()
-      .transform((v) => (v === "" ? null : toWesternDigits(v)))
-      .refine((v) => v === null || /^[12][0-9]{9}$/.test(v), "رقم الهوية الوطنية أو الإقامة عشرة أرقام ويبدأ بالرقم ١ أو ٢.")
-      .nullable()
-      .default(null),
-    officerPhone: requiredPhone,
-    officerEmail: optionalEmail,
-    username: usernameSchema,
-    password: newPasswordSchema,
-    confirmPassword: z.string(),
-    pledge: z.literal("on", { error: "يلزم التعهد بالالتزام بقيم الرئاسة وصحة البيانات." }),
-  })
-  .refine((v) => v.password === v.confirmPassword, { path: ["confirmPassword"], message: "كلمتا المرور غير متطابقتين." });
+const registrationFields = z.object({
+  name: z.string().trim().min(3, "أدخل اسم الجمعية كما في الترخيص.").max(150, "اسم الجمعية طويل جدًا."),
+  licenseNumber: z
+    .string()
+    .trim()
+    .transform(toWesternDigits)
+    .pipe(z.string().regex(/^[0-9]{1,10}$/, "رقم الترخيص أرقام فقط، كما في شهادة تسجيل المركز الوطني لتنمية القطاع غير الربحي.")),
+  classification: z.enum(REGISTRATION_CLASSIFICATIONS, { error: "اختر تصنيف الجمعية." }),
+  region: z.enum(SAUDI_REGIONS, { error: "اختر المنطقة." }),
+  city: z.string().trim().min(2, "أدخل المدينة.").max(80, "اسم المدينة طويل جدًا."),
+  foundedYear: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? null : Number(toWesternDigits(v))))
+    .refine((v) => v === null || (Number.isInteger(v) && v >= 1300 && v <= 1500), "أدخل سنة التأسيس الهجرية، مثل ١٤٣٥.")
+    .nullable()
+    .default(null),
+  contactPhone: requiredPhone,
+  contactEmail: optionalEmail,
+  website: optionalUrl,
+  programNumbers: z
+    .array(z.coerce.number().int().min(1).max(99))
+    .min(1, "اختاروا برنامجًا واحدًا على الأقل من برامج الرئاسة.")
+    .transform((v) => [...new Set(v)].sort((a, b) => a - b)),
+  officerName: fullNameSchema,
+  officerNationalId: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? null : toWesternDigits(v)))
+    .refine((v) => v === null || /^[12][0-9]{9}$/.test(v), "رقم الهوية الوطنية أو الإقامة عشرة أرقام ويبدأ بالرقم ١ أو ٢.")
+    .nullable()
+    .default(null),
+  officerPhone: requiredPhone,
+  officerEmail: optionalEmail,
+  username: usernameSchema,
+  password: newPasswordSchema,
+  confirmPassword: z.string(),
+  pledge: z.literal("on", { error: "يلزم التعهد بالالتزام بقيم الرئاسة وصحة البيانات." }),
+});
+
+const passwordsMatch = { path: ["confirmPassword"], message: "كلمتا المرور غير متطابقتين." };
+
+export const registrationSchema = registrationFields.refine((v) => v.password === v.confirmPassword, passwordsMatch);
 
 export type RegistrationInput = z.infer<typeof registrationSchema>;
 
@@ -110,6 +112,22 @@ export const REGISTRATION_FIELD_STEP: Record<string, number> = {
   confirmPassword: 3,
   pledge: 4,
 };
+
+type RegistrationField = keyof typeof registrationFields.shape;
+
+/** The fields entered on one step of the journey. */
+export function registrationStepFields(step: number): RegistrationField[] {
+  return (Object.keys(REGISTRATION_FIELD_STEP) as RegistrationField[]).filter((k) => REGISTRATION_FIELD_STEP[k] === step);
+}
+
+/** Validation of one step's fields, so each «التالي» checks that step before moving on. */
+export function registrationStepSchema(step: number) {
+  const keys = registrationStepFields(step);
+  const picked = registrationFields.pick(Object.fromEntries(keys.map((k) => [k, true])) as Partial<Record<RegistrationField, true>>);
+  return keys.includes("confirmPassword")
+    ? picked.refine((v) => (v as { password?: string }).password === (v as { confirmPassword?: string }).confirmPassword, passwordsMatch)
+    : picked;
+}
 
 export const registrationLookupSchema = z.object({
   referenceNo: z

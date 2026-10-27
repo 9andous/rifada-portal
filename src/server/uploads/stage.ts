@@ -5,6 +5,7 @@ import { formatNumber } from "@/lib/format";
 import { checkFileName, FILE_TYPES, type AllowedExtension } from "@/lib/uploads";
 import { getStorage, StorageError } from "@/server/storage/storage";
 import { getSetting } from "@/server/settings/read";
+import type { UploadGroup } from "@/lib/validation/settings";
 import { getMalwareScanner } from "./scanner";
 
 // The upload pipeline (Phase 2b stop 2; reused by Phase 3): stream into staging with a byte limit,
@@ -46,8 +47,15 @@ export async function stageUpload(input: {
   body: ReadableStream<Uint8Array> | Readable | null;
   /** Binds the upload to where it may be used (e.g. `request:<id>`); checked again on consume. */
   context?: string | null;
+  /**
+   * Fixed rules instead of the platform settings, for uploads that are not documents (profile
+   * pictures and logos: images only, small).
+   */
+  only?: { groups: readonly UploadGroup[]; maxMb: number };
 }): Promise<StageResult> {
-  const [maxMb, groups] = await Promise.all([getSetting("uploads.maxFileMb"), getSetting("uploads.allowedGroups")]);
+  const [maxMb, groups] = input.only
+    ? [input.only.maxMb, input.only.groups]
+    : await Promise.all([getSetting("uploads.maxFileMb"), getSetting("uploads.allowedGroups")]);
   const maxBytes = maxMb * MB;
   const tooLarge = `حجم الملف أكبر من الحد المسموح به (${formatNumber(maxMb)} ميغابايت).`;
 
@@ -135,7 +143,7 @@ export async function peekUpload(
 export async function consumeUpload(
   uploaderId: string,
   uploadId: string,
-  area: "templates" | "attachments",
+  area: "templates" | "attachments" | "images",
   now: number = Date.now(),
   context: string | null = null,
 ): Promise<{ ok: true; file: ConsumedUpload } | { ok: false; message: string }> {

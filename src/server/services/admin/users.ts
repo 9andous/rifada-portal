@@ -1,4 +1,5 @@
 import "server-only";
+import { imageUrl } from "@/lib/images";
 import type { Prisma, Role } from "@/generated/prisma/client";
 import { enumParam, pageWindow, parseListParams, type Page, type SearchParams } from "@/lib/list-params";
 import type { UserFormInput } from "@/lib/validation/admin";
@@ -47,10 +48,15 @@ export function userSnapshot(user: SnapshotSource, programIds: readonly string[]
 export const USER_SORTS = ["name", "username", "role", "createdAt", "lastLoginAt"] as const;
 export type UserSort = (typeof USER_SORTS)[number];
 export const USER_STATUSES = ["active", "inactive"] as const;
+/** The users page's two tabs: the platform's own team, and the association officers. */
+export const USER_TABS = ["staff", "officers"] as const;
+export type UserTab = (typeof USER_TABS)[number];
+export const STAFF_ROLES = ROLES.filter((r) => r !== "ASSOCIATION_OFFICER");
 
 export function parseUserListParams(params: SearchParams) {
   return {
     ...parseListParams(params, USER_SORTS, { sort: "name", dir: "asc" }),
+    tab: enumParam(params, "tab", USER_TABS) ?? "staff",
     role: enumParam(params, "role", ROLES),
     status: enumParam(params, "status", USER_STATUSES),
     program: typeof params.program === "string" && params.program ? params.program : undefined,
@@ -72,13 +78,17 @@ export type UserRow = {
   createdAt: Date;
   associationName: string | null;
   programNumbers: number[];
+  /** The user's picture, or for an officer without one, the association's logo. */
+  imageUrl: string | null;
 };
 
 export async function listUsers(actor: Actor, params: UserListParams): Promise<Page<UserRow>> {
   assertCan(actor, "users.manage");
   const where: Prisma.UserWhereInput = {};
   if (params.q) where.OR = containsAny(params.q, ["username", "name", "email", "phone"] as const);
-  if (params.role) where.role = params.role;
+  // Each tab lists its own kind of account; the role filter narrows the team tab only.
+  if (params.tab === "officers") where.role = "ASSOCIATION_OFFICER";
+  else where.role = params.role && params.role !== "ASSOCIATION_OFFICER" ? params.role : { not: "ASSOCIATION_OFFICER" };
   if (params.status) where.isActive = params.status === "active";
   if (params.program) where.supervisedPrograms = { some: { programId: params.program } };
 
@@ -101,7 +111,9 @@ export async function listUsers(actor: Actor, params: UserListParams): Promise<P
       mustChangePassword: true,
       lastLoginAt: true,
       createdAt: true,
-      association: { select: { name: true } },
+      avatarKey: true,
+      associationId: true,
+      association: { select: { name: true, logoKey: true } },
       supervisedPrograms: { select: { program: { select: { number: true } } } },
     },
   });
@@ -120,6 +132,7 @@ export async function listUsers(actor: Actor, params: UserListParams): Promise<P
       createdAt: u.createdAt,
       associationName: u.association?.name ?? null,
       programNumbers: u.supervisedPrograms.map((p) => p.program.number).sort((a, b) => a - b),
+      imageUrl: imageUrl("user", u.id, u.avatarKey) ?? (u.associationId ? imageUrl("association", u.associationId, u.association?.logoKey) : null),
     })),
     total,
     page: win.page,
@@ -137,6 +150,9 @@ export async function userFigures(actor: Actor) {
     total: count(() => true),
     active: count((g) => g.isActive),
     inactive: count((g) => !g.isActive),
+    /** All accounts per tab, active or not. */
+    staff: count((g) => g.role !== "ASSOCIATION_OFFICER"),
+    officers: count((g) => g.role === "ASSOCIATION_OFFICER"),
     byRole: Object.fromEntries(ROLES.map((r) => [r, count((g) => g.role === r && g.isActive)])) as Record<Role, number>,
   };
 }
@@ -172,6 +188,7 @@ export async function getUserDetail(actor: Actor, id: string) {
       createdAt: true,
       updatedAt: true,
       isDemo: true,
+      avatarKey: true,
       associationId: true,
       association: { select: { id: true, name: true, isActive: true } },
       supervisedPrograms: { select: { programId: true } },

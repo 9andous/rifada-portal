@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { UserAccountActions } from "@/components/admin/user-account-actions";
 import { UserForm } from "@/components/admin/user-form";
+import { imageUrl } from "@/lib/images";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -69,6 +70,7 @@ export default async function UserPage({ params }: PageProps<"/admin/users/[id]"
                   role: detail.role,
                   programIds: detail.programIds,
                   associationId: detail.associationId ?? "",
+                  imageUrl: imageUrl("user", detail.id, detail.avatarKey),
                 }}
               />
             </div>

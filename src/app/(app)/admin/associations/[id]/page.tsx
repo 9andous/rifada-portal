@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { AssociationStatusPanel } from "@/components/admin/association-detail";
 import { AssociationForm } from "@/components/admin/association-form";
+import { imageUrl } from "@/lib/images";
 import { AssociationOfficerCreator } from "@/components/admin/association-officer-creator";
 import { AssociationStatusActions } from "@/components/admin/association-status-actions";
 import { PageBody } from "@/components/layout/app-shell";
@@ -57,6 +58,7 @@ export default async function AdminAssociationPage({ params }: PageProps<"/admin
                     contactName: association.contactName ?? "",
                     contactEmail: association.contactEmail ?? "",
                     contactPhone: association.contactPhone ?? "",
+                    imageUrl: imageUrl("association", association.id, association.logoKey),
                   }}
                 />
               </div>

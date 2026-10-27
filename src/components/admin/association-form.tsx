@@ -9,6 +9,7 @@ import { OneTimeSecret } from "@/components/ui/one-time-secret";
 import { Alert, SectionTitle } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import type { AdminFormState } from "@/server/actions/admin/state";
+import { ImageField } from "./image-field";
 import { OfficerFields } from "./officer-fields";
 
 export type AssociationFormDefaults = {
@@ -20,6 +21,8 @@ export type AssociationFormDefaults = {
   contactName: string;
   contactEmail: string;
   contactPhone: string;
+  /** The current logo's URL, if any. */
+  imageUrl?: string | null;
 };
 
 const EMPTY: AssociationFormDefaults = {
@@ -74,7 +77,7 @@ export function AssociationForm({
     );
   }
 
-  const text = (name: keyof AssociationFormDefaults, label: string, opts: { required?: boolean; hint?: string; ltr?: boolean; type?: string } = {}) => (
+  const text = (name: Exclude<keyof AssociationFormDefaults, "imageUrl">, label: string, opts: { required?: boolean; hint?: string; ltr?: boolean; type?: string } = {}) => (
     <Field id={name} label={label} hint={opts.hint} error={e[name]} required={opts.required}>
       <Input
         id={name}
@@ -97,6 +100,7 @@ export function AssociationForm({
         <SectionTitle as="h3" className="text-[0.9375rem]">
           بيانات الجمعية
         </SectionTitle>
+        <ImageField label="شعار الجمعية" shape="square" currentUrl={defaults.imageUrl} nameFieldId="name" defaultName={defaults.name} error={e.image} />
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="md:col-span-2">{text("name", "اسم الجمعية", { required: true })}</div>
           {text("licenseNumber", "رقم الترخيص", { hint: "اختياري، ولا يتكرر بين الجمعيات." })}

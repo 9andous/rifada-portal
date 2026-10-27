@@ -29,6 +29,8 @@ model User {
   email              String    @unique
   emailVerified      Boolean   @default(false)
   image              String?
+  /// Profile picture in file storage (images/<key>); optional, initials are shown without it.
+  avatarKey          String?
   username           String?   @unique
   role               Role
   // Used only by the mock Nafath provider. Never required.
@@ -128,6 +130,8 @@ model Association {
   contactName    String?
   contactEmail   String?
   contactPhone   String?
+  /// Association logo in file storage (images/<key>); optional, initials are shown without it.
+  logoKey        String?
   isActive       Boolean   @default(true)
   isDemo         Boolean   @default(false)
   createdAt      DateTime  @default(now())

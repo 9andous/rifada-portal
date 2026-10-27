@@ -86,12 +86,20 @@ describe("users: permissions", () => {
 
   it("lets the super admin list, filter, sort and page users", async () => {
     for (let i = 0; i < 22; i++) await makeUser("SUPERVISOR", { username: `bulk.sup.${String(i).padStart(2, "0")}` });
+    // The default tab lists the platform's team; the one association officer has its own tab.
     const all = await listUsers(admin, parseUserListParams({}));
-    expect(all.total).toBe(26);
+    expect(all.total).toBe(25);
     expect(all.items).toHaveLength(20);
+    expect(all.items.every((u) => u.role !== "ASSOCIATION_OFFICER")).toBe(true);
     expect(all.pageCount).toBe(2);
     const second = await listUsers(admin, parseUserListParams({ page: "2" }));
-    expect(second.items).toHaveLength(6);
+    expect(second.items).toHaveLength(5);
+
+    const officers = await listUsers(admin, parseUserListParams({ tab: "officers" }));
+    expect(officers.items.map((u) => u.role)).toEqual(["ASSOCIATION_OFFICER"]);
+    // The role filter cannot pull officers into the team tab, nor staff into the officers tab.
+    expect((await listUsers(admin, parseUserListParams({ role: "ASSOCIATION_OFFICER" }))).total).toBe(25);
+    expect((await listUsers(admin, parseUserListParams({ tab: "officers", role: "SUPERVISOR" }))).total).toBe(1);
 
     const sup = await listUsers(admin, parseUserListParams({ role: "SUPERVISOR", q: "bulk.sup.0", sort: "username", dir: "desc" }));
     expect(sup.items.map((u) => u.username)).toEqual(Array.from({ length: 10 }, (_, i) => `bulk.sup.0${9 - i}`));
