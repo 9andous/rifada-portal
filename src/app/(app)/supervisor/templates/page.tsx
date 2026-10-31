@@ -4,11 +4,11 @@ import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
 import { ListSkeleton } from "@/components/states/list-skeleton";
-import { TemplatesList } from "@/components/templates/templates-list";
+import { TemplatesLibrary } from "@/components/templates/templates-library";
 import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/authz/permissions";
 
-export const metadata: Metadata = { title: "النماذج" };
+export const metadata: Metadata = { title: "الأدلة والنماذج" };
 
 export default async function SupervisorTemplatesPage({ searchParams }: PageProps<"/supervisor/templates">) {
   const user = await requireUser();
@@ -16,10 +16,10 @@ export default async function SupervisorTemplatesPage({ searchParams }: PageProp
 
   return (
     <>
-      <PageBand compact title="النماذج" lead="النماذج المنشورة للجمعيات، للاطلاع والتنزيل." />
+      <PageBand compact title="الأدلة والنماذج" lead="الأدلة والنماذج المنشورة للجمعيات، للاطلاع والتنزيل." />
       <PageBody>
         <Suspense fallback={<ListSkeleton />}>
-          <TemplatesList actor={user} searchParams={searchParams} path="/supervisor/templates" view="reader" />
+          <TemplatesLibrary actor={user} searchParams={searchParams} path="/supervisor/templates" />
         </Suspense>
       </PageBody>
     </>

@@ -1,7 +1,8 @@
 import "server-only";
 import type { Readable } from "node:stream";
 import { fileTypeFromFile } from "file-type";
-import { IMAGE_CONTEXT, type ImageOwner } from "@/lib/images";
+import { IMAGE_CONTEXT, REGISTRATION_LOGO_CONTEXT, REGISTRATION_UPLOADER, type ImageOwner } from "@/lib/images";
+import { can } from "@/server/authz/permissions";
 import { assertCan, fieldRefusal, type Result } from "@/server/services/admin/common";
 import { audit } from "@/server/services/audit";
 import type { Actor } from "@/server/authz/scope";
@@ -9,7 +10,7 @@ import { db } from "@/server/db";
 import { getStorage, isStorageKey, StorageError } from "@/server/storage/storage";
 import { consumeUpload, NOT_USABLE, peekUpload } from "@/server/uploads/stage";
 
-// Profile pictures and association logos. Both are optional: without one the initials show. The
+// Profile pictures, association logos and home page portraits. All are optional: without one the initials show. The
 // file goes through the usual upload pipeline (staged, checked, then committed to `images/`); the
 // owner row keeps only the storage key.
 
@@ -33,9 +34,11 @@ export async function checkImageChange(actor: Actor, change: ImageChange): Promi
 }
 
 /** Stores or removes the image of a user or association, replacing (and deleting) any earlier one. */
-export async function applyImageChange(actor: Actor, owner: ImageOwner, id: string, change: ImageChange): Promise<Result> {
+export async function applyImageChange(actor: Actor, owner: Exclude<ImageOwner, "registration">, id: string, change: ImageChange): Promise<Result> {
   if (!change) return { ok: true };
-  assertCan(actor, owner === "user" ? "users.manage" : "associations.manage");
+  // An association officer may change their own association's logo from «ملف الجمعية» (D-101).
+  const ownLogo = owner === "association" && actor.associationId === id && can(actor.role, "associations.profile");
+  if (!ownLogo) assertCan(actor, OWNER_PERMISSION[owner]);
   const current = await currentKey(owner, id);
   if (current === undefined) return fieldRefusal("image", "لم يُعثر على السجل.");
 
@@ -49,16 +52,38 @@ export async function applyImageChange(actor: Actor, owner: ImageOwner, id: stri
   }
 
   if (owner === "user") await db.user.update({ where: { id }, data: { avatarKey: next } });
-  else await db.association.update({ where: { id }, data: { logoKey: next } });
-  const action = owner === "user" ? (next ? "user.image_changed" : "user.image_removed") : next ? "association.logo_changed" : "association.logo_removed";
-  await audit({ actorId: actor.id, action, entityType: owner === "user" ? "User" : "Association", entityId: id });
+  else if (owner === "association") await db.association.update({ where: { id }, data: { logoKey: next } });
+  else await db.homeQuote.update({ where: { id }, data: { imageKey: next } });
+  const { entityType, changed, removed } = OWNER_AUDIT[owner];
+  await audit({ actorId: actor.id, action: next ? changed : removed, entityType, entityId: id });
   if (current) await getStorage().remove(current).catch(() => undefined);
   return { ok: true };
 }
 
+const OWNER_PERMISSION = { user: "users.manage", association: "associations.manage", quote: "content.manage" } as const;
+
+const OWNER_AUDIT = {
+  user: { entityType: "User", changed: "user.image_changed", removed: "user.image_removed" },
+  association: { entityType: "Association", changed: "association.logo_changed", removed: "association.logo_removed" },
+  quote: { entityType: "HomeQuote", changed: "home_quote.image_changed", removed: "home_quote.image_removed" },
+} as const;
+
 async function currentKey(owner: ImageOwner, id: string): Promise<string | null | undefined> {
   if (owner === "user") return (await db.user.findUnique({ where: { id }, select: { avatarKey: true } }))?.avatarKey;
-  return (await db.association.findUnique({ where: { id }, select: { logoKey: true } }))?.logoKey;
+  if (owner === "association") return (await db.association.findUnique({ where: { id }, select: { logoKey: true } }))?.logoKey;
+  if (owner === "registration") return (await db.associationRegistration.findUnique({ where: { id }, select: { logoKey: true } }))?.logoKey;
+  return (await db.homeQuote.findUnique({ where: { id }, select: { imageKey: true } }))?.imageKey;
+}
+
+/** Whether a logo staged from the public registration form can still be used (D-100). */
+export async function registrationLogoUsable(uploadId: string): Promise<boolean> {
+  return Boolean(await peekUpload(REGISTRATION_UPLOADER, uploadId, REGISTRATION_LOGO_CONTEXT));
+}
+
+/** Moves a logo staged from the registration form into `images/`; its storage key, or null. */
+export async function commitRegistrationLogo(uploadId: string): Promise<string | null> {
+  const consumed = await consumeUpload(REGISTRATION_UPLOADER, uploadId, "images", Date.now(), REGISTRATION_LOGO_CONTEXT);
+  return consumed.ok ? consumed.file.storageKey : null;
 }
 
 /** The stored image of a user or association, re-checked as a picture before it is served. */

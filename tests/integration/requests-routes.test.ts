@@ -133,8 +133,8 @@ describe("download route", () => {
   it("never serves a draft's file to staff", async () => {
     const draft = await newDraft(w);
     const uploadId = await stageFor(w.actors.officer, draft);
-    const { attachRequirementFile } = await import("@/server/services/requests/attachments");
-    await attachRequirementFile(w.actors.officer, draft, "program_plan", uploadId);
+    const { attachOwnFile } = await import("@/server/services/requests/attachments");
+    await attachOwnFile(w.actors.officer, draft, uploadId);
     const version = await db.attachmentVersion.findFirstOrThrow({ where: { attachment: { requestId: draft } } });
     const n = names();
     for (const who of ["admin", "manager", "supervisor"] as const) expect((await download(draft, version.id, await cookieFor(n[who]))).status, who).toBe(404);

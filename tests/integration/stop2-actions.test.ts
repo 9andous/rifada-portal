@@ -63,8 +63,8 @@ describe("Phase 2b stop 2 server actions", () => {
         await st.createTransitionAction({}, form({ fromStatusId: returned.id, toStatusId: rejected.id, roles: ["UNIT_MANAGER"] })),
         await st.updateTransitionAction(transition.id, {}, form({ roles: ["UNIT_MANAGER"] })),
         await st.removeTransitionAction(transition.id),
-        await tp.createTemplateAction({}, form({ title: "نموذج جديد", uploadId: "a".repeat(32) })),
-        await tp.updateTemplateAction(template.id, {}, form({ title: "عنوان آخر" })),
+        await tp.createTemplateAction({}, form({ kind: "FORM", title: "نموذج جديد", uploadId: "a".repeat(32) })),
+        await tp.updateTemplateAction(template.id, {}, form({ kind: "FORM", title: "عنوان آخر" })),
         await tp.replaceTemplateFileAction(template.id, {}, form({ uploadId: "a".repeat(32) })),
         await tp.setTemplatePublishedAction(template.id, true),
         await tp.setTemplateArchivedAction(template.id, true),
@@ -80,7 +80,7 @@ describe("Phase 2b stop 2 server actions", () => {
     signInAs("SUPER_ADMIN");
     const status = await db.requestStatus.findFirstOrThrow({ where: { key: "DRAFT" } });
     expect(await st.updateStatusAction(status.id, {}, form({ name: "م", tone: "purple" }))).toMatchObject({ ok: false, errors: { name: expect.any(String), tone: expect.any(String) } });
-    expect(await tp.createTemplateAction({}, form({ title: "نموذج", uploadId: "" }))).toMatchObject({ ok: false, errors: { file: expect.any(String) } });
+    expect(await tp.createTemplateAction({}, form({ kind: "FORM", title: "نموذج", uploadId: "" }))).toMatchObject({ ok: false, errors: { file: expect.any(String) } });
     expect(await st.updateStatusAction(status.id, {}, form({ name: "مسودة الطلب", tone: "info" }))).toMatchObject({ ok: true });
   });
 });

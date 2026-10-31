@@ -6,7 +6,8 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline" | "gold"
 type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-primary text-primary-ink hover:bg-primary-hover",
+  /** The main filled action: gold #8a6f2e across the platform (owner's request, D-109). */
+  primary: "bg-gold-action text-on-gold-action hover:bg-gold-action-hover",
   secondary: "bg-primary-soft text-primary-soft-ink hover:bg-surface-sunken",
   outline: "border border-line-strong bg-surface text-ink hover:border-primary hover:text-primary",
   ghost: "text-primary hover:bg-primary-soft",

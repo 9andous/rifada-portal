@@ -35,7 +35,7 @@ export function RequestsTable({
   showSupervisor: boolean;
   bulk: { enabled: boolean; max: number; supervisors: SupervisorChoice[] | null };
 }) {
-  const selectable = rows.filter((r) => r.decidable).map((r) => ({ id: r.id, title: r.title, referenceNo: r.referenceNo }));
+  const selectable = rows.filter((r) => r.decidable).map((r) => ({ id: r.id, title: r.title, referenceNo: r.referenceNo, approvable: r.approvable }));
   const table = (
     <DataTable caption="قائمة الطلبات" minWidth="56rem">
       <thead className="border-y border-line bg-surface-muted">
@@ -71,15 +71,12 @@ export function RequestsTable({
               </span>
             </Td>
             <Td className="max-w-[13rem]">
-              <span className="block truncate">
-                {toArabicDigits(r.program.number)}. {r.program.name}
-              </span>
-              <span className="t-caption block truncate">
-                {toArabicDigits(r.initiative.number)}. {r.initiative.name}
-              </span>
+              <span className="block truncate">{r.track ? r.track.name : "—"}</span>
+              <span className="t-caption block truncate">{r.program ? r.program.name : (r.requestType ?? "")}</span>
             </Td>
             <Td>
               <StatusText tone={r.status.tone}>{r.status.name}</StatusText>
+              {r.withManager ? <span className="t-caption mt-1 block whitespace-nowrap">بانتظار مدير الوحدة</span> : null}
             </Td>
             {showSupervisor ? (
               <Td>{r.supervisor ? <PersonName name={r.supervisor.name} muted={!r.supervisor.isActive} /> : <span className="whitespace-nowrap text-ink-subtle">لم يُسند بعد</span>}</Td>
@@ -95,7 +92,7 @@ export function RequestsTable({
                 <span className="text-ink-subtle">—</span>
               )}
             </Td>
-            <Td className="w-28 ps-0">{r.decidable ? <RowActions request={{ id: r.id, title: r.title, referenceNo: r.referenceNo }} /> : null}</Td>
+            <Td className="w-28 ps-0">{r.decidable ? <RowActions request={{ id: r.id, title: r.title, referenceNo: r.referenceNo, approvable: r.approvable }} /> : null}</Td>
           </Tr>
         ))}
       </tbody>

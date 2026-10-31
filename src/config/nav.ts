@@ -20,7 +20,8 @@ export type NavIcon =
   | "templates"
   | "requests"
   | "newRequest"
-  | "folder";
+  | "folder"
+  | "help";
 
 export type NavItem = { label: string; href?: string; icon: NavIcon };
 
@@ -47,16 +48,28 @@ export const NAV: Record<Role, NavItem[]> = {
     { label: "قائمة أعمالي", href: "/supervisor/queue", icon: "queue" },
     { label: "الطلبات", href: "/supervisor/requests", icon: "inbox" },
     { label: "الجمعيات", icon: "building" },
-    { label: "النماذج", href: "/supervisor/templates", icon: "templates" },
+    { label: "الأدلة والنماذج", href: "/supervisor/templates", icon: "templates" },
     { label: "التقارير", icon: "chart" },
   ],
+  // Short and plain for the associations' officers (D-102); «تقديم طلب جديد» is the gold button.
   ASSOCIATION_OFFICER: [
     { label: "الرئيسية", href: "/association", icon: "home" },
     { label: "طلباتي", href: "/association/requests", icon: "requests" },
-    { label: "طلب جديد", href: "/association/requests/new", icon: "newRequest" },
-    { label: "المستندات", href: "/association/documents", icon: "folder" },
-    { label: "ملف الجمعية", icon: "building" },
+    { label: "الأدلة والنماذج", href: "/association/documents", icon: "folder" },
+    { label: "ملف الجمعية", href: "/association/profile", icon: "building" },
   ],
+};
+
+/** The role's help page, reached from the user menu in the header (owner's request, 2026-10-28). */
+export const HELP_HREF: Partial<Record<Role, string>> = {
+  ASSOCIATION_OFFICER: "/association/help",
+};
+
+/** «التحقق من وثيقة» (D-122), in the user menu of the staff: the public page, outside the role areas. */
+export const VERIFY_HREF: Partial<Record<Role, string>> = {
+  SUPER_ADMIN: "/verify",
+  UNIT_MANAGER: "/verify",
+  SUPERVISOR: "/verify",
 };
 
 /** The gold call-to-action at the end of the navigation bar, per role. */

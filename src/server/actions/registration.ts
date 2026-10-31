@@ -37,7 +37,8 @@ export async function submitRegistrationAction(_: RegistrationFormState, formDat
 
   const parsed = registrationSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, message: "راجعوا الحقول المشار إليها ثم أعيدوا الإرسال.", errors: fieldErrors(parsed.error) };
-  const result = await submitRegistration(parsed.data);
+  const logo = String(formData.get("image.uploadId") ?? "");
+  const result = await submitRegistration(parsed.data, new Date(), /^[a-f0-9]{32}$/.test(logo) ? logo : undefined);
   if (!result.ok) return { ok: false, message: result.message ?? "راجعوا الحقول المشار إليها ثم أعيدوا الإرسال.", errors: result.errors };
   revalidatePath("/admin/registrations");
   return { ok: true, referenceNo: result.referenceNo };

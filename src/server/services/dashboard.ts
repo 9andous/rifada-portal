@@ -1,7 +1,7 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { lastHijriMonths, hijriMonth } from "@/lib/format";
-import { scopeRequests, type Actor } from "@/server/authz/scope";
+import { ForbiddenError, scopeRequests, type Actor } from "@/server/authz/scope";
 import { db } from "@/server/db";
 
 // Dashboard figures, always computed from the database and always limited to what the actor may
@@ -10,6 +10,8 @@ import { db } from "@/server/db";
 
 /** Statuses that count as open (not yet decided). */
 export const OPEN_KEYS = ["SUBMITTED", "COMPLETENESS_CHECK", "UNDER_REVIEW", "RETURNED"] as const;
+/** Statuses that close a request with a decision. */
+export const DECIDED_KEYS = ["APPROVED", "REJECTED"] as const;
 /** Open statuses the unit is responsible for; only these can be overdue against the SLA. */
 export const SLA_KEYS = ["SUBMITTED", "COMPLETENESS_CHECK", "UNDER_REVIEW"] as const;
 
@@ -92,35 +94,85 @@ export async function getOverview(actor: Actor, now: Date = new Date()): Promise
   };
 }
 
-export type MonthBucket = { key: string; name: string; count: number };
+export type MonthBucket = { key: string; name: string; count: number; decided: number };
 
-/** Submitted requests per Hijri month for the last `months` months, oldest first. */
+/** Months the monthly card can show (its range switch). */
+export const MONTH_RANGES = [3, 6, 12] as const;
+
+/**
+ * Per Hijri month for the last `months` months, oldest first: requests submitted (`count`) and
+ * requests decided, approved or rejected (`decided`).
+ */
 export async function getMonthly(actor: Actor, months = 6, now: Date = new Date()): Promise<MonthBucket[]> {
-  const buckets = lastHijriMonths(months, now).map((m) => ({ ...m, count: 0 }));
+  const buckets = lastHijriMonths(months, now).map((m) => ({ ...m, count: 0, decided: 0 }));
   const since = new Date(now.getTime() - (months * 30 + 2) * DAY_MS);
-  const rows = await db.request.findMany({
-    where: { AND: [scopeRequests(actor), { submittedAt: { gte: since, lte: now } }] },
-    select: { submittedAt: true },
-  });
-  for (const row of rows) {
+  const scope = scopeRequests(actor);
+  const [submitted, decided] = await Promise.all([
+    db.request.findMany({ where: { AND: [scope, { submittedAt: { gte: since, lte: now } }] }, select: { submittedAt: true } }),
+    db.request.findMany({ where: { AND: [scope, { decidedAt: { gte: since, lte: now } }] }, select: { decidedAt: true } }),
+  ]);
+  for (const row of submitted) {
     const bucket = buckets.find((b) => b.key === hijriMonth(row.submittedAt!).key);
     if (bucket) bucket.count += 1;
+  }
+  for (const row of decided) {
+    const bucket = buckets.find((b) => b.key === hijriMonth(row.decidedAt!).key);
+    if (bucket) bucket.decided += 1;
   }
   return buckets;
 }
 
-export type ProgramRow = { id: string; number: number; name: string; count: number };
+export type ProgramRow = { id: string; number: number; name: string; count: number; open: number; decided: number };
 
-/** Submitted requests per program, in program order. Empty when the taxonomy is not loaded. */
+/**
+ * Submitted requests per program, in program order, split into open and decided (approved or
+ * rejected). Only requests the supervisor classified under a programme count (D-123). Empty when
+ * the taxonomy is not loaded.
+ */
 export async function getByProgram(actor: Actor): Promise<ProgramRow[]> {
-  const [programs, grouped] = await Promise.all([
+  const scope = scopeRequests(actor);
+  const [programs, openIds, decidedIds] = await Promise.all([
     db.program.findMany({ where: { archivedAt: null }, orderBy: { number: "asc" }, select: { id: true, number: true, name: true } }),
-    db.request.groupBy({ by: ["programId"], where: { AND: [scopeRequests(actor), { submittedAt: { not: null } }] }, _count: { _all: true } }),
+    statusIds(OPEN_KEYS),
+    statusIds(DECIDED_KEYS),
   ]);
-  return programs.map((p) => ({ ...p, count: grouped.find((g) => g.programId === p.id)?._count._all ?? 0 }));
+  const [all, open, decided] = await Promise.all([
+    db.request.groupBy({ by: ["programId"], where: { AND: [scope, { submittedAt: { not: null } }] }, _count: { _all: true } }),
+    db.request.groupBy({ by: ["programId"], where: { AND: [scope, { submittedAt: { not: null }, statusId: { in: openIds } }] }, _count: { _all: true } }),
+    db.request.groupBy({ by: ["programId"], where: { AND: [scope, { statusId: { in: decidedIds } }] }, _count: { _all: true } }),
+  ]);
+  const count = (rows: typeof all, id: string) => rows.find((g) => g.programId === id)?._count._all ?? 0;
+  return programs.map((p) => ({ ...p, count: count(all, p.id), open: count(open, p.id), decided: count(decided, p.id) }));
 }
 
-export type WorkloadRow = { id: string; name: string; programs: string[]; open: number; overdue: number };
+export type TrackRow = { id: string; number: number; name: string; count: number; open: number };
+
+/**
+ * Submitted requests in the actor's scope per track (D-119), by the track the association chose
+ * (D-123). Requests without a track (none since D-123) come back as `unclassified`. Staff only:
+ * the counts are internal.
+ */
+export async function getByTrack(actor: Actor): Promise<{ rows: TrackRow[]; unclassified: number; total: number }> {
+  if (actor.role === "ASSOCIATION_OFFICER") throw new ForbiddenError("tracks are internal");
+  const scope = scopeRequests(actor);
+  const [tracks, openIds] = await Promise.all([
+    db.track.findMany({ where: { archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true } }),
+    statusIds(OPEN_KEYS),
+  ]);
+  const [all, open] = await Promise.all([
+    db.request.groupBy({ by: ["trackId"], where: { AND: [scope, { submittedAt: { not: null } }] }, _count: { _all: true } }),
+    db.request.groupBy({ by: ["trackId"], where: { AND: [scope, { submittedAt: { not: null }, statusId: { in: openIds } }] }, _count: { _all: true } }),
+  ]);
+  const count = (rows: typeof all, id: string) => rows.find((g) => g.trackId === id)?._count._all ?? 0;
+  const listed = new Set(tracks.map((t) => t.id));
+  return {
+    rows: tracks.map((t) => ({ id: t.id, number: t.number, name: t.name, count: count(all, t.id), open: count(open, t.id) })),
+    unclassified: all.filter((g) => !g.trackId || !listed.has(g.trackId)).reduce((n, g) => n + g._count._all, 0),
+    total: all.reduce((n, g) => n + g._count._all, 0),
+  };
+}
+
+export type WorkloadRow = { id: string; name: string; tracks: string[]; open: number; overdue: number };
 
 /** Open and overdue requests per active supervisor (management dashboards only). */
 export async function getWorkload(now: Date = new Date()): Promise<WorkloadRow[]> {
@@ -129,7 +181,7 @@ export async function getWorkload(now: Date = new Date()): Promise<WorkloadRow[]
     db.user.findMany({
       where: { role: "SUPERVISOR", isActive: true },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, supervisedPrograms: { select: { program: { select: { name: true } } } } },
+      select: { id: true, name: true, supervisedTracks: { orderBy: { track: { number: "asc" } }, select: { track: { select: { name: true } } } } },
     }),
     db.request.groupBy({ by: ["assignedSupervisorId"], where: { statusId: { in: openIds } }, _count: { _all: true } }),
     db.request.groupBy({
@@ -142,7 +194,7 @@ export async function getWorkload(now: Date = new Date()): Promise<WorkloadRow[]
   return supervisors.map((s) => ({
     id: s.id,
     name: s.name,
-    programs: s.supervisedPrograms.map((sp) => sp.program.name),
+    tracks: s.supervisedTracks.map((st) => st.track.name),
     open: count(open, s.id),
     overdue: count(overdue, s.id),
   }));

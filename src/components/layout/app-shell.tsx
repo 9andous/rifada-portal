@@ -4,31 +4,34 @@ import { GeometricPattern } from "@/components/brand/geometric-pattern";
 import { ForbiddenState } from "@/components/states/states";
 import { buttonClasses } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/surface";
-import { NAV, NAV_CTA } from "@/config/nav";
+import { HELP_HREF, NAV, NAV_CTA, VERIFY_HREF } from "@/config/nav";
 import { initials } from "@/lib/images";
 import { requireRole } from "@/server/auth/session";
+import { bellView } from "@/server/services/notifications";
 import { ROLE_HOME, ROLE_LABELS, ROLES, type Role } from "@/server/authz/roles";
+import { AccessibilityMenu } from "./accessibility-menu";
 import { GovBar } from "./gov-bar";
 import { MobileNav } from "./mobile-nav";
+import { NotificationBell } from "./notification-bell";
 import { NavIcon } from "./nav-icon";
 import { PageBand } from "./page-band";
-import { SignOutButton } from "./sign-out-button";
 import { AppFooter } from "./site-footer";
 import { HeaderDivider, SiteHeader } from "./site-header";
-import { ThemeToggle } from "./theme-toggle";
 import { TopNav, TopNavView } from "./top-nav";
+import { UserMenu, UserMenuArrow } from "./user-menu";
 
 /**
  * Logged-in layout for one role area (docs/DESIGN.md: App shell): gov banner, white header with
  * both logos and the user, the green navigation bar, then each page's <PageBand> head and body.
  * Session-dependent parts stream in behind Suspense and are authorized on the server.
  */
-export function AppShell({ role, children }: { role: Role; children: ReactNode }) {
+export function AppShell({ role, easy, children }: { role: Role; easy?: boolean; children: ReactNode }) {
   const root = ROLE_HOME[role];
   const cta = NAV_CTA[role];
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    // `data-easy`: the simplified interface of the association area (D-102), one text size larger.
+    <div className="flex min-h-dvh flex-col" data-easy={easy ? "" : undefined}>
       <GovBar />
       {/* The white header and the green navigation bar stay at the top together on scroll. */}
       <div data-print="hide" className="sticky top-0 z-30">
@@ -38,16 +41,19 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
           leading={
             // The drawer reads the URL; on dynamic routes it is unknown while prerendering.
             <Suspense fallback={<span aria-hidden="true" className="size-[42px] lg:hidden" />}>
-              <MobileNav items={NAV[role]} root={root} roleLabel={ROLE_LABELS[role]} />
+              <MobileNav items={NAV[role]} root={root} roleLabel={ROLE_LABELS[role]} cta={cta} />
             </Suspense>
           }
         >
-          <ThemeToggle />
+          <AccessibilityMenu />
+          {/* The theme moved into the accessibility panel; the bell takes its place (D-108). */}
+          <Suspense fallback={<span aria-hidden="true" className="size-[42px]" />}>
+            <Notifications />
+          </Suspense>
           <HeaderDivider />
           <Suspense fallback={<span className="mx-2 h-[46px] w-40 animate-pulse rounded-lg bg-surface-sunken" />}>
-            <UserChip />
+            <UserChip helpHref={HELP_HREF[role]} verifyHref={VERIFY_HREF[role]} />
           </Suspense>
-          <SignOutButton />
         </SiteHeader>
 
         <nav data-print="hide" aria-label="التنقل الرئيسي" className="band-scope relative hidden overflow-hidden bg-band text-band-ink lg:block">
@@ -93,13 +99,21 @@ async function AreaGuard({ role, children }: { role: Role; children: ReactNode }
   return children;
 }
 
-async function UserChip() {
+async function Notifications() {
+  const user = await requireRole(ROLES);
+  if (!user) return null;
+  const { items, unread } = await bellView(user.id);
+  return <NotificationBell items={items} unread={unread} />;
+}
+
+/** The user's avatar and name; it opens the user menu (help, sign out). */
+async function UserChip({ helpHref, verifyHref }: { helpHref?: string; verifyHref?: string }) {
   const user = await requireRole(ROLES);
   if (!user) return null;
   // When the account's name is its role («مدير النظام»), show the username instead of repeating it.
   const subtitle = user.associationName ?? ROLE_LABELS[user.role];
-  return (
-    <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface py-1 pe-3.5 ps-1 shadow-1">
+  const chip = (
+    <span className="flex items-center gap-2.5 rounded-xl border border-line bg-surface py-1 pe-3 ps-1 shadow-1">
       <span aria-hidden="true" className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-band text-xs font-bold text-band-gold ring-2 ring-band-gold/40">
         {user.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- a private, signed-in-only image
@@ -114,8 +128,10 @@ async function UserChip() {
           {subtitle !== user.name ? subtitle : user.username ? <bdi dir="ltr">@{user.username}</bdi> : null}
         </span>
       </span>
-    </div>
+      <UserMenuArrow />
+    </span>
   );
+  return <UserMenu chip={chip} helpHref={helpHref} verifyHref={verifyHref} />;
 }
 
 /** Content area below the page head. */

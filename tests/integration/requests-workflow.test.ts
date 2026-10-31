@@ -7,12 +7,15 @@ import { addWorkingDays } from "@/lib/working-days";
 import { ForbiddenError } from "@/server/authz/scope";
 import { reassignRequests } from "@/server/services/requests/assignment";
 import { createDraft, discardDraft, saveDraft } from "@/server/services/requests/drafts";
+import { attachOwnFile, OWN_FILES_MAX } from "@/server/services/requests/attachments";
 import { decideRequests } from "@/server/services/requests/decisions";
+import { approveRequests, evaluateRequest } from "@/server/services/requests/review";
 import { getRequestDetail } from "@/server/services/requests/read";
 import { ALREADY_SUBMITTED, submitRequest } from "@/server/services/requests/submit";
 import { makeUser } from "../support/admin";
 import { db, resetDatabase } from "../support/db";
-import { attachPlan, makeRequestWorld, newDraft, submittedRequest, validDraft, type RequestWorld } from "../support/requests";
+import { FIXTURES } from "../support/files";
+import { attachPlan, evaluateAndApprove, evaluationInput, managerSignature, makeRequestWorld, MIME, newDraft, stageFor, submittedRequest, validDraft, type RequestWorld } from "../support/requests";
 
 const storageRoot = mkdtempSync(join(tmpdir(), "rifada-requests-test-"));
 const previousStorage = process.env.STORAGE_DIR;
@@ -34,32 +37,32 @@ beforeEach(async () => {
 const statusKey = async (id: string) => (await db.request.findUniqueOrThrow({ where: { id }, include: { status: true } })).status.key;
 
 describe("drafts", () => {
-  it("are created by an officer of an active association for an available initiative only", async () => {
+  it("are created by an officer of an active association in an available track and request type only (D-123)", async () => {
     const id = await newDraft(w);
     expect(await statusKey(id)).toBe("DRAFT");
+    const choice = { trackId: w.t1.id, requestTypeId: w.requestTypes[0].id, title: "مشروع" };
     for (const role of ["admin", "manager", "supervisor"] as const) {
-      await expect(createDraft(w.actors[role], { programId: w.p1.id, initiativeId: w.i1.id })).rejects.toBeInstanceOf(ForbiddenError);
+      await expect(createDraft(w.actors[role], choice)).rejects.toBeInstanceOf(ForbiddenError);
     }
-    expect(await createDraft(w.actors.officer, { programId: w.p2.id, initiativeId: w.i1.id })).toMatchObject({ ok: false });
-    await db.initiative.update({ where: { id: w.i2.id }, data: { isActive: false } });
-    expect(await createDraft(w.actors.officer, { programId: w.p1.id, initiativeId: w.i2.id })).toMatchObject({ ok: false });
-    await db.program.update({ where: { id: w.p2.id }, data: { archivedAt: new Date() } });
-    expect(await createDraft(w.actors.officer, { programId: w.p2.id, initiativeId: w.iP2.id })).toMatchObject({ ok: false });
+    expect(await createDraft(w.actors.officer, { ...choice, title: undefined })).toMatchObject({ ok: true }); // named on the next step
+    expect(await createDraft(w.actors.officer, { ...choice, trackId: "" })).toMatchObject({ ok: false, errors: { trackId: expect.any(String) } });
+    await db.track.update({ where: { id: w.t2.id }, data: { archivedAt: new Date() } });
+    expect(await createDraft(w.actors.officer, { ...choice, trackId: w.t2.id })).toMatchObject({ ok: false, errors: { trackId: expect.any(String) } });
+    await db.requestType.update({ where: { id: w.requestTypes[1].id }, data: { isActive: false } });
+    expect(await createDraft(w.actors.officer, { ...choice, requestTypeId: w.requestTypes[1].id })).toMatchObject({ ok: false, errors: { requestTypeId: expect.any(String) } });
     await db.association.update({ where: { id: w.association.id }, data: { isActive: false } });
-    expect(await createDraft(w.actors.officer, { programId: w.p1.id, initiativeId: w.i1.id })).toMatchObject({ ok: false });
+    expect(await createDraft(w.actors.officer, choice)).toMatchObject({ ok: false });
   });
 
-  it("store initiative values by requirement key and keep values of removed requirements", async () => {
+  it("store the design's fields, with numbers in Arabic digits, and a new track or type (D-123)", async () => {
     const id = await newDraft(w);
-    expect(await saveDraft(w.actors.officer, id, validDraft({ custom: { participants: "30", level: "متقدم", stray: "x" } }))).toEqual({ ok: true });
-    let row = await db.request.findUniqueOrThrow({ where: { id } });
-    expect(row.customFields).toEqual({ participants: "30", level: "متقدم" });
-    await db.initiativeRequirement.deleteMany({ where: { initiativeId: w.i1.id, key: "level" } });
-    await saveDraft(w.actors.officer, id, validDraft({ custom: { participants: "31", level: "مبتدئ" } }));
-    row = await db.request.findUniqueOrThrow({ where: { id } });
-    expect(row.customFields).toEqual({ participants: "31", level: "متقدم" });
-    const detail = await getRequestDetail(w.actors.officer, id);
-    expect(detail?.otherValues).toEqual([{ key: "level", value: "متقدم" }]);
+    expect(await saveDraft(w.actors.officer, id, validDraft({ trackId: w.t2.id, requestTypeId: w.requestTypes[2].id, partners: "مجمع الملك فهد" }))).toEqual({ ok: true });
+    const row = await db.request.findUniqueOrThrow({ where: { id } });
+    expect(row).toMatchObject({ trackId: w.t2.id, requestTypeId: w.requestTypes[2].id, expectedBeneficiaries: "المؤذنون الجدد\nطلاب العلم", estimatedBudget: 480000, partners: "مجمع الملك فهد", programId: null, initiativeId: null });
+    // Empty keeps the choice; a figure that is not a whole number is refused.
+    expect(await saveDraft(w.actors.officer, id, validDraft({ trackId: "", requestTypeId: "" }))).toEqual({ ok: true });
+    expect((await db.request.findUniqueOrThrow({ where: { id } })).trackId).toBe(w.t2.id);
+    expect(await saveDraft(w.actors.officer, id, validDraft({ estimatedBudget: "نصف مليون" }))).toMatchObject({ ok: false, errors: { estimatedBudget: expect.any(String) } });
   });
 
   it("can be saved only by their own association", async () => {
@@ -94,6 +97,52 @@ describe("drafts", () => {
   });
 });
 
+describe("track and request type at submission (D-123)", () => {
+  it("does not ask for measures or partners; an archived track blocks by name", async () => {
+    const id = await newDraft(w);
+    expect(await saveDraft(w.actors.officer, id, validDraft({ kpis: "", partners: "" }))).toEqual({ ok: true });
+    await db.track.update({ where: { id: w.t1.id }, data: { archivedAt: new Date() } });
+    const blocked = await submitRequest(w.actors.officer, id);
+    expect(blocked).toMatchObject({ ok: false, missing: [expect.objectContaining({ code: "track_unavailable", field: "trackId" })] });
+    await db.track.update({ where: { id: w.t1.id }, data: { archivedAt: null } });
+    const sent = await submitRequest(w.actors.officer, id);
+    expect(sent.ok).toBe(true);
+    const row = await db.request.findUniqueOrThrow({ where: { id } });
+    // Assigned to a supervisor of the track, with no programme until the supervisor sets one.
+    expect([w.users.supervisor.id, w.users.supervisor2.id]).toContain(row.assignedSupervisorId);
+    expect(row.programId).toBeNull();
+  });
+
+  it("show the staff the programmes of the track, and supervisors only their tracks' requests", async () => {
+    const { id } = await submittedRequest(w);
+    const detail = await getRequestDetail(w.actors.supervisor, id);
+    expect(detail?.track?.id).toBe(w.t1.id);
+    expect(detail?.trackPrograms.map((p) => p.id)).toEqual([w.p1.id]);
+    expect(detail?.program).toBeNull();
+    expect((await getRequestDetail(w.actors.officer, id))?.trackPrograms).toEqual([]);
+    expect(await getRequestDetail(w.actors.supervisorP2, id)).toBeNull();
+  });
+});
+
+describe("the association's own files (D-115)", () => {
+  it("are attached to an editable request beyond the requirements, any allowed type, at most ten", async () => {
+    const id = await newDraft(w);
+    const r = await attachOwnFile(w.actors.officer, id, await stageFor(w.actors.officer, id, "صورة.png", FIXTURES.png(), MIME.png));
+    expect(r.ok).toBe(true);
+    const detail = await getRequestDetail(w.actors.officer, id);
+    expect(detail?.otherFiles.map((f) => f.current?.fileName)).toEqual(["صورة.png"]);
+    expect(await attachOwnFile(w.actors.officer2, id, await stageFor(w.actors.officer2, id))).toMatchObject({ ok: false });
+    for (let n = 1; n < OWN_FILES_MAX; n++) expect((await attachOwnFile(w.actors.officer, id, await stageFor(w.actors.officer, id, `ملف ${n}.pdf`, FIXTURES.pdf(String(n))))).ok).toBe(true);
+    expect(await attachOwnFile(w.actors.officer, id, await stageFor(w.actors.officer, id, "زائد.pdf", FIXTURES.pdf("extra")))).toMatchObject({ ok: false, errors: { file: expect.any(String) } });
+  });
+
+  it("are refused once the request is submitted, and staff see them with the request", async () => {
+    const { id } = await submittedRequest(w);
+    expect(await attachOwnFile(w.actors.officer, id, await stageFor(w.actors.officer, id))).toMatchObject({ ok: false });
+    expect((await getRequestDetail(w.actors.supervisor, id))?.otherFiles).toHaveLength(1);
+  });
+});
+
 describe("completeness check", () => {
   async function blocked(id: string) {
     const r = await submitRequest(w.actors.officer, id);
@@ -103,19 +152,12 @@ describe("completeness check", () => {
 
   it("lists everything missing in Arabic, persists the result and leaves the draft a draft", async () => {
     const id = await newDraft(w);
+    await saveDraft(w.actors.officer, id, validDraft({ title: "", description: "" }));
     const missing = await blocked(id);
-    expect(missing.map((m) => m.code)).toEqual([
-      "general_missing",
-      "general_missing",
-      "general_missing",
-      "general_missing",
-      "general_missing",
-      "general_missing",
-      "field_missing",
-      "field_missing",
-      "attachment_missing",
+    expect(missing.map((m) => [m.code, m.field])).toEqual([
+      ["general_missing", "title"],
+      ["general_missing", "description"],
     ]);
-    expect(missing.map((m) => m.field)).toContain("attachment.program_plan");
     for (const m of missing) expect(m.message).toMatch(/[؀-ۿ]/);
     expect(await statusKey(id)).toBe("DRAFT");
     const check = await db.completenessCheck.findFirstOrThrow({ where: { requestId: id } });
@@ -123,48 +165,35 @@ describe("completeness check", () => {
     expect((await db.request.findUniqueOrThrow({ where: { id } })).referenceNo).toBeNull();
   });
 
-  it.each([
-    ["a number field that is not a number", { custom: { participants: "كثير", level: "مبتدئ" } }, "field_not_number"],
-    ["a select value outside the options", { custom: { participants: "10", level: "خبير" } }, "field_bad_option"],
-    ["a malformed optional date field", { custom: { participants: "10", level: "مبتدئ", session_date: "2099-13-01" } }, "field_not_date"],
-    ["an end date before the start date", { startDate: "2099-03-01", endDate: "2099-02-01" }, "end_before_start"],
-    ["a start date in the past", { startDate: "2020-01-01", endDate: "2020-02-01" }, "start_in_past"],
-    ["an implausibly long span", { startDate: "2099-01-01", endDate: "2109-01-01" }, "span_too_long"],
-  ])("blocks %s", async (_name, overrides, code) => {
+  it("refuses, on saving, a start date in the past and an end date before the start (D-123)", async () => {
     const id = await newDraft(w);
-    await saveDraft(w.actors.officer, id, validDraft(overrides));
-    await attachPlan(w.actors.officer, id);
-    expect((await blocked(id)).map((m) => m.code)).toEqual([code]);
+    expect(await saveDraft(w.actors.officer, id, validDraft({ startDate: "2020-01-01", endDate: "2020-02-01" }))).toMatchObject({ ok: false, errors: { startDate: expect.any(String) } });
+    expect(await saveDraft(w.actors.officer, id, validDraft({ startDate: "2099-03-01", endDate: "2099-02-01" }))).toMatchObject({ ok: false, errors: { endDate: expect.any(String) } });
   });
 
-  it("blocks a missing required attachment and a paused initiative or program", async () => {
+  it("blocks a start date that has passed since it was saved, and an implausibly long span", async () => {
     const id = await newDraft(w);
-    await saveDraft(w.actors.officer, id, validDraft());
-    expect((await blocked(id)).map((m) => m.code)).toEqual(["attachment_missing"]);
-    await attachPlan(w.actors.officer, id);
-    await db.initiative.update({ where: { id: w.i1.id }, data: { isActive: false } });
-    expect((await blocked(id)).map((m) => m.code)).toEqual(["initiative_unavailable"]);
-    await db.initiative.update({ where: { id: w.i1.id }, data: { isActive: true } });
-    await db.program.update({ where: { id: w.p1.id }, data: { isActive: false } });
-    expect((await blocked(id)).map((m) => m.code)).toEqual(["program_unavailable"]);
+    await saveDraft(w.actors.officer, id, validDraft({ startDate: "2099-01-01", endDate: "2109-01-01" }));
+    expect((await blocked(id)).map((m) => m.code)).toEqual(["span_too_long"]);
+    await db.request.update({ where: { id }, data: { startDate: new Date("2020-01-01T00:00:00Z"), endDate: new Date("2020-02-01T00:00:00Z") } });
+    expect((await blocked(id)).map((m) => m.code)).toEqual(["start_in_past"]);
   });
 
-  it("blocks an inactive association", async () => {
+  it("blocks a paused request type and an inactive association", async () => {
     const id = await newDraft(w);
     await saveDraft(w.actors.officer, id, validDraft());
-    await attachPlan(w.actors.officer, id);
+    await db.requestType.update({ where: { id: w.requestTypes[0].id }, data: { isActive: false } });
+    expect((await blocked(id)).map((m) => m.code)).toEqual(["request_type_unavailable"]);
+    await db.requestType.update({ where: { id: w.requestTypes[0].id }, data: { isActive: true } });
     await db.association.update({ where: { id: w.association.id }, data: { isActive: false } });
     expect((await blocked(id)).map((m) => m.code)).toEqual(["association_inactive"]);
   });
 
-  it("checks drafts against the requirements as they stand at submission", async () => {
+  it("no longer asks for initiative requirements (D-123)", async () => {
     const id = await newDraft(w);
     await saveDraft(w.actors.officer, id, validDraft());
-    await attachPlan(w.actors.officer, id);
-    await db.initiativeRequirement.create({
-      data: { initiativeId: w.i1.id, kind: "FIELD", key: "venue_capacity", label: "سعة المكان", fieldType: "NUMBER", isRequired: true, sortOrder: 9 },
-    });
-    expect((await blocked(id)).map((m) => m.field)).toEqual(["custom.venue_capacity"]);
+    // The world's initiative 1 has required fields and a required file; none applies any more.
+    expect((await submitRequest(w.actors.officer, id)).ok).toBe(true);
   });
 });
 
@@ -176,7 +205,7 @@ describe("submission", () => {
     const row = await db.request.findUniqueOrThrow({ where: { id }, include: { status: true } });
     expect(row.status.key).toBe("UNDER_REVIEW");
     expect(row.submittedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
-    expect(row.slaDueAt!.toISOString()).toBe(addWorkingDays(row.submittedAt!, 7).toISOString());
+    expect(row.slaDueAt!.toISOString()).toBe(addWorkingDays(row.submittedAt!, 3).toISOString());
     expect(Array.isArray(row.requirementsSnapshot)).toBe(true);
     expect(row.assignedSupervisorId).toBe(w.users.supervisor.id);
     const history = await db.requestStatusHistory.findMany({ where: { requestId: id }, orderBy: { createdAt: "asc" }, include: { fromStatus: true, toStatus: true } });
@@ -198,7 +227,7 @@ describe("references under concurrency", () => {
     for (let i = 0; i < 6; i++) {
       const id = await newDraft(w);
       await saveDraft(w.actors.officer, id, validDraft());
-      await attachPlan(w.actors.officer, id, "program_plan", `r${i}`);
+      await attachPlan(w.actors.officer, id, `r${i}`);
       ids.push(id);
     }
     const results = await Promise.all(ids.map((id) => submitRequest(w.actors.officer, id)));
@@ -224,7 +253,7 @@ describe("double-click safety", () => {
   it("decides once when a decision is sent twice in parallel, even by two deciders", async () => {
     const { id } = await submittedRequest(w);
     const [a, b] = await Promise.all([
-      decideRequests(w.actors.supervisor, [id], "approve"),
+      decideRequests(w.actors.supervisor, [id], "return", "أرفقوا الخطة المحدثة"),
       decideRequests(w.actors.manager, [id], "reject", "لا يتوافق مع شروط المبادرة"),
     ]);
     const done = [a, b].flatMap((r) => (r.ok ? r.outcome.done : []));
@@ -245,7 +274,7 @@ describe("full lifecycle with return and resubmission", () => {
     expect(await db.notification.count({ where: { userId: w.users.officer.id, type: "request.returned" } })).toBe(1);
 
     // Staff still see the returned request and the officer's edits as they are saved (D-078).
-    await saveDraft(w.actors.officer, id, validDraft({ title: "دورة تأهيل المؤذنين — محدثة", startDate: "2020-01-05", endDate: "2020-03-01" }));
+    await saveDraft(w.actors.officer, id, validDraft({ title: "دورة تأهيل المؤذنين — محدثة", startDate: "2099-01-05", endDate: "2099-03-01" }));
     const staffView = await getRequestDetail(w.actors.supervisor, id);
     expect(staffView?.title).toBe("دورة تأهيل المؤذنين — محدثة");
     expect(staffView?.capabilities.returnedNotice).toBe(true);
@@ -259,12 +288,11 @@ describe("full lifecycle with return and resubmission", () => {
     const row = await db.request.findUniqueOrThrow({ where: { id } });
     expect(row.assignedSupervisorId).toBe(w.users.supervisor.id);
     expect(row.slaDueAt!.getTime()).toBeGreaterThanOrEqual(firstSla.getTime());
-    expect(row.slaDueAt!.toISOString()).toBe(addWorkingDays(resubmittedAt, 7).toISOString());
+    expect(row.slaDueAt!.toISOString()).toBe(addWorkingDays(resubmittedAt, 3).toISOString());
     expect(row.submittedAt!.getTime()).toBeLessThan(resubmittedAt.getTime()); // first submission kept
     expect(await db.notification.count({ where: { userId: w.users.supervisor.id, type: "request.resubmitted" } })).toBe(1);
 
-    const approved = await decideRequests(w.actors.supervisor, [id], "approve");
-    expect(approved.ok && approved.outcome.done).toHaveLength(1);
+    await evaluateAndApprove(w, id);
     const final = await db.request.findUniqueOrThrow({ where: { id }, include: { status: true } });
     expect(final.status.key).toBe("APPROVED");
     expect(final.decidedAt).not.toBeNull();
@@ -300,7 +328,7 @@ describe("automatic assignment", () => {
     const c = await submittedRequest(w);
     expect((await db.request.findUniqueOrThrow({ where: { id: c.id } })).assignedSupervisorId).toBe(w.users.supervisor.id);
     // Decided requests no longer count as open: supervisor 0, supervisor2 1.
-    await decideRequests(w.actors.supervisor, [a.id, c.id], "approve");
+    await decideRequests(w.actors.supervisor, [a.id, c.id], "reject", "لا يستوفي الشروط");
     const d = await submittedRequest(w);
     expect((await db.request.findUniqueOrThrow({ where: { id: d.id } })).assignedSupervisorId).toBe(w.users.supervisor.id);
   });
@@ -312,8 +340,8 @@ describe("automatic assignment", () => {
     expect(await db.notification.count({ where: { type: "request.unassigned", userId: { in: [w.users.manager.id, w.users.manager2.id] } } })).toBe(2);
     const entry = await db.auditLog.findFirst({ where: { entityId: id, action: "request.left_unassigned" } });
     expect(entry?.actorId).toBeNull();
-    // Only the unit manager can decide an unassigned request.
-    const r = await decideRequests(w.actors.manager, [id], "approve");
+    // Only the unit manager can decide an unassigned request (approval needs a supervisor's evaluation, D-116).
+    const r = await decideRequests(w.actors.manager, [id], "return", "أرفقوا الخطة");
     expect(r.ok && r.outcome.done).toHaveLength(1);
   });
 });
@@ -336,9 +364,9 @@ describe("reassignment", () => {
     expect(await db.notification.count({ where: { userId: w.users.supervisor.id, type: "request.reassigned_away" } })).toBe(1);
 
     // The previous supervisor can no longer decide; the new one can.
-    const old = await decideRequests(w.actors.supervisor, [id], "approve");
+    const old = await decideRequests(w.actors.supervisor, [id], "return", "أرفقوا الخطة");
     expect(old.ok && old.outcome.skipped).toHaveLength(1);
-    const now = await decideRequests(w.actors.supervisor2, [id], "approve");
+    const now = await decideRequests(w.actors.supervisor2, [id], "reject", "لا يستوفي الشروط");
     expect(now.ok && now.outcome.done).toHaveLength(1);
 
     // Decided requests are not reassigned; drafts are not visible at all.
@@ -355,9 +383,9 @@ describe("bulk decisions", () => {
     const mine = await submittedRequest(w); // supervisor
     const theirs = await submittedRequest(w); // supervisor2
     const mine2 = await submittedRequest(w); // supervisor
-    const otherProgram = await submittedRequest(w, w.actors.officer, w.iP2); // supervisorP2
+    const otherProgram = await submittedRequest(w, w.actors.officer, w.t2); // supervisorP2
     const draft = await newDraft(w);
-    await decideRequests(w.actors.supervisor, [mine2.id], "approve"); // no longer under review
+    await evaluateAndApprove(w, mine2.id); // no longer under review
 
     const r = await decideRequests(w.actors.supervisor, [mine.id, theirs.id, mine2.id, otherProgram.id, draft, "missing-id", mine.id], "reject", "لا يستوفي الشروط");
     expect(r.ok).toBe(true);
@@ -391,15 +419,16 @@ describe("bulk decisions", () => {
 
   it("respect the lifecycle data: a removed transition refuses the decision", async () => {
     const { id } = await submittedRequest(w);
+    await evaluateRequest(w.actors.supervisor, id, evaluationInput());
     await db.statusTransition.deleteMany({ where: { fromStatus: { key: "UNDER_REVIEW" }, toStatus: { key: "APPROVED" } } });
-    const r = await decideRequests(w.actors.manager, [id], "approve");
+    const r = await approveRequests(w.actors.manager, [id], managerSignature());
     expect(r.ok && r.outcome.skipped[0].reason).toMatch(/دورة حياة الطلب/);
   });
 
   it("let no supervisor outside the assignment decide", async () => {
     const stray = await makeUser("SUPERVISOR");
     const { id } = await submittedRequest(w);
-    const r = await decideRequests({ id: stray.id, role: "SUPERVISOR", associationId: null, programIds: [] }, [id], "approve");
+    const r = await decideRequests({ id: stray.id, role: "SUPERVISOR", associationId: null, trackIds: [] }, [id], "approve");
     expect(r.ok && r.outcome.skipped).toHaveLength(1);
   });
 });

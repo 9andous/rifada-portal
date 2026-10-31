@@ -1,25 +1,27 @@
 import "server-only";
-import { parseCustomValues } from "@/lib/requests";
 import { fieldErrors } from "@/lib/validation/auth";
 import { draftSchema } from "@/lib/validation/requests";
 import type { Actor } from "@/server/authz/scope";
 import { db } from "@/server/db";
 import { assertCan, fieldRefusal, refuse, type Result } from "@/server/services/admin/common";
 import { audit } from "@/server/services/audit";
-import { availableInitiativeWhere } from "@/server/services/taxonomy";
 import { getStorage } from "@/server/storage/storage";
-import { liveRequirements, requestRef, statusMap } from "./common";
+import { riyadhDateString } from "@/lib/working-days";
+import { requestRef, statusMap } from "./common";
 
-// Drafts (Phase 3): an officer creates a draft by choosing an available program and initiative
-// (fixed afterwards, D-083), saves and resumes it, and may delete it while it has never been
-// submitted (D-073). Returned requests are edited through the same save.
+// Drafts (Phase 3): an officer creates a draft by choosing the track and the request type (D-123),
+// saves and resumes it, and may delete it while it has never been submitted (D-073). The programme
+// and initiatives are no longer the association's choice; the supervisor may set them in review.
+// Returned requests are edited through the same save.
 
 export const REQUEST_MSG = {
   notFound: "الطلب غير موجود.",
   notEditable: "لا يمكن تعديل الطلب في حالته الحالية.",
   associationInactive: "حساب الجمعية غير نشط، فلا يمكن إنشاء طلبات أو تعديلها.",
-  initiativeUnavailable: "المبادرة المختارة غير متاحة لتقديم الطلبات حاليًا.",
-  initiativeOutsideProgram: "المبادرة المختارة لا تتبع البرنامج المختار.",
+  trackMissing: "اختاروا المسار المستهدف.",
+  trackUnavailable: "المسار المختار غير متاح حاليًا.",
+  requestTypeMissing: "اختاروا نوع الطلب.",
+  requestTypeUnavailable: "نوع الطلب المختار غير متاح حاليًا.",
   notDiscardable: "لا تُحذف إلا المسودات التي لم تُقدَّم قط.",
 } as const;
 
@@ -29,38 +31,46 @@ async function activeAssociation(actor: Actor): Promise<boolean> {
   return Boolean(association?.isActive);
 }
 
-/** Programs and their initiatives open for new requests (D-052), for the «طلب جديد» screen. */
+const availableTrackWhere = { archivedAt: null };
+const availableRequestTypeWhere = { archivedAt: null, isActive: true };
+
+/** The tracks and request types offered for a request (D-123). */
 export async function newRequestOptions(actor: Actor) {
   assertCan(actor, "requests.create");
-  const programs = await db.program.findMany({
-    where: { archivedAt: null, isActive: true, initiatives: { some: availableInitiativeWhere } },
-    orderBy: [{ sortOrder: "asc" }, { number: "asc" }],
-    select: {
-      id: true,
-      number: true,
-      name: true,
-      initiatives: { where: availableInitiativeWhere, orderBy: { number: "asc" }, select: { id: true, number: true, name: true } },
-    },
-  });
-  return { programs, associationActive: await activeAssociation(actor) };
+  const [tracks, requestTypes] = await Promise.all([
+    db.track.findMany({ where: availableTrackWhere, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true, description: true } }),
+    db.requestType.findMany({ where: availableRequestTypeWhere, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, description: true } }),
+  ]);
+  return { tracks, requestTypes, associationActive: await activeAssociation(actor) };
 }
 
-export async function createDraft(actor: Actor, input: { programId: string; initiativeId: string }): Promise<Result<{ id: string }>> {
+/** Checks a track and request type choice; null when both are available. */
+async function checkChoice(input: { trackId: string; requestTypeId: string }) {
+  if (!input.trackId) return fieldRefusal("trackId", REQUEST_MSG.trackMissing);
+  if (!input.requestTypeId) return fieldRefusal("requestTypeId", REQUEST_MSG.requestTypeMissing);
+  if (!(await db.track.count({ where: { id: input.trackId, ...availableTrackWhere } }))) return fieldRefusal("trackId", REQUEST_MSG.trackUnavailable);
+  if (!(await db.requestType.count({ where: { id: input.requestTypeId, ...availableRequestTypeWhere } }))) return fieldRefusal("requestTypeId", REQUEST_MSG.requestTypeUnavailable);
+  return null;
+}
+
+/** The name is optional here: the association writes it on the next step (D-123). */
+export async function createDraft(actor: Actor, input: { trackId: string; requestTypeId: string; title?: string }): Promise<Result<{ id: string }>> {
   assertCan(actor, "requests.create");
   if (!actor.associationId || !(await activeAssociation(actor))) return refuse(REQUEST_MSG.associationInactive);
-  const initiative = await db.initiative.findFirst({ where: { id: input.initiativeId, ...availableInitiativeWhere }, select: { id: true, programId: true } });
-  if (!initiative) return fieldRefusal("initiativeId", REQUEST_MSG.initiativeUnavailable);
-  if (initiative.programId !== input.programId) return fieldRefusal("initiativeId", REQUEST_MSG.initiativeOutsideProgram);
+  const title = (input.title ?? "").trim();
+  if (title.length > 200) return fieldRefusal("title", "اسم المشروع أطول من الحد المسموح به (٢٠٠ حرف).");
+  const refused = await checkChoice(input);
+  if (refused) return refused;
   const associationId = actor.associationId;
 
   return db.$transaction(async (tx) => {
     const statuses = await statusMap(tx);
     const request = await tx.request.create({
-      data: { associationId, programId: initiative.programId, initiativeId: initiative.id, statusId: statuses.DRAFT.id, title: "", createdById: actor.id },
+      data: { associationId, trackId: input.trackId, requestTypeId: input.requestTypeId, statusId: statuses.DRAFT.id, title, createdById: actor.id },
     });
     await tx.requestStatusHistory.create({ data: { requestId: request.id, fromStatusId: null, toStatusId: statuses.DRAFT.id, actorId: actor.id } });
     await audit(
-      { actorId: actor.id, action: "request.created", entityType: "Request", entityId: request.id, after: { programId: request.programId, initiativeId: request.initiativeId } },
+      { actorId: actor.id, action: "request.created", entityType: "Request", entityId: request.id, after: { title, trackId: input.trackId, requestTypeId: input.requestTypeId } },
       tx,
     );
     return { ok: true, id: request.id };
@@ -73,16 +83,13 @@ export async function editableRequest(actor: Actor, id: string) {
   const statuses = await statusMap();
   return db.request.findFirst({
     where: { id, associationId: actor.associationId, statusId: { in: [statuses.DRAFT.id, statuses.RETURNED.id] } },
-    select: { id: true, referenceNo: true, title: true, statusId: true, initiativeId: true, programId: true, customFields: true, assignedSupervisorId: true },
+    select: { id: true, referenceNo: true, title: true, statusId: true, trackId: true, requestTypeId: true, assignedSupervisorId: true },
   });
 }
 
 const toDate = (value: string) => (value ? new Date(`${value}T00:00:00Z`) : null);
 
-/**
- * Saves the general fields and the initiative's own fields. Only keys of the initiative's current
- * field requirements are written; stored values of other keys (removed requirements) are kept.
- */
+/** Saves the form (D-123): the track, the request type and the general fields. */
 export async function saveDraft(actor: Actor, id: string, raw: unknown): Promise<Result> {
   assertCan(actor, "requests.editDraft");
   const parsed = draftSchema.safeParse(raw);
@@ -91,28 +98,44 @@ export async function saveDraft(actor: Actor, id: string, raw: unknown): Promise
   if (!(await activeAssociation(actor))) return refuse(REQUEST_MSG.associationInactive);
   const request = await editableRequest(actor, id);
   if (!request) return refuse(REQUEST_MSG.notEditable);
+  // Empty keeps the current choice. A track or type archived since it was chosen may stay; a new
+  // choice must be available.
+  const trackId = input.trackId || request.trackId || "";
+  const requestTypeId = input.requestTypeId || request.requestTypeId || "";
+  if (trackId !== request.trackId || requestTypeId !== request.requestTypeId) {
+    const refused = await checkChoice({ trackId, requestTypeId });
+    if (refused) return refused;
+  }
 
-  const fieldKeys = new Set((await liveRequirements(db, request.initiativeId)).filter((r) => r.kind === "FIELD").map((r) => r.key));
-  const custom = parseCustomValues(request.customFields);
-  for (const [key, value] of Object.entries(input.custom)) if (fieldKeys.has(key)) custom[key] = value;
+  // The period is checked as it is typed (D-123): the start not before today (a start already
+  // saved is left alone), the end not before the start.
+  const stored = await db.request.findUnique({ where: { id }, select: { startDate: true } });
+  const storedStart = stored?.startDate ? stored.startDate.toISOString().slice(0, 10) : "";
+  if (input.startDate && input.startDate !== storedStart && input.startDate < riyadhDateString(new Date())) {
+    return fieldRefusal("startDate", "تاريخ البداية يجب أن يكون اليوم أو بعده.");
+  }
+  if (input.startDate && input.endDate && input.endDate < input.startDate) return fieldRefusal("endDate", "تاريخ النهاية يجب ألا يسبق تاريخ البداية.");
 
   return db.$transaction(async (tx) => {
     const before = await tx.request.findFirst({ where: { id, statusId: request.statusId } });
     if (!before) return refuse(REQUEST_MSG.notEditable);
     const data = {
+      trackId: trackId || null,
+      requestTypeId: requestTypeId || null,
       title: input.title,
       description: input.description || null,
-      targetAudience: input.targetAudience || null,
-      location: input.location || null,
+      goals: input.goals || null,
+      expectedBeneficiaries: input.expectedBeneficiaries || null,
       startDate: toDate(input.startDate),
       endDate: toDate(input.endDate),
-      customFields: custom,
+      estimatedBudget: input.estimatedBudget,
+      kpis: input.kpis || null,
+      partners: input.partners || null,
     };
     await tx.request.update({ where: { id }, data });
     const changed = [
-      ...(["title", "description", "targetAudience", "location"] as const).filter((k) => (before[k] ?? "") !== (data[k] ?? "")),
+      ...(["trackId", "requestTypeId", "title", "description", "goals", "kpis", "partners", "expectedBeneficiaries", "estimatedBudget"] as const).filter((k) => (before[k] ?? "") !== (data[k] ?? "")),
       ...(["startDate", "endDate"] as const).filter((k) => (before[k]?.getTime() ?? null) !== (data[k]?.getTime() ?? null)),
-      ...Object.keys(custom).filter((k) => parseCustomValues(before.customFields)[k] !== custom[k]).map((k) => `custom.${k}`),
     ];
     if (changed.length) {
       await audit({ actorId: actor.id, action: "request.saved", entityType: "Request", entityId: id, after: { ...requestRef({ referenceNo: before.referenceNo, title: data.title }), changed } }, tx);

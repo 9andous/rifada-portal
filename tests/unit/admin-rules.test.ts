@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { pageNumbers } from "@/components/ui/pagination";
-import { activeNavHref, NAV } from "@/config/nav";
+import { activeNavHref, HELP_HREF, NAV } from "@/config/nav";
 import { countUnit } from "@/lib/format";
 import { listHref, parseListParams } from "@/lib/list-params";
 import { associationFormSchema, officerFormSchema, toWesternDigits, userFormSchema } from "@/lib/validation/admin";
@@ -55,7 +55,7 @@ describe("settings validation", () => {
     const defaults = Object.fromEntries(Object.keys(valid).map((k) => [k, SETTING_DEFAULTS[k as keyof typeof SETTING_DEFAULTS]]));
     expect(settingsSchema.safeParse(defaults).success).toBe(true);
     expect(SETTING_DEFAULTS["bulk.maxItems"]).toBe(25);
-    expect(SETTING_DEFAULTS["sla.workingDays"]).toBe(7);
+    expect(SETTING_DEFAULTS["sla.workingDays"]).toBe(3);
     expect(SETTING_DEFAULTS["uploads.maxFileMb"]).toBe(25);
     expect(SETTING_DEFAULTS["public.showInitiatives"]).toBe(false);
   });
@@ -102,7 +102,7 @@ describe("settings validation", () => {
 });
 
 describe("user and association forms", () => {
-  const base = { username: "Sara.Ali", name: "سارة علي", email: "", phone: "", role: "UNIT_MANAGER", programIds: [], associationId: "" };
+  const base = { username: "Sara.Ali", name: "سارة علي", email: "", phone: "", role: "UNIT_MANAGER", trackIds: [], associationId: "" };
 
   it("normalises the username and empties optional fields to null", () => {
     const v = userFormSchema.parse(base);
@@ -111,14 +111,14 @@ describe("user and association forms", () => {
     expect(v.phone).toBeNull();
   });
 
-  it("requires programs for supervisors and an association for officers", () => {
-    expect(userFormSchema.safeParse({ ...base, role: "SUPERVISOR" }).error?.issues[0].path).toEqual(["programIds"]);
+  it("requires tracks for supervisors and an association for officers", () => {
+    expect(userFormSchema.safeParse({ ...base, role: "SUPERVISOR" }).error?.issues[0].path).toEqual(["trackIds"]);
     expect(userFormSchema.safeParse({ ...base, role: "ASSOCIATION_OFFICER" }).error?.issues[0].path).toEqual(["associationId"]);
   });
 
-  it("drops programs and association that do not belong to the chosen role", () => {
-    const v = userFormSchema.parse({ ...base, programIds: ["p1"], associationId: "a1" });
-    expect(v.programIds).toEqual([]);
+  it("drops tracks and association that do not belong to the chosen role", () => {
+    const v = userFormSchema.parse({ ...base, trackIds: ["p1"], associationId: "a1" });
+    expect(v.trackIds).toEqual([]);
     expect(v.associationId).toBeNull();
   });
 
@@ -212,13 +212,16 @@ describe("navigation (Phase 2a)", () => {
     expect(links("SUPER_ADMIN")).toEqual(["/admin", "/admin/users", "/admin/associations", "/admin/registrations", "/admin/taxonomy", "/admin/settings", "/admin/audit"]);
     expect(links("UNIT_MANAGER")).toEqual(["/manager", "/manager/requests", "/manager/assignment", "/manager/associations", "/manager/taxonomy"]);
     expect(links("SUPERVISOR")).toEqual(["/supervisor", "/supervisor/queue", "/supervisor/requests", "/supervisor/templates"]);
-    expect(links("ASSOCIATION_OFFICER")).toEqual(["/association", "/association/requests", "/association/requests/new", "/association/documents"]);
+    // D-102: «طلب جديد» is the gold call-to-action only; «المساعدة» lives in the user menu (D-106).
+    expect(links("ASSOCIATION_OFFICER")).toEqual(["/association", "/association/requests", "/association/documents", "/association/profile"]);
+    expect(HELP_HREF.ASSOCIATION_OFFICER).toBe("/association/help");
   });
 
   it("marks only the most specific matching item active", () => {
     const items = NAV.ASSOCIATION_OFFICER;
-    expect(activeNavHref(items, "/association", "/association/requests/new")).toBe("/association/requests/new");
-    expect(activeNavHref(items, "/association", "/association/requests/abc")).toBe("/association/requests");
+    expect(activeNavHref(items, "/association", "/association/requests/new")).toBe("/association/requests");
+    expect(activeNavHref(items, "/association", "/association/requests/abc/edit")).toBe("/association/requests");
+    expect(activeNavHref(items, "/association", "/association/profile")).toBe("/association/profile");
     expect(activeNavHref(items, "/association", "/association")).toBe("/association");
     expect(activeNavHref(items, "/association", "/association/requestsx")).toBeNull();
     expect(activeNavHref(items, "/association", null)).toBeNull();

@@ -9,7 +9,7 @@ import { asAdmin, fromRefusal } from "./guard";
 import { INVALID_MESSAGE, type AdminFormState } from "./state";
 
 function parseUserForm(formData: FormData) {
-  return userFormSchema.safeParse(formObject(formData, ["programIds"]));
+  return userFormSchema.safeParse(formObject(formData, ["trackIds"]));
 }
 
 export async function createUserAction(_: AdminFormState, formData: FormData): Promise<AdminFormState> {

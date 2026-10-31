@@ -10,13 +10,14 @@ import { Select } from "@/components/ui/select";
 import { Alert } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import { toArabicDigits } from "@/lib/format";
+import { TEMPLATE_KIND_LABEL, TEMPLATE_KINDS, type TemplateKindKey } from "@/lib/validation/templates";
 import type { AdminFormState } from "@/server/actions/admin/state";
 import { replaceTemplateFileAction, setTemplateArchivedAction, setTemplatePublishedAction } from "@/server/actions/admin/templates";
 import { FileUploader } from "./file-uploader";
 
 type Action = (state: AdminFormState, formData: FormData) => Promise<AdminFormState>;
 export type ProgramOption = { id: string; number: number; name: string; initiatives: { id: string; number: number; name: string }[] };
-export type TemplateDefaults = { title: string; description: string; programId: string; initiativeId: string; attachmentTypeId: string };
+export type TemplateDefaults = { kind: TemplateKindKey; title: string; description: string; programId: string; initiativeId: string; attachmentTypeId: string };
 
 /** Metadata (and, when creating, the file). The initiative list follows the chosen program. */
 export function TemplateForm({
@@ -48,6 +49,9 @@ export function TemplateForm({
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {state.message ? <Alert tone={state.ok ? "success" : "danger"}>{state.message}</Alert> : null}
+      <Field id="tpl-kind" label="النوع" hint="الدليل للاطلاع، والنموذج يُعبأ ويُرفق بالطلب." error={e.kind} required>
+        <Select id="tpl-kind" name="kind" defaultValue={defaults.kind} options={TEMPLATE_KINDS.map((k) => ({ value: k, label: TEMPLATE_KIND_LABEL[k] }))} />
+      </Field>
       <Field id="tpl-title" label="عنوان النموذج" error={e.title} required>
         <Input id="tpl-title" name="title" defaultValue={defaults.title} aria-invalid={Boolean(e.title)} />
       </Field>

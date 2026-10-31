@@ -156,9 +156,8 @@ signed-in pages the white header and the green bar **stick to the top together**
 2. **Header** (`<SiteHeader>`, white, sticky, 88px; 72px below sm): the platform's identity leads
    at the start (Rifada logo 52px and «منصة رفادة» with the unit line, text from lg); theme
    toggle, the user chip (rounded-square initial, name, role or association) and sign out follow
-   at the end; then a hairline and the Presidency's logo (44px) on the far side with its own
-   clear space, so the two marks do not compete (logo option A, D-095). The Presidency's logo
-   hides below sm. Below lg the drawer button sits at the start. The login and public pages use
+   at the end. The Presidency's logo is no longer in the header (owner's request, 2026-10-28,
+   replacing D-095): its white version sits in the public footer under «الرئاسة». Below lg the drawer button sits at the start. The login and public pages use
    the same header.
 3. **Navigation bar** (green, 64px, pattern): icon plus 16px semibold label per item, full-height
    click targets; active item white text on a `white/10` fill with a 4px gold bar across the item;
@@ -174,7 +173,7 @@ signed-in pages the white header and the green bar **stick to the top together**
   - Unit manager: الرئيسية، الطلبات، الإسناد، الجمعيات، البرامج والمبادرات، التقارير
   - Super admin: الرئيسية، المستخدمون، الجمعيات، البرامج والمبادرات، الإعدادات، سجل التدقيق
   - Supervisor: الرئيسية، قائمة أعمالي، الطلبات، الجمعيات، النماذج، التقارير
-  - Association officer: الرئيسية، طلباتي، طلب جديد، المستندات (published templates)، ملف الجمعية
+  - Association officer: الرئيسية، طلباتي، النماذج (published templates)، ملف الجمعية، المساعدة (D-102)
   - Sections inside an item use a tab row (`TabNav`): super admin «البرامج والمبادرات»
     (programs, objectives, attachment types, templates, extraction review) and «الإعدادات» (general,
     request statuses); unit manager «البرامج والمبادرات» (programs, objectives, templates, request
@@ -209,8 +208,9 @@ signed-in pages the white header and the green bar **stick to the top together**
   the filtered list (an interactive card; the arrow shows on hover and focus only).
 - **Request list status filters** use the same tile; the selected filter has a gold top bar and a
   green border (gold in dark).
-- **No quick-action tiles**: the dashboards' shortcut row was removed; the navigation and the gold
-  call-to-action cover those routes (D-095).
+- **Dashboards are the exception (D-097):** the three role dashboards use the handoff's key
+  figures (`KpiRow`: icon tile, featured green first tile), shortcut tiles (`QuickActions`) and
+  icon-tile card headers; see «Dashboards» below. Every other page follows the rules above.
 - **Breadcrumbs** are derived from the navigation (`<Breadcrumbs>` inside the page head): home of
   the role, the active item, the current page.
 - **Tables**: header row on `surface-muted` between hairlines, 13px semibold labels, middle-aligned
@@ -256,20 +256,20 @@ signed-in pages the white header and the green bar **stick to the top together**
 Sections in order (`src/app/(public)/page.tsx`, `src/components/home/home-sections.tsx`):
 
 1. **Hero** (green, pattern): the Presidency's name, the unit's name, the strategy's motto
-   «مباركًا وهدًى للعالمين», what Rifada is, login and «تعرّف على المبادرة» buttons, key figures
-   counted from the database (programmes, available initiatives, objectives, values), and the Kaaba
-   photograph inside the arch.
-2. **Leadership statements**: the statements of the Custodian of the Two Holy Mosques (green card)
-   and of the Crown Prince (ivory card) with their portraits in a gold ring and a green arc, as on
-   the strategy outline's opening pages, then the opening word of the President of Religious
-   Affairs with his portrait, on a soft gold card (`accent-soft`, gold border) with the arch in
-   the corner like the two cards above it. Portraits come from the strategy outline
-   (`public/images/leadership/`).
+   «مباركًا وهدًى للعالمين», what Rifada is, login and registration buttons, key figures
+   counted from the database (programmes, available initiatives, objectives, values), and the
+   **leadership statements** one at a time (D-096): portrait in a gold ring with an arc, the
+   statement, honorific, name and title, rotating every seven seconds with dots and a pause
+   button. The statements, their portraits and order are managed on `/admin/settings/home`; the
+   super admin picks one of two looks: a cream card (`accent-soft`) with the portrait over its top
+   edge, or a translucent card with a gold border. With none published, the Kaaba photograph in
+   the arch takes their place.
+2. *(The separate leadership section was folded into the hero, D-096.)*
 3. **Vision and mission** (database), with photographs of al-Masjid al-Haram and al-Masjid an-Nabawi.
-4. **Values** (database), numbered in gold diamonds, beside the Haram arches photograph.
-5. **Strategic objectives** (database, green band): all seven cards share one gold border; the
-   four the supervision initiative serves (1, 5, 6, 7) are marked only by the «تخدمه المنصة» tag
-   with how.
+4. **Values** (database), numbered in gold diamonds, beside the Kaaba and clock tower photograph cut
+   to the outer silhouette of the rosary frame, with the frame drawn over it (`masba7a`, dark
+   variant in dark mode, D-098).
+5. *(Strategic objectives, green band: hidden at the owner's request, D-098.)*
 6. **The initiative**: introduction, summary, the procedural and technical tracks, the Presidency's
    supervisory tasks, beneficiaries and expected impact
    (`src/config/initiative.ts`, from the initiative document), then the full footer.
@@ -277,41 +277,42 @@ Sections in order (`src/app/(public)/page.tsx`, `src/components/home/home-sectio
 The programmes section, «كيف يعمل الإشراف الفني», the closing login band and the initiative's
 «مراحل التنفيذ» were removed at the owner's request (D-095), with their header and footer links.
 
-The public header adds five in-page section links in page order (القيادة، الرؤية والرسالة، القيم،
-الأهداف، المبادرة), spread evenly between the identity and the buttons from 1280px
-(`SiteHeader`'s `middle` slot), and a dark «الدخول إلى المنصة» button. The footer's «عن المنصة»
+The public header adds four in-page section links in page order (القيادة، الرؤية والرسالة، القيم،
+المبادرة), grouped together from 1280px, starting under the end of «كيف تتحقق» in the gov banner, with hairlines between them
+(`SiteHeader`'s `middle` slot), and a gold «الدخول إلى المنصة» button (`gold`, like the hero). The footer's «عن المنصة»
 links follow the same order. The
 footer (`<SiteFooter>`, `band-deep`) holds the white logo with a short description, links to the home
-sections, the login and password pages and the Presidency's official site, and the copyright bar. No
-invented contact details or social links.
+sections, the login and password pages and the Presidency's official site with the Presidency's white
+logo (72px) below it, and the copyright bar. No invented contact details or social links.
 
 ## Request pages
 
-- **Detail**: the page head carries the status pill; under it a card with the four-step stepper
+- **Detail** (staff; associations have their own page in the same structure, D-103): the page head carries the status pill; under it a card with the four-step stepper
   (`<RequestStepper>`: تقديم الطلب، فحص الاكتمال، المراجعة الفنية، القرار; done green, current gold with
   a halo, rejected red) and the key facts in icon cells. Each section (description, initiative
   data, attachments, completeness, conversation) is its own card. The side column holds the
   «القرار» panel (green-bordered, approve green, return amber outline, reject red outline), the
   assignment, the status timeline «مسار الطلب» (the shared diamond timeline, latest entry gold) and
   the audit trail.
-- **New request**: the programmes are selectable cards with their icons (`<ProgramIcon>`) and
-  available-initiative counts, then the initiative; beside the form the step guide
-  «خطوات الطلب» (`<FormSteps>`, the shared timeline: done green, current gold, upcoming grey; no
-  numbers or timestamps), which also accompanies the edit page. Its help text is a flat note with
-  a 2px gold side rule, like internal notes. The edit form is split into numbered sections with a
-  footer bar for submit and save.
+- **New request and the request form** belong to the association and follow «Association
+  interface» (D-102, D-103): the steps at the side as on the registration page; programme cards,
+  then the initiatives as a list of choices with a search box, then the wizard (one subject per
+  step, a review step, saving between steps).
 
 ## Timeline
 
 - One component (`src/components/ui/timeline.tsx`: `Timeline`, `TimelineItem`, `TimelineTitle`,
   `TimelineText`): a 1px `line-strong` connector and 10px diamond markers, title as the main line
   and a smaller muted line beneath, 24px between entries. Markers: `current` gold, `done` green,
-  `muted` grey. Used by «مسار الطلب» (history), «خطوات الطلب» (form guide) and «دليل التقديم» on the
-  association dashboard (all markers grey: information, not progress). Do not build another.
+  `muted` grey. Used by «مسار الطلب» (history on the staff request page). Do not build another.
 
-## Dashboards (design stop 2)
+## Dashboards (design stop 2, revised by D-097)
 
-- Shortcut tiles were removed from every dashboard (D-095).
+- The three role dashboards follow the handoff closely: key figures with icon tiles and the
+  featured green first tile (`KpiRow`), shortcut tiles with real counts (`QuickActions`, unit
+  manager and association), card headers with the 36px icon tile, the arch empty state in cards,
+  deadline pills in request tables. Building blocks: `src/components/dashboard/kpis.tsx`,
+  `cards.tsx`.
 - **Unit manager:** the page head shows a small time-based greeting (صباح الخير before noon, مساء الخير
   after, Asia/Riyadh time) above the large title «نظرة عامة على الإشراف», the Hijri date, and the
   key figures: إجمالي الطلبات، مفتوحة، متأخرة عن المهلة، متوسط المعالجة، نسبة الاعتماد، غير مسندة,
@@ -319,10 +320,42 @@ invented contact details or social links.
   (last six Hijri months), requests by program, supervisor workload, overdue requests (placed high
   on the page). All numbers from the database; designed empty states for every block.
 - **Super admin, supervisor, association officer:** same shell, page head and card system.
-  Supervisor: the queue sorted by nearest deadline, overdue requests, status distribution.
-  Association: «طلب يحتاج إلى تعديلكم» notice when a request is returned, the latest submitted
-  request with its stepper, recent requests and the submission guide «دليل التقديم» (shared
-  timeline). Admin: users by role, latest audit entries.
+  Unit manager adds: requests per programme split into decided and open, the monthly card
+  comparing submitted with decided over 3, 6 or 12 months, and the workload table with programmes,
+  load share and a link to each supervisor's requests.
+  Supervisor: «مراجعة الطلب التالي», the queue card with tabs (all, by status, overdue) and a
+  table sorted by nearest deadline, then status distribution and overdue requests.
+  Association (D-103): the key figures, a notice per returned request with the supervisor's note
+  and per draft, the latest requests with their next step, and how a request moves. Admin
+  (unchanged, D-095 style): users by role, latest audit entries.
+
+## Association interface (D-102, D-103)
+
+The association officers are often older and less used to web applications. Their area uses the
+platform's own components at their usual sizes, so it looks like the rest of the platform, with
+these rules on top (`src/components/association/`).
+
+- **Larger by default, once.** The area opens at «كبير» (112.5% of the root size); the «حجم الخط»
+  control in the header (and the phone menu, and the sign-in pages) offers 100%, 112.5% and 125%,
+  kept on the device. Components keep the design system's sizes; do not enlarge them again. Where a
+  layout depends on how much text fits (the requests table, the request page's facts), switch it
+  with a container query in rem, which follows the chosen size, not with a screen breakpoint.
+- **The official status names**, as everywhere (`StatusText`). Beside a status say what it means,
+  the next step and whose turn it is, from `lib/association-status.ts` («مطلوب منكم» in amber,
+  «لدى الوحدة الإشرافية» in grey). Never invent other labels for the statuses.
+- **Facts, not general sentences:** dates (sent, last update, returned, decided), the supervisor's
+  note with its date, the review time left or the review period in working days, what is missing,
+  the number of templates per programme.
+- **One worded button per request** («إكمال الطلب», gold «تعديل الطلب», «عرض الطلب»); no icon-only
+  buttons. Gold marks «تقديم طلب جديد» and correcting a returned request.
+- **Lists:** requests in a table with the next step (`AssocRequestsTable`), or a list of entries
+  where the table has no room; status tiles as filters and a search, as on the staff list; pages
+  with «الصفحة السابقة / التالية» (`ListPager`). Templates are filtered by programme from a side list.
+- **Forms:** label, then its explanation with an example, then the control, then the error; every
+  field is required unless marked «(اختياري)» (`FormField`). A new request follows the registration
+  page: the steps at the side (`StepsAside`; «الخطوة ٢ من ٥» on phones) and one card per step
+  (`StepCard`), saving between steps and on leaving a field, a review step with a checklist.
+- **Help** is a page of its own («المساعدة») and is linked from the home page.
 
 ## Requests list (Phase 3)
 
@@ -374,8 +407,12 @@ invented contact details or social links.
 | `.card-link`, `.card-hover`, motion, reduced motion, icon stroke | `src/app/globals.css` |
 | `EmptyState`, `ErrorState`, `ForbiddenState` | `src/components/states/states.tsx` |
 | `RefNumber` | `src/components/ui/ref-number.tsx` |
-| Dashboard cards (`RecentRequestsCard`, `OverdueCard`, ...) | `src/components/dashboard/cards.tsx` |
-| `RequestStepper`, `FormSteps`, `StatusTimeline` | `src/components/requests/request-stepper.tsx`, `form-steps.tsx`, `timeline.tsx` |
+| Dashboard key figures and shortcuts (`KpiRow`, `QuickActions`) | `src/components/dashboard/kpis.tsx` |
+| Dashboard cards (`RequestsTableCard`, `CardTabs`, `OverdueCard`, `SlaPill`, ...) | `src/components/dashboard/cards.tsx` |
+| Home hero statements (`HeroQuotes`) and their admin page | `src/components/home/hero-quotes.tsx`, `src/components/admin/home-quote-controls.tsx` |
+| `RequestStepper`, `StatusTimeline` | `src/components/requests/request-stepper.tsx`, `timeline.tsx` |
+| Association interface: `AssocRequestsTable`, `NextStep`, `RequestAction`, `BackLink`, `ListPager` (`parts.tsx`), `FormField`, `StepsAside`, `StepCard` (`fields.tsx`), `NewRequestPicker`, `RequestWizard`, `AttachmentCard`, `FileRow`, `AssociationMessages`, `AssociationRequestView`, `AssociationProfileForm` | `src/components/association/` |
+| `TextSizeControl` (text size, D-102) | `src/components/layout/text-size.tsx` |
 | `Breadcrumbs`, `NavIcon` (the icon per concept) | `src/components/layout/breadcrumbs.tsx`, `nav-icon.tsx` |
 | `ProgramIcon` | `src/components/brand/program-icon.tsx` |
 | `GeometricPattern` | `src/components/brand/geometric-pattern.tsx` |

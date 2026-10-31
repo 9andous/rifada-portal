@@ -1,4 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { Readable } from "node:stream";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { IMAGE_MAX_MB, REGISTRATION_LOGO_CONTEXT, REGISTRATION_UPLOADER } from "@/lib/images";
 import { registrationSchema } from "@/lib/validation/registration";
 import { verifyPassword } from "@/server/auth/password";
 import type { Role } from "@/server/authz/roles";
@@ -13,18 +18,21 @@ import {
   rejectRegistration,
   submitRegistration,
 } from "@/server/services/registrations";
+import { openImage } from "@/server/services/images";
+import { stageUpload } from "@/server/uploads/stage";
 import { makeAssociation, makeRoleActors } from "../support/admin";
 import { db, resetDatabase } from "../support/db";
+import { FIXTURES } from "../support/files";
 
 const PASSWORD = "Jamiya-2026-pass";
 let ctx: Awaited<ReturnType<typeof makeRoleActors>>;
 let admin: Actor;
 let seq = 0;
 
-/** A valid application as the public form sends it, parsed by the real schema. */
-function application(overrides: Record<string, unknown> = {}) {
+/** A valid application as the public form sends it. */
+function rawApplication(overrides: Record<string, unknown> = {}) {
   seq += 1;
-  return registrationSchema.parse({
+  return {
     name: `جمعية سقيا الحرم ${seq}`,
     licenseNumber: `${1000 + seq}`,
     classification: "منظمات خدمة ضيوف الرحمن",
@@ -32,7 +40,7 @@ function application(overrides: Record<string, unknown> = {}) {
     city: "مكة المكرمة",
     foundedYear: "١٤٣٥",
     contactPhone: "٠٥٥٠١٢٣٤٥٦",
-    contactEmail: "",
+    contactEmail: `info${seq}@example.org`,
     website: "",
     programNumbers: ["1", "3"],
     officerName: "فهد بن سعد",
@@ -44,7 +52,12 @@ function application(overrides: Record<string, unknown> = {}) {
     confirmPassword: PASSWORD,
     pledge: "on",
     ...overrides,
-  });
+  };
+}
+
+/** The same, parsed by the real schema. */
+function application(overrides: Record<string, unknown> = {}) {
+  return registrationSchema.parse(rawApplication(overrides));
 }
 
 async function submitted(overrides: Record<string, unknown> = {}) {
@@ -194,5 +207,60 @@ describe("checking a step before submission", () => {
     expect(await checkRegistrationAvailability({ username: input.username })).toMatchObject({ ok: false, errors: { username: expect.any(String) } });
     expect(await checkRegistrationAvailability({ licenseNumber: "99999", username: "free.name" })).toEqual({ ok: true });
     expect(await checkRegistrationAvailability({})).toEqual({ ok: true });
+  });
+});
+
+describe("the logo sent with an application (D-100)", () => {
+  const storageRoot = mkdtempSync(join(tmpdir(), "rifada-registration-logo-"));
+  const previousStorage = process.env.STORAGE_DIR;
+  beforeAll(() => {
+    process.env.STORAGE_DIR = storageRoot;
+  });
+  afterAll(() => {
+    process.env.STORAGE_DIR = previousStorage;
+    rmSync(storageRoot, { recursive: true, force: true });
+  });
+
+  async function stagedLogo(uploaderId = REGISTRATION_UPLOADER) {
+    const bytes = FIXTURES.png();
+    const staged = await stageUpload({
+      uploaderId,
+      sessionId: null,
+      fileName: "شعار.png",
+      declaredMime: "image/png",
+      contentLength: bytes.length,
+      body: Readable.from([bytes]),
+      context: REGISTRATION_LOGO_CONTEXT,
+      only: { groups: ["image"], maxMb: IMAGE_MAX_MB },
+    });
+    if (!staged.ok) throw new Error(staged.message);
+    return staged.uploadId;
+  }
+
+  it("is stored with the application and moves to the association on approval", async () => {
+    const result = await submitRegistration(application(), new Date(), await stagedLogo());
+    if (!result.ok) throw new Error(JSON.stringify(result));
+    const row = await db.associationRegistration.findUniqueOrThrow({ where: { referenceNo: result.referenceNo } });
+    expect(row.logoKey).toMatch(/^images\/[a-f0-9]{32}$/);
+    expect(await openImage("registration", row.id)).toMatchObject({ mime: "image/png" });
+
+    expect(await approveRegistration(admin, row.id, "")).toMatchObject({ ok: true });
+    const reg = await db.associationRegistration.findUniqueOrThrow({ where: { id: row.id } });
+    expect(reg.logoKey).toBeNull();
+    const association = await db.association.findUniqueOrThrow({ where: { id: reg.associationId! } });
+    expect(association.logoKey).toBe(row.logoKey);
+  });
+
+  it("refuses an upload staged by someone else or already used", async () => {
+    const foreign = await stagedLogo(admin.id);
+    expect(await submitRegistration(application(), new Date(), foreign)).toMatchObject({ ok: false, errors: { image: expect.any(String) } });
+    const once = await stagedLogo();
+    expect(await submitRegistration(application(), new Date(), once)).toMatchObject({ ok: true });
+    expect(await submitRegistration(application(), new Date(), once)).toMatchObject({ ok: false, errors: { image: expect.any(String) } });
+  });
+
+  it("requires both emails", () => {
+    expect(registrationSchema.safeParse({ ...rawApplication(), contactEmail: "" }).success).toBe(false);
+    expect(registrationSchema.safeParse({ ...rawApplication(), officerEmail: "" }).success).toBe(false);
   });
 });

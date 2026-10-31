@@ -123,18 +123,18 @@ async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDesc
   const staff = user.role !== "ASSOCIATION_OFFICER";
   const [page, options, maxBulk, supervisors] = await Promise.all([
     listRequests(user, list, view),
-    staff ? requestFilterOptions(user) : Promise.resolve({ programs: [], supervisors: [] }),
+    staff ? requestFilterOptions(user) : Promise.resolve({ tracks: [], supervisors: [] }),
     getSetting("bulk.maxItems"),
     isManager ? supervisorOptions(user) : Promise.resolve(null),
   ]);
-  const filtered = Boolean(list.q || list.status || list.program || list.supervisor || list.association);
+  const filtered = Boolean(list.q || list.status || list.track || list.program || list.supervisor || list.association || list.overdue || list.stage);
   const sortProps = { current: list.sort, dir: list.dir, path, params, className: SORT_TH };
   const showSupervisor = staff && view !== "queue";
   const canDecide = can(user.role, "requests.review");
 
   const filters = [];
-  if (staff && options.programs.length > 1) {
-    filters.push({ name: "program", label: "البرنامج", allLabel: "جميع البرامج", value: list.program, options: options.programs.map((p) => ({ value: p.id, label: `${toArabicDigits(p.number)}. ${p.name}` })) });
+  if (staff && options.tracks.length > 1) {
+    filters.push({ name: "track", label: "المسار", allLabel: "جميع المسارات", value: list.track, options: options.tracks.map((t) => ({ value: t.id, label: `${toArabicDigits(t.number)}. ${t.name}` })) });
   }
   if (options.supervisors.length && view !== "queue") {
     filters.push({
@@ -143,6 +143,21 @@ async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDesc
       allLabel: "جميع المشرفين",
       value: list.supervisor,
       options: [{ value: "none", label: "غير مسند" }, ...options.supervisors.map((s) => ({ value: s.id, label: s.isActive ? s.name : `${s.name} (معطل)` }))],
+    });
+  }
+
+  if (staff) {
+    filters.push({ name: "overdue", label: "المهلة", allLabel: "جميع المهل", value: list.overdue ? "1" : undefined, options: [{ value: "1", label: "المتأخرة عن المهلة" }] });
+    // The two-step review (D-116): who has the request under review now.
+    filters.push({
+      name: "stage",
+      label: "مرحلة المراجعة",
+      allLabel: "جميع المراحل",
+      value: list.stage,
+      options: [
+        { value: "supervisor", label: "لدى المشرف" },
+        { value: "manager", label: "بانتظار مدير الوحدة" },
+      ],
     });
   }
 
@@ -170,11 +185,11 @@ async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDesc
             detailBase={detailBase}
             showAssociation={staff}
             showSupervisor={showSupervisor}
-            bulk={{ enabled: canDecide, max: maxBulk, supervisors: supervisors?.map((s) => ({ id: s.id, name: s.name, programIds: s.programIds })) ?? null }}
+            bulk={{ enabled: canDecide, max: maxBulk, supervisors: supervisors?.map((s) => ({ id: s.id, name: s.name, trackIds: s.trackIds })) ?? null }}
             headers={
               <>
                 <SortHeader label="الطلب" column="title" {...sortProps} />
-                <Th>البرنامج والمبادرة</Th>
+                <Th>المسار</Th>
                 <Th>الحالة</Th>
                 {showSupervisor ? <Th>المشرف</Th> : null}
                 <SortHeader label="تاريخ التقديم" column="submittedAt" {...sortProps} />

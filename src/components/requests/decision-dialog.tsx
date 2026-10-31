@@ -2,6 +2,7 @@
 
 import { LoaderCircle, X } from "lucide-react";
 import { Dialog } from "radix-ui";
+import { toast } from "@/components/ui/toaster";
 import { useState, useTransition, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
@@ -11,15 +12,18 @@ import { Alert } from "@/components/ui/surface";
 import { formatNumber, requestsPhrase } from "@/lib/format";
 import { DECISION_LABELS, type Decision } from "@/lib/requests";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
-import { decideAction, reassignAction } from "@/server/actions/requests";
+import { PasswordInput } from "@/components/ui/password-input";
+import { approveAction, decideAction, reassignAction } from "@/server/actions/requests";
 import type { BulkOutcomeView, RequestFormState } from "@/server/actions/requests-state";
+import { SealNotice } from "./evaluation-dialog";
 
-export type DialogRequest = { id: string; title: string; referenceNo: string | null };
+/** `approvable`: approval is offered (the unit manager, after the supervisor's evaluation, D-116). */
+export type DialogRequest = { id: string; title: string; referenceNo: string | null; approvable?: boolean };
 
 const CONFIRM_VARIANT: Record<Decision, "primary" | "outline" | "danger"> = { approve: "primary", return: "outline", reject: "danger" };
-const CONFIRM_LABEL: Record<Decision, string> = { approve: "اعتماد", return: "إعادة للتعديل", reject: "رفض" };
+const CONFIRM_LABEL: Record<Decision, string> = { approve: "توقيع واعتماد", return: "إعادة للتعديل", reject: "رفض" };
 const EFFECT: Record<Decision, string> = {
-  approve: "يُعتمد الطلب وتُبلَّغ الجمعية، ولا يمكن التراجع عن الاعتماد.",
+  approve: "اعتماد نهائي تُبلَّغ به الجمعية، ولا يمكن التراجع عنه. وقّع ثم أدخل كلمة المرور.",
   return: "يعود الطلب إلى الجمعية لتعديله، ويُرسل إليها السبب، وتُستأنف المهلة عند إعادة التقديم.",
   reject: "يُرفض الطلب وتُبلَّغ الجمعية بالسبب، ولا يمكن التراجع عن الرفض.",
 };
@@ -126,20 +130,22 @@ export function DecisionDialog({
   const [reason, setReason] = useState(initialReason);
   const [result, setResult] = useState<RequestFormState | null>(null);
   const [busy, start] = useTransition();
-  const needsReason = decision !== "approve";
+  // The final approval is signed (D-117): the password confirms it, the server seals it (D-122).
+  const [password, setPassword] = useState("");
+  const approving = decision === "approve";
+  const needsReason = !approving;
   const outcome = result?.outcome;
 
   function confirm() {
     start(async () => {
-      const r = await decideAction(
-        requests.map((x) => x.id),
-        decision,
-        reason,
-      );
+      const ids = requests.map((x) => x.id);
+      const r = approving ? await approveAction(ids, { note: reason, password }) : await decideAction(ids, decision, reason);
+      if (approving && !r.ok) setPassword("");
       setResult(r);
       if (r.ok && r.outcome) {
         onDone(r.outcome);
         if (r.outcome.skipped.length === 0) onOpenChange(false);
+        toast(`تم ${DECISION_LABELS[decision]}`, { description: requests.length > 1 ? `عدد الطلبات: ${requests.length - r.outcome.skipped.length}` : requests[0]?.title });
       }
     });
   }
@@ -171,7 +177,15 @@ export function DecisionDialog({
               />
             </Field>
           ) : null}
-          {result?.message && !result.ok && !result.errors?.reason ? (
+          {approving ? (
+            <div className="mt-4 flex flex-col gap-3">
+              <SealNotice count={requests.length} />
+              <Field id="approve-password" label="كلمة المرور" error={result?.errors?.password} required>
+                <PasswordInput id="approve-password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" aria-invalid={Boolean(result?.errors?.password)} />
+              </Field>
+            </div>
+          ) : null}
+          {result?.message && !result.ok && !result.errors?.reason && !result.errors?.password ? (
             <Alert tone="danger" className="mt-4">
               {result.message}
             </Alert>
@@ -182,7 +196,7 @@ export function DecisionDialog({
                 إلغاء
               </Button>
             </Dialog.Close>
-            <Button variant={CONFIRM_VARIANT[decision]} disabled={busy || (needsReason && reason.trim().length < 3)} onClick={confirm}>
+            <Button variant={CONFIRM_VARIANT[decision]} disabled={busy || (needsReason && reason.trim().length < 3) || (approving && !password)} onClick={confirm}>
               {busy ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : null}
               {requests.length > 1 ? `${CONFIRM_LABEL[decision]} (${formatNumber(requests.length)})` : CONFIRM_LABEL[decision]}
             </Button>
@@ -193,9 +207,9 @@ export function DecisionDialog({
   );
 }
 
-export type SupervisorChoice = { id: string; name: string; programIds: string[]; open?: number };
+export type SupervisorChoice = { id: string; name: string; trackIds: string[]; open?: number };
 
-/** Unit manager: reassign one or more requests to an active supervisor of their program, with a reason. */
+/** Unit manager: reassign one or more requests to an active supervisor of their track, with a reason. */
 export function ReassignDialog({
   open,
   onOpenChange,
@@ -226,6 +240,7 @@ export function ReassignDialog({
       if (r.ok && r.outcome) {
         onDone(r.outcome);
         if (r.outcome.skipped.length === 0) onOpenChange(false);
+        toast("تمت إعادة الإسناد");
       }
     });
   }
@@ -244,7 +259,7 @@ export function ReassignDialog({
       ) : (
         <div className="flex flex-col">
           <RequestList requests={requests} />
-          <Field id="reassign-to" label="المشرف" hint="يظهر المشرفون النشطون؛ ويُتخطى كل طلب لا يشرف المختار على برنامجه." error={result?.errors?.toUserId} required className="mt-4">
+          <Field id="reassign-to" label="المشرف" hint="يظهر المشرفون النشطون؛ ويُتخطى كل طلب لا يشرف المختار على مساره." error={result?.errors?.toUserId} required className="mt-4">
             <Select
               id="reassign-to"
               value={toUserId}

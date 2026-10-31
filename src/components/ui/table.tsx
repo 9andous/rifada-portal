@@ -22,7 +22,7 @@ export function THead({ children }: { children: ReactNode }) {
 }
 
 export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th scope="col" className={cn("whitespace-nowrap py-3 pe-4 text-start text-[0.8125rem] font-semibold text-ink-muted first:ps-6 last:pe-6", className)} {...props} />;
+  return <th scope="col" className={cn("relative whitespace-nowrap py-3 pe-4 text-start text-[0.875rem] font-bold text-ink first:ps-6 last:pe-6", className)} {...props} />;
 }
 
 export function Tr({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {

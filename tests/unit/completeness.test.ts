@@ -18,8 +18,9 @@ const base = (over: Partial<CompletenessInput> = {}): CompletenessInput => ({
   general: {
     title: "عنوان",
     description: "وصف",
-    targetAudience: "الفئة",
-    location: "مكة",
+    goals: "الأهداف",
+    expectedBeneficiaries: "العاملون في قطاع الحج",
+    estimatedBudget: 1000,
     startDate: new Date("2099-01-10T00:00:00Z"),
     endDate: new Date("2099-02-10T00:00:00Z"),
   },
@@ -27,7 +28,7 @@ const base = (over: Partial<CompletenessInput> = {}): CompletenessInput => ({
   requirements: [],
   files: [],
   allowedGroups: ["pdf", "word", "excel", "image"],
-  availability: { associationActive: true, programAvailable: true, programName: "ب", initiativeAvailable: true, initiativeName: "م" },
+  availability: { associationActive: true, track: { name: "المسار", available: true }, requestType: { name: "اعتماد مشروع", available: true } },
   firstSubmission: true,
   today: "2026-10-25",
   ...over,
@@ -40,18 +41,30 @@ describe("completeness check (pure)", () => {
 
   it("is deterministic and keeps form order", () => {
     const input = base({
-      general: { title: "", description: null, targetAudience: " ", location: "x", startDate: null, endDate: null },
+      general: { title: "", description: null, goals: " ", expectedBeneficiaries: null, estimatedBudget: null, startDate: null, endDate: null },
       requirements: [req({ key: "b", sortOrder: 2 }), req({ key: "a", sortOrder: 1 }), req({ key: "f", kind: "ATTACHMENT", fieldType: null, attachmentType: { key: "f", name: "ملف", groups: ["pdf"] } })],
     });
     const first = checkCompleteness(input);
     expect(checkCompleteness(input)).toEqual(first);
-    expect(first.map((m) => m.field)).toEqual(["title", "description", "targetAudience", "startDate", "endDate", "custom.a", "custom.b", "attachment.f"]);
+    expect(first.map((m) => m.field)).toEqual(["title", "description", "goals", "expectedBeneficiaries", "startDate", "endDate", "estimatedBudget", "custom.a", "custom.b", "attachment.f"]);
   });
 
-  it("checks the start date only at the first submission", () => {
+  it("requires the track and the request type, and refuses archived or paused ones (D-123)", () => {
+    expect(checkCompleteness(base({ availability: { associationActive: true, track: null, requestType: null } })).map((m) => m.field)).toEqual(["trackId", "requestTypeId"]);
+    const closed = { associationActive: true, track: { name: "م", available: false }, requestType: { name: "ن", available: false } };
+    expect(checkCompleteness(base({ availability: closed })).map((m) => m.code)).toEqual(["track_unavailable", "request_type_unavailable"]);
+  });
+
+  it("requires the period and checks it (D-123)", () => {
+    expect(checkCompleteness(base({ general: { ...base().general, startDate: null, endDate: null } })).map((m) => m.field)).toEqual(["startDate", "endDate"]);
+    const reversed = { ...base().general, startDate: new Date("2099-03-01T00:00:00Z"), endDate: new Date("2099-02-01T00:00:00Z") };
+    expect(checkCompleteness(base({ general: reversed })).map((m) => m.code)).toEqual(["end_before_start"]);
+  });
+
+  it("checks that the start date is not in the past on every submission (D-123)", () => {
     const past = { ...base().general, startDate: new Date("2026-01-01T00:00:00Z"), endDate: new Date("2026-02-01T00:00:00Z") };
     expect(checkCompleteness(base({ general: past })).map((m) => m.code)).toEqual(["start_in_past"]);
-    expect(checkCompleteness(base({ general: past, firstSubmission: false }))).toEqual([]);
+    expect(checkCompleteness(base({ general: past, firstSubmission: false })).map((m) => m.code)).toEqual(["start_in_past"]);
   });
 
   it("type-checks optional fields only when filled", () => {

@@ -125,3 +125,22 @@ Seeded attachment types (`prisma/seed/attachment-types.json`); the super admin c
 | Notifications | أُسند إليك طلب للمراجعة، طلب بلا مشرف متاح، أُعيد إسناد طلب كان لديك، اعتُمد طلبكم، أُعيد طلبكم للتعديل، رُفض طلبكم، أُعيد تقديم طلب بعد التعديل، تعليق جديد من الجمعية، تعليق جديد على الطلب، ملاحظة داخلية جديدة | Titles of Notification rows (shown in Phase 4). |
 | Storage quota | تجاوز هذا الملف حد التخزين المخصص للجمعية (المستخدم … من …). تواصلوا مع إدارة المنصة. | |
 | Audit trail heading | سجل الاطلاع والتدقيق | Super admin and unit manager only. |
+
+## Association interface for older users (D-102)
+
+Plain wording, plural of respect, one idea per sentence. Defined once in
+`src/lib/association-status.ts` (statuses) and on the pages under `src/app/(app)/association/`.
+
+| Where | Current text | Note |
+|---|---|---|
+| Status labels | مسودة لم تُرسل بعد / تم الإرسال / قيد التحقق من الاكتمال / قيد المراجعة / يحتاج إلى تعديل منكم / تم الاعتماد / لم يُعتمد | Shown to associations in place of the unit's status names. |
+| Status sentences | e.g. «أعاد المشرف الطلب إليكم مع ملاحظات.» then «اقرؤوا ملاحظات المشرف، ثم عدّلوا الطلب وأعيدوا إرساله.» | One «what happened» and one «what to do» sentence per status, plus a variant read on the request page. |
+| Next-step labels | المطلوب منكم: / ماذا بعد؟ | The first when the association must act, the second otherwise. |
+| «طلباتي» tabs | جميع الطلبات / بانتظار إجراء منكم / لدى الوحدة الإشرافية / صدر فيها القرار | |
+| Home | ما المطلوب منكم الآن؟ / لا يوجد ما يحتاج إلى إجراء منكم الآن. / ابدأ طلبًا جديدًا | |
+| Request form steps | عن المشروع / المستفيدون والمكان والموعد / بيانات المبادرة / الملفات / المراجعة والإرسال | Each field carries «مطلوب» or «اختياري» and an example. |
+| Send | إرسال الطلب / إعادة إرسال الطلب / عند الإرسال يصل الطلب إلى الوحدة الإشرافية، ولا يمكن تعديله بعد ذلك إلا إذا أعاده المشرف إليكم. | The staff screens keep «تقديم». |
+| Review time | يتبقى من مدة المراجعة المحددة ٤ أيام عمل. / تجاوزت المراجعة مدتها المحددة، والطلب ما زال لدى المشرف المختص. | |
+| Messages | الرسائل مع الوحدة الإشرافية / اكتبوا رسالتكم إلى الوحدة الإشرافية / من الوحدة الإشرافية — … / منكم — … | |
+| Files | اختيار ملف لإرفاقه / تم الإرفاق / لم يُرفق بعد / استبدال بنسخة أحدث | «استبدال بنسخة أحدث» adds a new version; earlier versions stay with the unit. |
+| Help page | Seven questions with numbered steps («كيف أقدّم طلبًا جديدًا؟» …). | Please check every step against the screens. |

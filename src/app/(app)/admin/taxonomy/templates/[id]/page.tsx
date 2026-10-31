@@ -35,7 +35,7 @@ export default async function AdminTemplatePage({ params }: PageProps<"/admin/ta
     <>
       <PageBand
         compact
-        eyebrow="النماذج"
+        eyebrow="الأدلة والنماذج"
         title={template.title}
         lead={template.description ?? undefined}
         actions={
@@ -61,6 +61,7 @@ export default async function AdminTemplatePage({ params }: PageProps<"/admin/ta
                   mode="edit"
                   action={updateTemplateAction.bind(null, template.id)}
                   defaults={{
+                    kind: template.kind,
                     title: template.title,
                     description: template.description ?? "",
                     programId: template.programId ?? "",

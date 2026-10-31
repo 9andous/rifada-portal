@@ -826,3 +826,448 @@ rendered on a temporary page (light and dark, later deleted) and chosen by the o
   On the home page «مراحل التنفيذ» was removed (and `INITIATIVE.phases` with it). The public
   header's section links follow the page order with a new first link «القيادة» to the leadership
   section, spread across the header from 1280px; the footer uses the same order.
+
+**D-096 Leadership statements move into the home hero (2026-10-27, owner's request).** The hero's
+Kaaba photograph is replaced by a rotating panel (`src/components/home/hero-quotes.tsx`) showing
+the King's and the Crown Prince's statements and the President's word one at a time, every seven
+seconds, with dots and a pause button; it pauses on hover or focus and does not rotate under
+reduced motion. The separate section «خدمة الحرمين الشريفين مسؤولية وشرف» was removed; the panel
+keeps the `#leadership` anchor so the header and footer link «القيادة» still lands on it. The hero
+text column gained start padding on wide screens to sit nearer the centre.
+- **Managed by the super admin (same day).** The statements moved from `src/config/initiative.ts`
+  to the `home_quotes` table (seeded once with the three statements and their bundled portraits;
+  the seed leaves a non-empty table alone). «الإعدادات › كلمات الصفحة الرئيسية»
+  (`/admin/settings/home`, permission `content.manage`) adds, edits, hides, reorders and deletes
+  them, each with an optional portrait uploaded through the image pipeline (owner `quote`).
+  Portraits of statements are public content: `/api/images/quote/<id>` is served without a
+  session, unlike user pictures and logos. Removing or replacing the portrait of a seeded
+  statement drops its bundled image. With no published statement the hero shows the Kaaba
+  photograph in the arch again. Every change is audited (`home_quote.*`, `setting.updated`).
+- **Two looks, chosen by the admin.** Of five options rendered for review, the owner kept «د»
+  (cream card, portrait over its top edge) and «هـ» (translucent card with a gold border). The
+  setting `public.heroQuoteStyle` (`cream` by default, or `card`) is chosen on the same admin page
+  with a miniature of each. The development page `/dev/hero-quotes` (git-ignored) shows both.
+
+**D-097 Dashboards follow the design handoff closely again (2026-10-27, owner's request).** The
+owner's management asked for the three role dashboards (unit manager, supervisor, association
+officer) to stay close to the handoff v2. This reverses, on these dashboards only, parts of D-095:
+- Key figures (`KpiRow`, `src/components/dashboard/kpis.tsx`): 38px icon tile tinted by the
+  figure's colour, label, figure, caption; the first tile is the featured green tile with a faint
+  arch; linked tiles show the chevron. «إجمالي الطلبات» of the unit manager carries this Hijri
+  month's submissions as a pill. Other pages keep `BandFigures`.
+- Shortcut tiles (`QuickActions`) are back under the key figures, with real counts in their hints
+  and only routes that exist: six for the unit manager, four for the association officer. The
+  handoff's «إدارة المشرفين», «إضافة جمعية» and «التقارير» tiles are not shown (super admin's
+  work, or Phase 6).
+- Dashboard card headers use the handoff's 36px icon tile (`PanelHeader icon`); other cards keep
+  the gold diamond. Empty states inside dashboard cards use the arch illustration.
+- Unit manager: the critical notice names the overdue and unassigned counts with «عرض المتأخرة»
+  and «إسناد الآن»; requests per programme are split into decided (green) and open (gold); the
+  monthly card compares submitted with decided per Hijri month and switches between 3, 6 and 12
+  months (`?months=`); the workload table adds the assigned programmes, the load as each
+  supervisor's share of open assigned requests, and a link to that supervisor's requests; overdue
+  rows open the request and offer assignment when unassigned. A print button joins the date.
+  Not built: the period selector, refresh, report export and supervisor reminders (no data or
+  phase behind them yet).
+- Supervisor: key figures إجمالي، بانتظار قرارك، متأخرة، معتمدة; «مراجعة الطلب التالي» opens the
+  nearest-deadline request; the queue card has tabs (الكل، قيد المراجعة، فحص الاكتمال، معاد
+  للتعديل، متأخرة, `?tab=`) with counts, and a table with deadline pills (late red, two working
+  days or less amber) and «مراجعة»; status distribution and overdue requests follow.
+- Association officer: the returned-request notice offers «عرض الملاحظات» and «تعديل الطلب»; the
+  requests table has a search box, and returned requests get a gold «تعديل» button; the latest
+  request with its stepper and the submission guide stay.
+- Request lists gained an «المتأخرة عن المهلة» filter (`?overdue=1`) used by these links.
+- Fixed on the way: the screen-reader label of an empty table header was absolutely positioned
+  outside the table's scroll box and widened the page on phones (`Th` and dashboard tables are now
+  `relative`).
+
+**D-098 Home page: objectives hidden, values photograph in the rosary frame (2026-10-27, owner's
+request).** The strategic objectives section is no longer rendered on the home page and its
+header and footer links were removed; `ObjectivesSection` stays in the code for when it returns
+(the hero's key figure «أهداف استراتيجية» still counts them). The photograph beside the values is
+now the Kaaba with the clock tower (`kaaba-clock-tower.jpg`, square, so it fills the shape) cut to
+the outer silhouette of the eight-lobed rosary frame (`public/brand/masba7a.png`), with a soft
+green shadow, and the frame is drawn over it (`masba7a.png`, `masba7aDark.png` with white rings in dark
+mode). The mask `public/brand/masba7a-mask.png` was generated
+from the frame's outline (`.masba7a-mask` in `globals.css`) and works the same in both themes.
+
+**D-099 Registration: city from a list, darker Kaaba on the wheel (2026-10-27, owner's request).**
+«المدينة» on the registration form is a dropdown of the chosen region's city and governorates
+(`src/lib/saudi-cities.ts`), disabled until a region is picked and cleared when the region
+changes; the server refuses a city outside the region. The first slide of the registration wheel
+uses `kaaba-tawaf-dark.jpg`, a darkened, slightly green-tinted copy of the Kaaba photograph, so the
+quote over the bright marble reads clearly. The admin's association form keeps free text for city
+and region.
+
+**D-100 Registration: both emails required, association logo, larger wheel (2026-10-27, owner's
+request).**
+- «البريد الإلكتروني الرسمي» of the association and «بريد المسؤول» are required on the
+  registration form and by the server (`requiredEmail`).
+- The form takes an optional association logo (PNG, JPEG or WebP, up to 2 MB) under the name. With
+  no session, it is staged through the public route `/api/registration/logo` (same-origin only,
+  ten uploads per hour per client) under a fixed uploader and the `registration-logo` context;
+  the upload's random id is what the form posts, usable once within the hour. On submission the
+  file moves to `images/` and its key is kept on the application (`logoKey`); reviewers see it on
+  the application page (served only to `registrations.review`). On approval the key moves to the
+  new association and is cleared on the application, so a later logo change on the association
+  never leaves the application pointing at a removed file.
+- The registration wheel is larger (760px disc; 360px visible from 1280px, 400px from 1536px) and
+  darker (the facing photo under 70% green, the others under 90%).
+
+**D-101 «ملف الجمعية» for the association officer (2026-10-27, owner's request).** The navigation
+item is now a page (`/association/profile`): key figures (requests submitted, under review,
+approved, member since), an identity card (logo on a white plate over the green band, name,
+classification, licence, location, status), the registry data, the editable «بيانات التواصل
+والشعار», the programmes chosen at registration, the officer's account (with «تغيير كلمة المرور»)
+and the association's record (registration reference, submission, approval and joining dates).
+- The officer may change only the contact name, the official email, the phone (Saudi mobile, all
+  required) and the logo, through the new permission `associations.profile` (officer, own
+  association). The service always uses the actor's own association, never an id from the request;
+  the logo goes through the usual image pipeline, and `applyImageChange` accepts the officer only
+  for their own association. Name, licence, classification and location stay with the super admin
+  (a notice says so). An inactive association cannot be edited. Changes are audited as
+  `association.profile_updated` with before and after.
+
+**D-102 A simplified interface for the associations' officers (2026-10-28, owner's request).** Many
+of the officers who will use the platform are older and less used to web applications. The owner
+asked to keep the logic and make the association area as clear and uncluttered as possible. The
+staff areas are unchanged except where noted.
+- **Text size.** The whole interface is sized in rem, so the root size scales it. A «حجم الخط»
+  control (three letters «أ», `components/layout/text-size.tsx`) sits in the header of every
+  signed-in area and of the sign-in pages, and in the phone menu: normal 100%, large 112.5%,
+  larger 125%. The choice is kept on the device (`localStorage`) and applied before the first
+  paint by a script in the root layout. The association area (`AppShell easy`, `data-easy`) opens
+  at «كبير» until the officer chooses. Checked at 1024px with «أكبر»: no horizontal scrolling.
+- **Navigation.** الرئيسية، طلباتي، النماذج، ملف الجمعية، المساعدة, with the gold «تقديم طلب جديد»
+  as the only way to start a request (the duplicate «طلب جديد» item was removed). The phone menu
+  now starts with that gold button and the text-size control, and ends with a labelled
+  «تسجيل الخروج» (all roles).
+- **The request form became a wizard** (`request-wizard.tsx`): one subject per screen; moving
+  between steps saves the draft, and so does leaving a field (700ms after); a line says when it was
+  last saved; a button saves and leaves. The review step lists what was written with «تعديل» per
+  block and a checklist of what is still empty; after a refused send the server's completeness
+  list replaces it, each item with «الذهاب لإكماله» to its step. Each required file is a card
+  (attached or not, the accepted types, «اختيار ملف لإرفاقه» or drag and drop, an upload progress
+  bar, «استبدال بنسخة أحدث», «حذف» on never-submitted drafts). The old one-page form and its side
+  guide were removed (`RequestForm`, `RequirementFiles`, `FormSteps`, `NewRequestForm`).
+- **Messages** with the unit say who wrote each one («من الوحدة الإشرافية» / «منكم»), with one box
+  to write and an optional file; no reply threading for the officer. **«المساعدة»** (new) answers
+  seven questions with numbered steps (a new request, the statuses, a returned request, files,
+  messages, text size, the password), using the platform's real limits for files.
+- The staff request page (`RequestView`) lost its officer-only branches; associations have their
+  own page. Read-only addition: `services/association-home.ts`.
+- **The first version of the pages** gave the area a look of its own: statuses renamed in plain
+  words, «طلباتي» in four tabs by whose turn it was, requests only as cards, large page heads,
+  56px fields and buttons, separate wizard steps for the initiative's data and its files. The
+  owner found it odd, unclear and vague the same day; D-103 replaced it. The points above remain.
+
+**D-103 The association pages, second version (2026-10-28, owner's feedback on D-102).** The owner
+found the first version odd, unclear and vague, and asked why «النماذج» had no filter. What made it
+so: it left the platform's visual language for a look of its own; it enlarged twice (larger
+components on top of the larger root size); it renamed the statuses, so the association and the
+unit no longer used the same words; its sentences were general where facts were needed; the
+request page showed progress three times; and the templates were one long list. The second version
+keeps the logic and D-102's text size, navigation, wizard, messages and help, and returns to the
+platform's components with the facts written out:
+- **One look.** The association pages use the page head, cards, tables, status pills, buttons and
+  fields of the rest of the platform at the design system's sizes; only the root size is larger
+  (112.5% by default). The first version's kit (`easy.tsx`) was removed.
+- **Official status names.** A status always shows the name the unit uses (`StatusText`; the super
+  admin can rename it). `lib/association-status.ts` only explains it: per system key one sentence
+  on what it means, the next step in a few words, whose turn it is («مطلوب منكم» or «لدى الوحدة
+  الإشرافية»), and for drafts and returned requests what to do.
+- **Requests** (`AssocRequestsTable`): a table (الطلب with its number and programme, تاريخ الإرسال,
+  الحالة, الخطوة التالية with whose turn, and one worded button: «إكمال الطلب», gold «تعديل الطلب»,
+  «عرض الطلب»), or, where the table has no room, a list of entries with the same facts; returned
+  requests are tinted. The switch is a container query in rem (64rem), so it follows the chosen
+  text size as well as the screen. «طلباتي» filters by the official statuses with counted tiles
+  (`?status=`; the two transient statuses, submitted and completeness check, only when not zero)
+  and a search; D-102's `group` filter was removed.
+- **Home:** the key figures (sent, under review, returned, approved; each opens «طلباتي» at that
+  status; labels wrap rather than being cut), each returned request as a notice with the
+  supervisor's latest note, its date and «تعديل الطلب», a notice for drafts, «آخر طلبات الجمعية»,
+  and «كيف يسير الطلب؟» in four steps with the configured review period.
+- **The request page** has the staff page's structure: the head with the official status and
+  «العودة إلى طلباتي»; the four stages and four facts (date sent, last update, next step, and the
+  review time left; before the review starts, its length, e.g. «٧ أيام عمل بعد إعادة الإرسال»; or
+  the decision date), four in a row only where a date fits on one line; a «حالة الطلب» panel (what
+  the status means, the supervisor's notes or the decision's note with their dates, what was
+  missing when sending failed, «المطلوب منكم» with the button); then messages, data and files; the
+  actions and the history at the side.
+- **A new request** follows the registration page: the steps listed at the side (`StepsAside`; on
+  phones «الخطوة ١ من ٥» with a bar) and one card per step (`StepCard`). Step one is the programme
+  cards and the initiatives as a list of choices (with a search above six), then «اخترتم: …». The
+  initiative's data and files now share one step, «متطلبات المبادرة», shown only when the
+  initiative has requirements. Every field is required unless marked «(اختياري)».
+- **«النماذج» can be filtered by programme:** a side list «اختاروا البرنامج» with «جميع البرامج»,
+  «نماذج عامة لكل البرامج» and each programme that has published templates, with counts
+  (`?program=`), and a search by title. With all programmes shown, the templates are grouped under
+  their programme. Each one shows its file type as a coloured tag (PDF, Word, Excel), its
+  description, the initiative it is for, the attachment it is uploaded as, its size and last
+  update, and «تنزيل». Read-only services: `readerTemplates`, `readerTemplateFilters` (published
+  templates only, `templates.read`).
+- **«ملف الجمعية» and «المساعدة»** use the standard two-column layout; the help lists the official
+  status names with their meaning and next step from the same source.
+- Shared changes: an `Alert` keeps at least 15rem for its text, so on a narrow screen its buttons
+  move below it instead of squeezing it (all roles); `KpiRow` takes `wrap`. Verified at 1440px,
+  1024px and 390px with the three text sizes (no horizontal scrolling), with temporary preview
+  requests and templates on the demo association, deleted afterwards.
+
+**D-104 The request form speaks of «المشروع» (2026-10-28, owner's request).** Once the association
+has chosen the programme and initiative, the form talks about the project, not the request: the
+general fields are «اسم المشروع» and «وصف المشروع» (`GENERAL_FIELD_LABELS`, so validation and
+completeness messages follow), the first step is «عن المشروع», and the review, the help page, the
+request views and the title column/search use the same words. «الطلب» stays for the envelope:
+sending, statuses, the request number and the list of requests. Data model unchanged (`title`,
+`description`).
+
+**D-105 Gold actions and red alerts for the association (2026-10-28, owner's request, "for now").**
+In the association area every filled action button (submit, continue, send, edit, download, save)
+uses the `gold` variant (`#8a6f2e`) instead of green `primary`, and the alerts that ask the
+association to act (request returned, unsent drafts, missing items before sending) use the `danger`
+tone. Outline and ghost buttons, success messages and the informational note on «ملف الجمعية» are
+unchanged. Other roles are unchanged.
+
+**D-106 User menu and accessibility panel in the header (2026-10-28, owner's request).** The user
+chip opens a menu (as in the design handoff) holding «المساعدة» (the association's help page, now
+out of its navigation bar; `HELP_HREF`) and «تسجيل الخروج», which left the header row for every
+role. The inline text-size buttons gave way to the handoff's access icon, which opens «أدوات سهولة
+الوصول» with the text size and the theme (light or dark), on the signed-in, public and login
+headers. The handoff's language button is left out (Arabic only); its high-contrast switch was
+added the same day (D-107). The phone drawer keeps its text size and sign-out.
+
+**D-107 High contrast (2026-10-28, owner's request).** «التباين العالي» (تشغيل / إيقاف) in the
+accessibility panel sets `data-contrast="high"` on the root, kept on the device
+(`rifada-contrast`) and applied before first paint like the theme. `tokens.css` overrides the tokens
+on top of either theme: black (or white) text, near-black muted text, darker greens, gold and
+status colours in light, lighter ones in dark, visible borders and a black (gold in dark) focus
+ring. Screen only.
+
+**D-108 Notification bell; the theme button leaves the signed-in header (2026-10-28, owner's
+request).** The theme is now set in the accessibility panel (D-106), so the signed-in header's moon
+button gave way to the bell of the design handoff: the unread count on the bell and the latest eight
+notifications (`listNotifications`) in a panel; opening one marks it read
+(`markNotificationReadAction`, own rows only) and «تعليم الكل كمقروء» clears them. A full
+notification centre page remains Phase 4 work. The public and login headers keep the moon. The
+signed-in and login footer shows the Presidency's white logo above the copyright line.
+
+**D-109 The association's look on every role (2026-10-28, owner's request).** What D-105 and the
+association tweaks did for one area now applies platform-wide: the `primary` button variant is the
+gold action (`#8a6f2e`, dark-mode gold in dark), table headers are 14px bold ink (`TH`,
+`SortHeader`, dashboard tables), key-figure labels are bold ink and captions semibold (`KpiRow`,
+`BandFigures`), and «النماذج» reads «المرفقات» in every menu and page title. The association keeps
+its larger text and its red alerts; other roles' alerts are unchanged.
+
+**D-110 The request as a formal document (2026-10-28, owner's request).** «طباعة الطلب (PDF)» on
+the association's and the staff's request pages opens `/account/requests/[id]/print`: an A4
+portrait document in black and white (logos in greyscale) with a letterhead, a reference table,
+numbered sections in bordered tables (applicant, programme and initiative, project, initiative
+requirements, attachments, the unit's decision), signature lines and a stamp area, and the issuing
+line and «صفحة ن من م» in the page margin. The browser saves it as PDF. Access follows
+`getRequestDetail` (404 outside the reader's scope). The general print styles stay as they were.
+
+**D-111 Live notifications, auto-read and toasts (2026-10-28, owner's request).** `notify()` and
+the read paths call `signalUsers`, a `pg_notify` inside the same transaction (delivered on
+commit). Each app process holds one `LISTEN` connection (`src/server/realtime.ts`, reconnects
+after 5 s, only while someone listens) and fans signals out per user to
+`/api/notifications/stream`, a Server-Sent Events stream (snapshot on connect, coalesced updates,
+25 s heartbeat, browser retry 15 s). SSE was chosen over WebSockets: the traffic is one-way, it
+runs on `next start` without a custom server, and it passes Caddy as is. The bell keeps one
+EventSource per tab; a new notification shows a toast and, when the user allowed it from the bell
+and the tab is in the background, a system notification. Opening a request (or its edit page)
+marks the user's notifications for it read (`MarkRequestSeen`). Toasts (`src/components/ui/
+toaster.tsx`) confirm saves and creations (`useActionForm`, confirm dialogs), sending a request,
+saving a draft, decisions, reassignment, comments and messages.
+
+**D-112 Pages open at the top; «الأدلة والنماذج» (2026-10-29, owner's request).** Navigating to
+another page scrolls the window to its top (`src/components/layout/scroll-to-top.tsx` in the root
+layout); Next.js alone scrolled only the page segment into view, under the sticky header. Query-only
+links (tabs, sorting, filters) and back/forward keep their position; `/admin/associations/new` is
+left out at the owner's request. The published templates section («المرفقات») is renamed
+«الأدلة والنماذج» in the navigation, titles and links; request attachments and attachment types keep
+their names.
+
+**D-113 «الأدلة والنماذج», second version (2026-10-29, owner's request).** The owner found the page
+unclear and asked for clearer filters and realistic content. A template now has a kind
+(`TemplateKind`: GUIDE «دليل» for reading, FORM «نموذج» to fill in and attach; existing rows default
+to FORM), chosen by the super admin in the template form and shown as a column in the admin list.
+Every reader (association, supervisor, unit manager) gets the same page
+(`components/templates/templates-library.tsx`): the kind as tabs with counts, the programme
+(with counts for the chosen kind) and words in one search form with «مسح التصفية», a results line
+naming the active filters, and cards grouped by programme (guides before forms) with the kind, file
+type, programme and initiative, and for a form the attachment name it is uploaded under. The
+association page opens with three numbered steps. `npm run db:seed:dev-templates` adds ten
+published sample guides and forms (isDemo, one-page placeholder PDFs). The test template «do this»
+was archived (not deleted) in the local database.
+
+**D-114 The association prints only an approved request (2026-10-29, owner's request).** «طباعة
+الطلب (PDF)» is offered to the association only when the request is approved
+(`RequestCapabilities.canPrint`); before that its request page says that printing opens after the
+unit's approval, and the print route answers 404. Staff print at any stage, as before (D-110).
+
+**D-115 Several initiatives in one request; the association's own files (2026-10-29, owner's
+request).** The association chooses one programme and one or more of its initiatives (checkboxes,
+in the order ticked, with the chosen ones shown as removable chips). `request_initiatives` holds
+every chosen initiative; `Request.initiativeId` stays the first one, so lists, filters and
+dashboards keep working, and the migration links every existing request to its initiative. The
+requirements of the chosen initiatives are combined without repeats (owner's choice): a field once
+per key, a file once per attachment type, required when any initiative requires it; the snapshot
+at submission keeps the combined list. Submission checks that every chosen initiative is still
+open. On the review step the association may add files of its own beyond the requirements
+(«ملفات إضافية من الجمعية»): any type the settings allow, within the storage quota, at most ten per
+request, with versions like any request file; staff see them with the request and in the printed
+document.
+
+**D-116 Two-step review: the supervisor evaluates and signs, the unit manager decides (2026-10-29,
+owner's request).** A request under review now has a `reviewStage` (SUPERVISOR, then MANAGER); its
+status stays «قيد المراجعة», so the association sees no step in between and no new notification
+until the request is approved, rejected or returned.
+- **Supervisor.** «اعتماد» became «تقييم واعتماد»: a dialog with the five acceptance criteria
+  (`config/review-criteria.ts`, the owner's text), each met or not met with an optional note, the
+  reviewer's note («ملاحظة المراجع الفني»), a drawn signature (PNG, checked on the server) and the
+  password re-entered (a wrong one is refused and audited). It saves a `RequestEvaluation`, moves
+  the request to the unit manager and notifies the managers. The supervisor can no longer approve
+  directly (also not in bulk); return and reject stay until the request is sent on (owner's choice).
+- **Unit manager.** «اعتماد نهائي» only after the evaluation; return and reject at any time. A
+  decision sends the request back to the supervisor stage (a resubmitted request starts with the
+  supervisor again) and notifies the assigned supervisor of the outcome. The dashboard shows how
+  many requests wait for the manager; the request lists have a «مرحلة المراجعة» filter and mark
+  those rows «بانتظار مدير الوحدة».
+- **Programme and initiatives.** The supervisor (before sending) and the unit manager may change
+  them, never the content: only open programmes the assigned supervisor covers, so the request
+  stays in that supervisor's scope. The requirements snapshot is recomputed; files and data stay.
+  Each change is a `RequestScopeChange` (before, after, reason), audited; the supervisor is told
+  when the manager made it.
+- **Staff page.** Under the stepper (five steps for staff, with «اعتماد مدير الوحدة»), cards for
+  the programme and each initiative with «تعديل البرنامج والمبادرات»; the evaluation card (criteria,
+  notes, signature); «سجل الطلب» joins status moves, evaluations and changes. The printed request
+  shows the supervisor's drawn signature on staff copies and the unit manager's name once decided.
+
+**D-117 «تقييم واعتماد» in two short steps; the unit manager signs the final approval (2026-10-29,
+owner's feedback on D-116).** The owner found the evaluation dialog too wordy. It now has two
+steps: first «معايير القبول والامتثال» as one compact list (each criterion with ✓ / ✗ and a small
+note button that opens a note field only when wanted; the criteria's hints moved to a tooltip) and
+«ملاحظة المراجع الفني»; «توقيع وإرسال إلى مدير الوحدة» then shows only the signature box and the
+password, with «رجوع» and «تأكيد وإرسال». The unit manager's «اعتماد نهائي» (single or bulk) now
+also needs a drawn signature and the password (`approveRequests`; a wrong password is refused and
+audited); each approved request keeps a `RequestApproval` with the signature. The evaluation card
+shows both signatures side by side, and the printed request carries the manager's signature in
+its block.
+
+**D-118 «البرنامج والمبادرات» under the stepper (2026-10-29, owner's feedback, three rounds).** Neither
+a quiet strip nor a green banner with icons was right. It is now a card right under the stepper,
+typography only, no icons: the programme on the right on a light green ground with a gold rule
+(«البرنامج», then the name large and bold), the chosen initiatives on the left as a numbered list
+each in its own bordered box (one or two per row; with several, a small circled order number; the
+programme.initiative code «٣٫٣» was dropped as confusing), and a plain «تعديل» button when the
+user may change them. On a phone the programme sits above the list. For staff, the
+head's subtitle is only the association's name, since the programme is in the card.
+
+**D-119 «المسارات» above the programmes (2026-10-30, owner's request).** The Presidency's technical
+supervision falls under group nine (منظمات خدمة ضيوف الرحمن) and is organised in five tracks
+(«المسارات الخمسة في نطاق الإشراف الفني», names and descriptions from the early draft portal):
+الدعوة والإرشاد والتوعية الدينية والفكرية، العناية بالقرآن الكريم والمصاحف، العناية بالتطويف
+والمطوفين، البحوث العلمية والمطبوعات والترجمة، خدمة الحجاج والمعتمرين والزوار.
+- **Data.** `Track` (number, name, description, order, archived) and `TrackProgram`: a programme may
+  sit in several tracks. Seeded create-only from `prisma/seed/tracks.json`. Neither source PDF maps
+  programmes to tracks, so the seeded links are a proposal from the programme and initiative names
+  (الأئمة والمؤذنين → الدعوة والقرآن؛ الدروس العلمية وإجابة السائلين → الدعوة؛ إصدارات الحرمين →
+  البحوث؛ مقرأة الحرمين → القرآن؛ الحسبة والتوعية الميدانية → الدعوة والتطويف وخدمة الحجاج؛
+  الدورات التدريبية → الدعوة وخدمة الحجاج) for the super admin to correct.
+- **Editing.** «المسارات» is the first tab of «البرامج والمبادرات»: the super admin adds a track (numbered
+  after the last), edits its name and description, chooses its programmes and archives or restores
+  it; every change is audited. The unit manager and supervisors read it. Programmes in no active
+  track are listed in a warning.
+- **Internal only.** Association officers never see tracks: the loaders refuse them although they
+  read the taxonomy, and no association page shows them.
+- **Use.** «التوزيع على المسارات» on the unit manager's and the supervisor's dashboards: submitted
+  requests in the user's scope per track, through the request's programme (a programme in several
+  tracks counts in each), with the open ones, largest first, and «غير مصنّفة» in gold for programmes
+  in no track. The card is drawn on the green band with its pattern
+  (white bars, gold for «غير مصنّفة») so it stands apart from the white dashboard cards (owner's
+  request).
+
+**D-120 The unit manager edits the supervisor's evaluation (2026-10-30, owner's request).** While a
+request waits for the unit manager, «تقييم المشرف» has «تعديل التقييم»: the same compact criteria
+list (✓ / ✗, notes on request) and «ملاحظة المراجع الفني», pre-filled. The manager changes the
+criteria and the note, never the supervisor's signature; the evaluation keeps who edited it last
+and when («عدّله …» on the card, «عُدّل تقييم المشرف» in «سجل الطلب»), the change is audited with
+before and after, and the supervisor is notified. After the decision the evaluation can no longer be
+edited. The manager then approves with their own signature as before (D-117).
+
+**D-121 Programme and initiative descriptions on «طلب جديد» (2026-10-30, owner's request).**
+Associations often could not tell which programme and initiatives their project belongs under: the
+strategy outline gives only programme goals and short initiative names. Each programme and
+initiative now has a plain-language description (`prisma/seed/taxonomy-descriptions.json`), written
+from those names and goals as a draft for the Presidency to review in the admin taxonomy editors.
+The seed writes a description only where none is set (`npm run db:seed:descriptions` on an existing
+database), so later edits are kept. The first step of a new request shows each programme's
+description on its card (first lines) and in full above its initiatives, each initiative's
+description under its name, and the initiative search also matches descriptions. No external AI
+service is used.
+
+**D-122 Electronic seals and QR verification replace the drawn signatures (2026-10-30, owner's
+request, revising D-116 and D-117).** The owner wants a systematic, government-grade signature
+instead of a signature drawn with the mouse, unique to each request and checkable by scanning.
+- **Signing.** The supervisor («توقيع وإرسال إلى مدير الوحدة») and the unit manager («توقيع واعتماد»)
+  still confirm with their password, which is checked and audited as before. The drawing box is gone.
+  The server then seals the signing: a statement in canonical JSON (kind, serial, request, signer's
+  id, name and role, time, the SHA-256 fingerprint of the request's content, of the evaluation, and
+  for an approval the supervisor's seal it approved and the verification code), signed with an
+  Ed25519 key that only the server holds (`SEAL_PRIVATE_KEY` in `.env`, made by
+  `npm run seal:keygen`). Each seal has a serial number `RFD-SIG-<hijriYear>-<seq>`
+  (`request_seals`, `seal_counters`). A bulk approval seals every request separately.
+- **Content fingerprint.** The request's reference, association, programme and initiatives (by id),
+  its fields and dates, and each file's current version with its SHA-256. Ids rather than names, so
+  renaming a programme or association leaves documents valid; any change to the request does not.
+- **The document.** The signature lines show «موقّع إلكترونيًا» with the seal number for the
+  supervisor and the unit manager; an approved request carries one QR code, unique to it, linking to
+  `/verify/<code>`, with the code (12 Crockford base32 characters, `XXXX-XXXX-XXXX`) printed under it
+  and a sentence on how to verify. The dashed «الختم الرسمي» circle is removed. The association's
+  copy carries the same seals and QR code (owner's choice); the evaluation itself stays staff-only.
+- **Verification.** `/verify` is public (owner's choice): type the code or scan the QR code with the
+  phone camera (the browser's `BarcodeDetector`, `jsqr` where it is missing, e.g. iPhone). The result
+  re-checks the seals' signatures, that the request is still approved under that approval, and that
+  its content and evaluation still match the fingerprints: «وثيقة صحيحة وسارية», «الوثيقة لم تعد
+  مطابقة» (changed after approval), «الوثيقة لم تعد سارية» (returned or decided again), «تعذّر
+  التحقق من الختم الإلكتروني» (altered seal), or not found. The public answer is minimal (reference,
+  association, project, programme, approval date, signers and seal numbers); staff also see the key
+  id, the seal digest and a link to the request. Every check is audited (`document.verified`) and
+  limited to 30 per address per ten minutes. «التحقق من وثيقة» is in the unit manager's and the
+  supervisor's navigation and in the public footer.
+- **Existing data.** The migration drops the drawn signatures; `npm run seal:backfill` seals the
+  earlier evaluations and approvals, dated as signed, against the requests as they stand.
+- **Limits.** This is a strong system seal, not yet a qualified digital signature under the
+  Electronic Transactions Law; that needs a certificate from the National Center for Digital
+  Certification. The key is a single setting, so it can later move to an HSM or such a certificate.
+  Replacing the key makes earlier documents fail verification; keep it backed up.
+
+**D-123 The association chooses the track and the request type; supervisors cover tracks
+(2026-10-30, owner's request).** Associations kept choosing the wrong programme and initiatives, so
+they no longer choose them. A new request starts with the project's name, «المسار المستهدف» (one of
+the tracks, D-119, now shown to associations with their descriptions) and «نوع الطلب» (a new list,
+`RequestType`, managed by the super admin under «أنواع الطلبات»: add, edit, pause, archive; the
+migration loads the design handoff's three). The form follows the handoff: name, track, type and
+description are required; goals and outputs, expected beneficiaries, period, estimated budget
+(SAR), KPIs, partners and supporting files are optional. Initiative requirements no longer apply to
+new requests; requests submitted before keep their recorded snapshot. «الفئة المستهدفة» and «مكان
+التنفيذ» are no longer asked and show only where filled. Supervisors are assigned to tracks
+(`SupervisorTrack` replaces `SupervisorProgram`; the migration gives each supervisor every track
+linked to one of their programmes): auto-assignment, reassignment and the supervisor's read scope go
+by the request's track. On the request page the staff see the track, the type and the programmes of
+that track; classifying the request under a programme and initiatives of its track is optional and
+uses the existing scope dialog (D-116); a request can be approved without it. Existing requests got
+the first track (by number) linked to their programme and «اعتماد مشروع/برنامج». Dashboards count
+requests per chosen track; «حسب البرنامج» counts classified requests only. Seals made from now on
+(version 2) also cover the track, the type and the new fields; version 1 seals are still checked
+against what they covered. This supersedes the association's choice in D-083, D-102 and D-115.
+
+Later the same day (owner's review of D-123): «تقديم طلب جديد» opens the form directly at «عن المشروع»
+(name, track, type, description, goals); the draft is created on the first «التالي» with what was
+typed, and the address stays /new so the form keeps its state. Required at submission: name,
+track, type, description, goals and outputs, «الفئات المستهدفة» (free text, one group per line, not
+a number), estimated budget, start and end dates; KPIs and partners are optional. The start date may never be before
+today (the calendar greys out earlier days, a save refuses a newly typed past date, and every
+submission, resubmissions included, checks it; this replaces D-078's first-submission-only rule),
+and the end date may not be before the start. Any value refused on saving or sending opens its step
+and puts the cursor in the field.

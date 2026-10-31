@@ -5,14 +5,14 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { ForbiddenError, type Actor } from "@/server/authz/scope";
 import { getOverview, getWorkload } from "@/server/services/dashboard";
 import { assignmentOverview } from "@/server/services/requests/assignment";
-import { attachRequirementFile, canUploadTo, removeDraftAttachment, requestFile } from "@/server/services/requests/attachments";
+import { attachOwnFile, canUploadTo, removeDraftAttachment, requestFile } from "@/server/services/requests/attachments";
 import { addComment } from "@/server/services/requests/comments";
 import { saveDraft } from "@/server/services/requests/drafts";
 import { getRequestDetail, listRequests, parseRequestListParams, requestStatusCounts } from "@/server/services/requests/read";
 import { submitRequest } from "@/server/services/requests/submit";
 import { db, resetDatabase } from "../support/db";
 import { FIXTURES } from "../support/files";
-import { addVersion, attachPlan, makeRequestWorld, MIME, newDraft, stageFor, submittedRequest, validDraft, type RequestWorld } from "../support/requests";
+import { addVersion, attachPlan, evaluateAndApprove, makeRequestWorld, MIME, newDraft, stageFor, submittedRequest, validDraft, type RequestWorld } from "../support/requests";
 
 const storageRoot = mkdtempSync(join(tmpdir(), "rifada-requests-access-"));
 const previousStorage = process.env.STORAGE_DIR;
@@ -37,7 +37,7 @@ const staffRoles = ["admin", "manager", "supervisor"] as const;
 describe("draft privacy (change 19)", () => {
   it("no staff role can read, list, count or download a draft, its files or completeness result", async () => {
     const draft = await newDraft(w);
-    await saveDraft(w.actors.officer, draft, validDraft({ title: "مسودة سرية للجمعية", custom: {} }));
+    await saveDraft(w.actors.officer, draft, validDraft({ title: "مسودة سرية للجمعية", description: "" }));
     const attachmentId = await attachPlan(w.actors.officer, draft);
     expect((await submitRequest(w.actors.officer, draft)).ok).toBe(false); // a blocked check stays private too
     expect(await db.completenessCheck.count({ where: { requestId: draft } })).toBe(1);
@@ -75,13 +75,21 @@ describe("draft privacy (change 19)", () => {
     expect(await getRequestDetail(w.actors.supervisorP2, id)).toBeNull(); // other program
     expect(await getRequestDetail(w.actors.officer2, id)).toBeNull(); // other association
   });
+
+  it("the association prints the request only once it is approved; staff print it at any stage (D-114)", async () => {
+    const { id } = await submittedRequest(w);
+    expect((await getRequestDetail(w.actors.officer, id))?.capabilities.canPrint).toBe(false);
+    for (const role of staffRoles) expect((await getRequestDetail(w.actors[role], id))?.capabilities.canPrint, role).toBe(true);
+    await evaluateAndApprove(w, id);
+    expect((await getRequestDetail(w.actors.officer, id))?.capabilities.canPrint).toBe(true);
+  });
 });
 
 describe("request lists and counts", () => {
   it("are limited to the role's scope and the supervisor's queue to its own open requests", async () => {
     const a = await submittedRequest(w); // supervisor
     const b = await submittedRequest(w); // supervisor2
-    const c = await submittedRequest(w, w.actors.officer2, w.iP2); // supervisorP2, association 2
+    const c = await submittedRequest(w, w.actors.officer2, w.t2); // supervisorP2, association 2
     const ids = (page: { items: { id: string }[] }) => page.items.map((r) => r.id).sort();
     expect(ids(await listRequests(w.actors.manager, params("scope"), "scope"))).toEqual([a.id, b.id, c.id].sort());
     expect(ids(await listRequests(w.actors.admin, params("scope"), "scope"))).toEqual([a.id, b.id, c.id].sort());
@@ -95,7 +103,7 @@ describe("request lists and counts", () => {
     expect(Object.fromEntries(sup.items.map((r) => [r.id, r.decidable]))).toEqual({ [a.id]: true, [b.id]: false });
     expect((await listRequests(w.actors.admin, params("scope"), "scope")).items.every((r) => !r.decidable)).toBe(true);
     // Filters and search.
-    expect(ids(await listRequests(w.actors.manager, params("scope", { program: w.p2.id }), "scope"))).toEqual([c.id]);
+    expect(ids(await listRequests(w.actors.manager, params("scope", { track: w.t2.id }), "scope"))).toEqual([c.id]);
     expect(ids(await listRequests(w.actors.manager, params("scope", { supervisor: w.users.supervisor2.id }), "scope"))).toEqual([b.id]);
     expect(ids(await listRequests(w.actors.manager, params("scope", { q: "جمعية أخرى" }), "scope"))).toEqual([c.id]);
     const counts = await requestStatusCounts(w.actors.manager, "scope");
@@ -162,39 +170,28 @@ describe("internal notes never reach association officers", () => {
 });
 
 describe("attachments", () => {
-  it("keep several files per requirement, each with versions; identical bytes are refused", async () => {
+  it("keep several files, each with versions; identical bytes are refused", async () => {
     const id = await newDraft(w);
-    const first = await attachPlan(w.actors.officer, id, "program_plan", "a");
-    const second = await attachPlan(w.actors.officer, id, "program_plan", "b");
+    const first = await attachPlan(w.actors.officer, id, "a");
+    const second = await attachPlan(w.actors.officer, id, "b");
     expect(first).not.toBe(second);
     expect((await addVersion(w.actors.officer, id, first, "a")).ok).toBe(false); // same bytes as current
     expect(await addVersion(w.actors.officer, id, first, "a2")).toEqual({ ok: true, version: 2 });
     const detail = await getRequestDetail(w.actors.officer, id);
-    const plan = detail?.requirements.find((r) => r.key === "program_plan");
-    expect(plan?.files).toHaveLength(2);
-    expect(plan?.files.find((f) => f.attachmentId === first)?.versions.map((v) => v.versionNo)).toEqual([2, 1]);
-  });
-
-  it("refuse a file type the requirement does not accept, before using the staged upload", async () => {
-    const id = await newDraft(w);
-    const uploadId = await stageFor(w.actors.officer, id, "صورة.png", FIXTURES.png(), MIME.png);
-    const r = await attachRequirementFile(w.actors.officer, id, "program_plan", uploadId);
-    expect(r).toMatchObject({ ok: false });
-    // The upload is still usable for a requirement that accepts images.
-    expect((await attachRequirementFile(w.actors.officer, id, "supporting_documents", uploadId)).ok).toBe(true);
-    expect((await attachRequirementFile(w.actors.officer, id, "not_a_requirement", await stageFor(w.actors.officer, id))).ok).toBe(false);
+    expect(detail?.otherFiles).toHaveLength(2);
+    expect(detail?.otherFiles.find((f) => f.attachmentId === first)?.versions.map((v) => v.versionNo)).toEqual([2, 1]);
   });
 
   it("use staged uploads only by their uploader and only for the request they were staged for", async () => {
     const a = await newDraft(w);
     const b = await newDraft(w);
     const forA = await stageFor(w.actors.officer, a);
-    expect((await attachRequirementFile(w.actors.officer, b, "program_plan", forA)).ok).toBe(false);
+    expect((await attachOwnFile(w.actors.officer, b, forA)).ok).toBe(false);
     const other = await newDraft(w, w.actors.officer2);
     const theirs = await stageFor(w.actors.officer2, other);
-    expect((await attachRequirementFile(w.actors.officer, a, "program_plan", theirs)).ok).toBe(false);
-    expect((await attachRequirementFile(w.actors.officer, a, "program_plan", forA)).ok).toBe(true);
-    expect((await attachRequirementFile(w.actors.officer, a, "program_plan", forA)).ok).toBe(false); // used once
+    expect((await attachOwnFile(w.actors.officer, a, theirs)).ok).toBe(false);
+    expect((await attachOwnFile(w.actors.officer, a, forA)).ok).toBe(true);
+    expect((await attachOwnFile(w.actors.officer, a, forA)).ok).toBe(false); // used once
   });
 
   it("are uploaded only to the officer's own editable request; files leave only drafts", async () => {
@@ -244,7 +241,7 @@ describe("attachments", () => {
         uploadedById: w.users.officer.id,
       },
     });
-    const r = await attachRequirementFile(w.actors.officer, id, "program_plan", await stageFor(w.actors.officer, id));
+    const r = await attachOwnFile(w.actors.officer, id, await stageFor(w.actors.officer, id));
     expect(r.ok).toBe(false);
     expect(JSON.stringify(r)).toContain("حد التخزين");
   });

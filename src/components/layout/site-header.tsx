@@ -1,14 +1,14 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Logo, PresidencyLogo } from "@/components/brand/logo";
+import { Logo } from "@/components/brand/logo";
 import { brand } from "@/config/brand";
 
 /**
  * White header of every page (docs/DESIGN.md: App shell). The platform's identity (Rifada logo and
- * system name) leads at the start; utilities (theme, user, sign in or out) follow at the end, and
- * the Presidency's logo closes the header on the far side with its own clear space, so the two
- * marks no longer compete. It spans the full width of the screen; page content stays at 1360px.
- * `leading` holds the drawer button on narrow screens.
+ * system name) leads at the start; utilities (theme, user, sign in or out) follow at the end. The
+ * Presidency's logo lives in the public footer (owner's request, 2026-10-28). It spans the full
+ * width of the screen; page content stays at 1360px. `leading` holds the drawer button on narrow
+ * screens.
  */
 export function SiteHeader({
   href = "/",
@@ -38,11 +38,6 @@ export function SiteHeader({
         </Link>
         {middle ? <div className="hidden min-w-0 flex-1 xl:block">{middle}</div> : null}
         <div className="ms-auto flex items-center gap-1.5">{children}</div>
-        <span aria-hidden="true" className="hidden h-12 w-px bg-line md:block" />
-        {/* Wrapped: cn() does not merge classes, so `hidden` on the logo itself loses to its inline-flex. */}
-        <span className="hidden shrink-0 sm:inline-flex md:ms-1">
-          <PresidencyLogo height={44} priority />
-        </span>
       </div>
     </header>
   );

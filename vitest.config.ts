@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import { defineConfig } from "vitest/config";
@@ -21,6 +22,8 @@ export default defineConfig({
       DATABASE_URL: process.env.TEST_DATABASE_URL ?? "",
       BETTER_AUTH_URL: "http://localhost:3000",
       BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret-0123456789",
+      // A throwaway seal key per run (D-121); never the development or production key.
+      SEAL_PRIVATE_KEY: generateKeyPairSync("ed25519").privateKey.export({ format: "der", type: "pkcs8" }).toString("base64"),
     },
     fileParallelism: false,
     testTimeout: 20_000,

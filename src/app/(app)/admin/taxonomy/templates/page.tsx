@@ -14,7 +14,7 @@ import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/authz/permissions";
 import { templateFigures } from "@/server/services/admin/templates";
 
-export const metadata: Metadata = { title: "النماذج" };
+export const metadata: Metadata = { title: "الأدلة والنماذج" };
 
 export default async function AdminTemplatesPage({ searchParams }: PageProps<"/admin/taxonomy/templates">) {
   const user = await requireUser();
@@ -25,7 +25,7 @@ export default async function AdminTemplatesPage({ searchParams }: PageProps<"/a
     <>
       <PageBand
         compact
-        title="النماذج"
+        title="الأدلة والنماذج"
         lead="ملفات تنزّلها الجمعيات لتعبئتها وإرفاقها بطلباتها. لا يظهر النموذج إلا بعد نشره، ولا يُحذف؛ يُؤرشف ويبقى سجل ملفاته."
         actions={
           <Link href="/admin/taxonomy/templates/new" className={buttonClasses("onBand")}>

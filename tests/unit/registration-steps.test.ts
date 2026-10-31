@@ -15,8 +15,24 @@ describe("registration steps", () => {
 
   it("checks only the fields of the step", () => {
     const errors = errorsOf(1, { name: "جم", licenseNumber: "abc", city: "", contactPhone: "123", foundedYear: "", contactEmail: "", website: "" });
-    expect(Object.keys(errors).sort()).toEqual(["city", "classification", "contactPhone", "licenseNumber", "name", "region"]);
+    expect(Object.keys(errors).sort()).toEqual(["city", "classification", "contactEmail", "contactPhone", "licenseNumber", "name", "region"]);
     expect(errors.username).toBeUndefined();
+  });
+
+  it("takes only a city of the chosen region", () => {
+    const step1 = {
+      name: "جمعية سقيا الحرم",
+      licenseNumber: "1234",
+      classification: "منظمات خدمة ضيوف الرحمن",
+      region: "منطقة المدينة المنورة",
+      contactPhone: "0551234567",
+      foundedYear: "",
+      contactEmail: "info@example.org",
+      website: "",
+    };
+    expect(errorsOf(1, { ...step1, city: "ينبع" })).toEqual({});
+    expect(errorsOf(1, { ...step1, city: "جدة" }).city).toBe("اختر مدينة من مدن المنطقة المختارة.");
+    expect(errorsOf(1, { ...step1, city: "" }).city).toBe("اختر المدينة.");
   });
 
   it("passes a complete step", () => {
@@ -28,7 +44,7 @@ describe("registration steps", () => {
       city: "مكة المكرمة",
       foundedYear: "",
       contactPhone: "0551234567",
-      contactEmail: "",
+      contactEmail: "info@example.org",
       website: "",
     };
     expect(errorsOf(1, step1)).toEqual({});
@@ -44,7 +60,7 @@ describe("registration steps", () => {
       officerName: "فهد بن سعد",
       officerNationalId: "",
       officerPhone: "0551234567",
-      officerEmail: "",
+      officerEmail: "officer@example.org",
       username: "saqya.1",
       password: "Jamiya-2026-pass",
       confirmPassword: "Jamiya-2026-other",

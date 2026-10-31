@@ -4,12 +4,16 @@
 // the availability flags, and persists the result (CompletenessCheck, ranBy RULES).
 
 import { arabicList } from "./format";
-import { GENERAL_FIELD_LABELS, groupOfMime, type CustomValues, type RequirementSpec } from "./requests";
+import { GENERAL_FIELD_LABELS, REQUIRED_GENERAL_FIELDS, groupOfMime, type CustomValues, type RequirementSpec } from "./requests";
 import { UPLOAD_GROUP_LABELS, type UploadGroup } from "./validation/settings";
 import { toWesternDigits } from "./validation/admin";
 
 export type MissingCode =
   | "association_inactive"
+  | "track_missing"
+  | "track_unavailable"
+  | "request_type_missing"
+  | "request_type_unavailable"
   | "program_unavailable"
   | "initiative_unavailable"
   | "general_missing"
@@ -30,8 +34,9 @@ export type CompletenessInput = {
   general: {
     title: string | null;
     description: string | null;
-    targetAudience: string | null;
-    location: string | null;
+    goals: string | null;
+    expectedBeneficiaries: string | null;
+    estimatedBudget: number | null;
     startDate: Date | null;
     endDate: Date | null;
   };
@@ -41,8 +46,13 @@ export type CompletenessInput = {
   files: readonly { typeKey: string | null; mime: string }[];
   /** `uploads.allowedGroups` from the settings. */
   allowedGroups: readonly string[];
-  availability: { associationActive: boolean; programAvailable: boolean; programName: string; initiativeAvailable: boolean; initiativeName: string };
-  /** The «start date is today or later» rule applies only at the first submission (D-078). */
+  /** The track and the request type the association chose (D-123): null when not chosen. */
+  availability: {
+    associationActive: boolean;
+    track: { name: string; available: boolean } | null;
+    requestType: { name: string; available: boolean } | null;
+  };
+  /** Kept for the callers; the «start date is today or later» rule now applies on every submission (D-123). */
   firstSubmission: boolean;
   /** Today in Asia/Riyadh, YYYY-MM-DD. */
   today: string;
@@ -72,18 +82,21 @@ export function checkCompleteness(input: CompletenessInput): MissingItem[] {
   const { availability: a } = input;
 
   if (!a.associationActive) add("association_inactive", "association", "حساب الجمعية غير نشط، فلا يمكن تقديم الطلب.");
-  if (!a.programAvailable) add("program_unavailable", "program", `البرنامج ${quoted(a.programName)} موقوف أو مؤرشف حاليًا، فلا تُقبل عليه طلبات جديدة.`);
-  if (!a.initiativeAvailable) add("initiative_unavailable", "initiative", `المبادرة ${quoted(a.initiativeName)} موقوفة أو مؤرشفة حاليًا، فلا تُقبل عليها طلبات جديدة.`);
+  if (!a.track) add("track_missing", "trackId", "المسار المستهدف مطلوب.");
+  else if (!a.track.available) add("track_unavailable", "trackId", `المسار ${quoted(a.track.name)} مؤرشف حاليًا؛ اختاروا مسارًا آخر.`);
+  if (!a.requestType) add("request_type_missing", "requestTypeId", "نوع الطلب مطلوب.");
+  else if (!a.requestType.available) add("request_type_unavailable", "requestTypeId", `نوع الطلب ${quoted(a.requestType.name)} موقوف حاليًا؛ اختاروا نوعًا آخر.`);
 
   const g = input.general;
-  for (const field of ["title", "description", "targetAudience", "location"] as const) {
+  for (const field of REQUIRED_GENERAL_FIELDS) {
     if (!g[field]?.trim()) add("general_missing", field, `${GENERAL_FIELD_LABELS[field]} مطلوب.`);
   }
   const start = g.startDate && !Number.isNaN(g.startDate.getTime()) ? g.startDate.toISOString().slice(0, 10) : null;
   const end = g.endDate && !Number.isNaN(g.endDate.getTime()) ? g.endDate.toISOString().slice(0, 10) : null;
   if (!start) add("general_missing", "startDate", `${GENERAL_FIELD_LABELS.startDate} مطلوب.`);
   if (!end) add("general_missing", "endDate", `${GENERAL_FIELD_LABELS.endDate} مطلوب.`);
-  if (start && input.firstSubmission && start < input.today) {
+  if (g.estimatedBudget === null) add("general_missing", "estimatedBudget", `${GENERAL_FIELD_LABELS.estimatedBudget} مطلوبة.`);
+  if (start && start < input.today) {
     add("start_in_past", "startDate", "تاريخ البداية يجب أن يكون اليوم أو بعده.");
   }
   if (start && end && end < start) add("end_before_start", "endDate", "تاريخ النهاية يجب ألا يسبق تاريخ البداية.");

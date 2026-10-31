@@ -11,7 +11,7 @@ Every rule is enforced on the server. Three layers apply to each request:
 3. **Data access**: every query of scoped data uses the scopers in `src/server/authz/scope.ts`, and every
    server action and route handler checks `can()` before acting.
 
-Scopes: **all** = every record; **own programs** = records in programs assigned to the supervisor;
+Scopes: **all** = every record; **own tracks** = records in tracks assigned to the supervisor (D-123);
 **own association** = records of the officer's association; **—** = denied.
 
 | Action | Description | SUPER_ADMIN (مدير النظام) | UNIT_MANAGER (مدير الوحدة) | SUPERVISOR (مشرف) | ASSOCIATION_OFFICER (مسؤول الجمعية) |
@@ -20,26 +20,27 @@ Scopes: **all** = every record; **own programs** = records in programs assigned 
 | `users.manage` | إنشاء المستخدمين وتعديلهم وتعطيلهم | all | — | — | — |
 | `associations.manage` | إنشاء الجمعيات وحساباتها وتعديلها واستيرادها | all | — | — | — |
 | `registrations.review` | مراجعة طلبات تسجيل الجمعيات واعتمادها أو رفضها | all | — | — | — |
-| `associations.read` | عرض بيانات الجمعيات | all | all | own programs | own association |
+| `associations.read` | عرض بيانات الجمعيات | all | all | own tracks | own association |
+| `associations.profile` | تعديل بيانات التواصل وشعار الجمعية من ملفها | — | — | — | own association |
 | `taxonomy.manage` | تعديل البرامج والمبادرات والأهداف ومتطلبات المبادرات وأنواع المرفقات | all | — | — | — |
 | `taxonomy.read` | عرض البرامج والمبادرات والأهداف | all | all | all | all |
 | `settings.manage` | تعديل إعدادات النظام وحالات الطلبات ووضع العرض التجريبي | all | — | — | — |
 | `statuses.read` | عرض حالات الطلبات وانتقالاتها ودورة حياة الطلب | all | all | — | — |
 | `templates.read` | عرض النماذج المنشورة وتنزيلها | all | all | all | all |
 | `audit.read` | عرض سجل التدقيق | all | — | — | — |
-| `content.manage` | إدارة الإعلانات والأدلة والنماذج | all | — | — | — |
-| `requests.read` | عرض الطلبات وتفاصيلها | all | all | own programs | own association |
+| `content.manage` | إدارة الإعلانات والأدلة والنماذج وكلمات الصفحة الرئيسية | all | — | — | — |
+| `requests.read` | عرض الطلبات وتفاصيلها | all | all | own tracks | own association |
 | `requests.create` | إنشاء طلب جديد وحفظه كمسودة | — | — | — | own association |
 | `requests.editDraft` | تعديل المسودة أو الطلب المعاد للتعديل وتقديمه | — | — | — | own association |
-| `requests.review` | إعادة الطلب للتعديل أو اعتماده أو رفضه | — | all | own programs | — |
+| `requests.review` | إعادة الطلب للتعديل أو اعتماده أو رفضه | — | all | own tracks | — |
 | `requests.auditTrail` | عرض سجل الاطلاع والتدقيق في صفحة الطلب | all | all | — | — |
 | `requests.assign` | إسناد الطلب إلى مشرف أو إعادة إسناده | — | all | — | — |
-| `comments.write` | إضافة تعليق على الطلب | — | all | own programs | own association |
-| `comments.readInternal` | قراءة الملاحظات الداخلية للفريق الإشرافي | all | all | own programs | — |
-| `comments.writeInternal` | إضافة ملاحظة داخلية لا تظهر للجمعية | — | all | own programs | — |
-| `attachments.read` | تنزيل مرفقات الطلب | all | all | own programs | own association |
-| `attachments.upload` | رفع مرفق أو إصدار جديد منه | — | all | own programs | own association |
-| `reports.read` | عرض التقارير وتصديرها | all | all | own programs | own association |
+| `comments.write` | إضافة تعليق على الطلب | — | all | own tracks | own association |
+| `comments.readInternal` | قراءة الملاحظات الداخلية للفريق الإشرافي | all | all | own tracks | — |
+| `comments.writeInternal` | إضافة ملاحظة داخلية لا تظهر للجمعية | — | all | own tracks | — |
+| `attachments.read` | تنزيل مرفقات الطلب | all | all | own tracks | own association |
+| `attachments.upload` | رفع مرفق أو إصدار جديد منه | — | all | own tracks | own association |
+| `reports.read` | عرض التقارير وتصديرها | all | all | own tracks | own association |
 | `dashboard.management` | لوحات المؤشرات الإدارية الشاملة | all | all | — | — |
 
 ## Rules worth calling out

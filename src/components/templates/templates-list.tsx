@@ -11,6 +11,7 @@ import { DataTable, SORT_TH, THead, Td, Th, Tr } from "@/components/ui/table";
 import { formatFileSize, formatNumber, toArabicDigits } from "@/lib/format";
 import type { SearchParams } from "@/lib/list-params";
 import { FILE_TYPES, type AllowedExtension } from "@/lib/uploads";
+import { TEMPLATE_KIND_LABEL } from "@/lib/validation/templates";
 import { can } from "@/server/authz/permissions";
 import type { Actor } from "@/server/authz/scope";
 import { db } from "@/server/db";
@@ -88,6 +89,7 @@ export async function TemplatesList({ actor, searchParams, path, view }: { actor
           <DataTable caption="النماذج" minWidth="52rem">
             <THead>
               <SortHeader label="النموذج" column="title" {...sortProps} />
+              <Th className="w-20">النوع</Th>
               <Th>البرنامج والمبادرة</Th>
               <Th className="w-40">الملف</Th>
               {view === "admin" ? <Th className="w-28">الحالة</Th> : null}
@@ -110,6 +112,7 @@ export async function TemplatesList({ actor, searchParams, path, view }: { actor
                     {t.description ? <span className="t-caption mt-0.5 line-clamp-2 block">{t.description}</span> : null}
                     {t.attachmentType ? <span className="t-caption mt-0.5 block">لمرفق: {t.attachmentType.name}</span> : null}
                   </Td>
+                  <Td className="text-sm">{TEMPLATE_KIND_LABEL[t.kind]}</Td>
                   <Td className="text-sm">
                     {t.program ? `${toArabicDigits(t.program.number)}. ${t.program.name}` : <span className="text-ink-subtle">عام لجميع البرامج</span>}
                     {t.initiative ? <span className="t-caption mt-0.5 block">المبادرة {toArabicDigits(t.initiative.number)}: {t.initiative.name}</span> : null}

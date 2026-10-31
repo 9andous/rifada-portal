@@ -69,10 +69,12 @@ export function RequestSelection({
           <span className="text-sm font-semibold text-primary">{requestsPhrase(chosen.length)} محددة</span>
           {tooMany ? <span className="text-xs text-st-bad">الحد الأقصى للإجراء الجماعي {requestsPhrase(max)}.</span> : null}
           <div className="ms-auto flex flex-wrap items-center gap-2">
-            <Button size="sm" onClick={() => value.openDecision("approve", chosen)} disabled={tooMany}>
-              <Check aria-hidden="true" strokeWidth={1.75} />
-              اعتماد المحدد
-            </Button>
+            {chosen.every((r) => r.approvable) ? (
+              <Button size="sm" onClick={() => value.openDecision("approve", chosen)} disabled={tooMany}>
+                <Check aria-hidden="true" strokeWidth={1.75} />
+                اعتماد المحدد
+              </Button>
+            ) : null}
             <Button size="sm" variant="outline" onClick={() => value.openDecision("return", chosen)} disabled={tooMany}>
               <RotateCcw aria-hidden="true" strokeWidth={1.75} />
               إعادة للتعديل
@@ -154,7 +156,7 @@ export function RowActions({ request }: { request: DialogRequest }) {
   const { openDecision } = useSelection();
   return (
     <span className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
-      {ROW_ACTIONS.map((a) => (
+      {ROW_ACTIONS.filter((a) => a.decision !== "approve" || request.approvable).map((a) => (
         <button
           key={a.decision}
           type="button"

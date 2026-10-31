@@ -7,7 +7,7 @@ const actor = (role: Actor["role"], extra: Partial<Actor> = {}): Actor => ({
   id: "u1",
   role,
   associationId: null,
-  programIds: [],
+  trackIds: [],
   ...extra,
 });
 
@@ -39,11 +39,11 @@ describe("permission matrix", () => {
     expect(can("ASSOCIATION_OFFICER", "comments.writeInternal")).toBe(false);
   });
 
-  it("limits supervisors to their programs for every scoped action they hold", () => {
+  it("limits supervisors to their tracks for every scoped action they hold", () => {
     for (const action of Object.keys(PERMISSIONS) as Action[]) {
       const scope = scopeFor("SUPERVISOR", action);
-      // Reference data shared with everyone (the taxonomy, published templates) is not program-scoped.
-      expect(scope === null || scope === "programs" || action === "taxonomy.read" || action === "templates.read").toBe(true);
+      // Reference data shared with everyone (the taxonomy, published templates) is not track-scoped.
+      expect(scope === null || scope === "tracks" || action === "taxonomy.read" || action === "templates.read").toBe(true);
     }
   });
 
@@ -63,16 +63,16 @@ describe("query scopers", () => {
   it("scopes requests per role", () => {
     expect(scopeRequests(actor("UNIT_MANAGER"))).toEqual({ referenceNo: { not: null } });
     expect(scopeRequests(actor("SUPER_ADMIN"))).toEqual({ referenceNo: { not: null } });
-    expect(scopeRequests(actor("SUPERVISOR", { programIds: ["p1", "p2"] }))).toEqual({
+    expect(scopeRequests(actor("SUPERVISOR", { trackIds: ["p1", "p2"] }))).toEqual({
       referenceNo: { not: null },
-      programId: { in: ["p1", "p2"] },
+      trackId: { in: ["p1", "p2"] },
     });
     expect(scopeRequests(actor("ASSOCIATION_OFFICER", { associationId: "a1" }))).toEqual({ associationId: "a1" });
   });
 
-  it("matches nothing for an officer without an association or a supervisor without programs", () => {
+  it("matches nothing for an officer without an association or a supervisor without tracks", () => {
     expect(scopeRequests(actor("ASSOCIATION_OFFICER"))).toEqual({ id: { in: [] } });
-    expect(scopeRequests(actor("SUPERVISOR"))).toEqual({ referenceNo: { not: null }, programId: { in: [] } });
+    expect(scopeRequests(actor("SUPERVISOR"))).toEqual({ referenceNo: { not: null }, trackId: { in: [] } });
   });
 
   it("denies review scope to officers", () => {
@@ -86,16 +86,16 @@ describe("query scopers", () => {
       request: { associationId: "a1" },
       isInternal: false,
     });
-    expect(scopeComments(actor("SUPERVISOR", { programIds: ["p1"] }))).toEqual({
-      request: { referenceNo: { not: null }, programId: { in: ["p1"] } },
+    expect(scopeComments(actor("SUPERVISOR", { trackIds: ["p1"] }))).toEqual({
+      request: { referenceNo: { not: null }, trackId: { in: ["p1"] } },
     });
     expect(scopeComments(actor("UNIT_MANAGER"))).toEqual({ request: { referenceNo: { not: null } } });
   });
 
   it("scopes associations per role", () => {
     expect(scopeAssociations(actor("ASSOCIATION_OFFICER", { associationId: "a1" }))).toEqual({ id: "a1" });
-    expect(scopeAssociations(actor("SUPERVISOR", { programIds: ["p1"] }))).toEqual({
-      requests: { some: { referenceNo: { not: null }, programId: { in: ["p1"] } } },
+    expect(scopeAssociations(actor("SUPERVISOR", { trackIds: ["p1"] }))).toEqual({
+      requests: { some: { referenceNo: { not: null }, trackId: { in: ["p1"] } } },
     });
   });
 });

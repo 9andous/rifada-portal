@@ -44,24 +44,29 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  association          Association?            @relation(fields: [associationId], references: [id])
-  sessions             Session[]
-  accounts             Account[]
-  supervisedPrograms   SupervisorProgram[]
-  assignedRequests     Request[]               @relation("AssignedSupervisor")
-  createdRequests      Request[]               @relation("RequestCreator")
-  statusChanges        RequestStatusHistory[]
-  comments             Comment[]
-  notifications        Notification[]
-  auditLogs            AuditLog[]
-  assignmentsMade      AssignmentHistory[]     @relation("AssignmentActor")
-  assignmentsReceived  AssignmentHistory[]     @relation("AssignmentTo")
-  assignmentsReleased  AssignmentHistory[]     @relation("AssignmentFrom")
-  uploadedAttachments  Attachment[]
-  uploadedVersions     AttachmentVersion[]
-  settingsUpdated      Setting[]
-  templateFiles        TemplateFile[]
+  association           Association?              @relation(fields: [associationId], references: [id])
+  sessions              Session[]
+  accounts              Account[]
+  supervisedTracks      SupervisorTrack[]
+  assignedRequests      Request[]                 @relation("AssignedSupervisor")
+  createdRequests       Request[]                 @relation("RequestCreator")
+  statusChanges         RequestStatusHistory[]
+  comments              Comment[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  assignmentsMade       AssignmentHistory[]       @relation("AssignmentActor")
+  assignmentsReceived   AssignmentHistory[]       @relation("AssignmentTo")
+  assignmentsReleased   AssignmentHistory[]       @relation("AssignmentFrom")
+  uploadedAttachments   Attachment[]
+  uploadedVersions      AttachmentVersion[]
+  settingsUpdated       Setting[]
+  templateFiles         TemplateFile[]
   reviewedRegistrations AssociationRegistration[] @relation("RegistrationReviewer")
+  evaluations           RequestEvaluation[]       @relation("RequestEvaluations")
+  approvals             RequestApproval[]         @relation("RequestApprovals")
+  evaluationEdits       RequestEvaluation[]       @relation("RequestEvaluationEdits")
+  scopeChanges          RequestScopeChange[]      @relation("RequestScopeChanges")
+  seals                 RequestSeal[]             @relation("RequestSeals")
 
   @@index([role])
   @@map("users")
@@ -121,9 +126,9 @@ model Verification {
 // ---------------------------------------------------------------------------
 
 model Association {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   name           String
-  licenseNumber  String?   @unique
+  licenseNumber  String?  @unique
   city           String?
   region         String?
   classification String?
@@ -132,10 +137,10 @@ model Association {
   contactPhone   String?
   /// Association logo in file storage (images/<key>); optional, initials are shown without it.
   logoKey        String?
-  isActive       Boolean   @default(true)
-  isDemo         Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  isActive       Boolean  @default(true)
+  isDemo         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   officer      User?
   requests     Request[]
@@ -164,6 +169,39 @@ model StrategicObjective {
   @@map("strategic_objectives")
 }
 
+// «المسارات الخمسة في نطاق الإشراف الفني» (D-119): internal classification above the programmes,
+// for the unit's staff only. A programme may sit in several tracks; nothing is deleted, a track is
+// archived.
+model Track {
+  id          String    @id @default(cuid())
+  number      Int       @unique
+  name        String
+  description String?
+  sortOrder   Int       @default(0)
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  programs    TrackProgram[]
+  supervisors SupervisorTrack[]
+  requests    Request[]
+
+  @@map("tracks")
+}
+
+model TrackProgram {
+  trackId   String
+  programId String
+  createdAt DateTime @default(now())
+
+  track   Track   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@id([trackId, programId])
+  @@index([programId])
+  @@map("track_programs")
+}
+
 model Program {
   id           String    @id @default(cuid())
   number       Int       @unique
@@ -179,8 +217,8 @@ model Program {
   updatedAt    DateTime  @updatedAt
 
   goals       ProgramGoal[]
+  tracks      TrackProgram[]
   initiatives Initiative[]
-  supervisors SupervisorProgram[]
   requests    Request[]
   templates   Template[]
 
@@ -188,7 +226,7 @@ model Program {
 }
 
 model ProgramGoal {
-  id        String   @id @default(cuid())
+  id         String    @id @default(cuid())
   programId  String
   number     Int
   text       String
@@ -220,6 +258,7 @@ model Initiative {
   objectiveLinks InitiativeObjectiveLink[]
   requirements   InitiativeRequirement[]
   requests       Request[]
+  requestLinks   RequestInitiative[]
   templates      Template[]
 
   @@unique([programId, number])
@@ -287,16 +326,35 @@ model InitiativeRequirement {
   @@map("initiative_requirements")
 }
 
-model SupervisorProgram {
+// The tracks a supervisor covers (D-123): new requests of those tracks are assigned to them, and
+// they read every submitted request of those tracks.
+model SupervisorTrack {
   userId    String
-  programId String
+  trackId   String
   createdAt DateTime @default(now())
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
 
-  @@id([userId, programId])
-  @@map("supervisor_programs")
+  @@id([userId, trackId])
+  @@index([trackId])
+  @@map("supervisor_tracks")
+}
+
+// «نوع الطلب» (D-123): the kinds of request an association can submit, managed by the super admin.
+model RequestType {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  requests Request[]
+
+  @@map("request_types")
 }
 
 // ---------------------------------------------------------------------------
@@ -348,34 +406,49 @@ model ReferenceCounter {
 }
 
 model Request {
-  id                   String    @id @default(cuid())
+  id                    String      @id @default(cuid())
   // Assigned on first successful submission: RF-<hijriYear>-<seq>.
-  referenceNo          String?   @unique
-  associationId        String
-  programId            String
-  initiativeId         String
-  statusId             String
-  title                String
-  description          String?
-  targetAudience       String?
-  location             String?
-  startDate            DateTime?
-  endDate              DateTime?
-  customFields         Json      @default("{}")
+  referenceNo           String?     @unique
+  associationId         String
+  // The association chooses the track and the request type (D-123); the supervisor may later
+  // classify the request under a programme and initiatives of that track, or leave it unclassified.
+  trackId               String?
+  requestTypeId         String?
+  programId             String?
+  // The first chosen initiative; every chosen one is in `initiatives` (D-115).
+  initiativeId          String?
+  statusId              String
+  title                 String
+  description           String?
+  targetAudience        String?
+  goals                 String?
+  location              String?
+  startDate             DateTime?
+  endDate               DateTime?
+  expectedBeneficiaries String?
+  // Saudi riyals.
+  estimatedBudget       Int?
+  kpis                  String?
+  partners              String?
+  customFields          Json        @default("{}")
   // The initiative's requirements as they stood at the last successful submission (D-077).
-  requirementsSnapshot Json?
-  assignedSupervisorId String?
-  createdById          String
-  submittedAt          DateTime?
-  decidedAt            DateTime?
-  slaDueAt             DateTime?
-  isDemo               Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  requirementsSnapshot  Json?
+  assignedSupervisorId  String?
+  // Who acts next while the request is under review (D-116): the supervisor, then the unit manager.
+  reviewStage           ReviewStage @default(SUPERVISOR)
+  createdById           String
+  submittedAt           DateTime?
+  decidedAt             DateTime?
+  slaDueAt              DateTime?
+  isDemo                Boolean     @default(false)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
   association        Association            @relation(fields: [associationId], references: [id], onDelete: Restrict)
-  program            Program                @relation(fields: [programId], references: [id], onDelete: Restrict)
-  initiative         Initiative             @relation(fields: [initiativeId], references: [id], onDelete: Restrict)
+  track              Track?                 @relation(fields: [trackId], references: [id], onDelete: Restrict)
+  requestType        RequestType?           @relation(fields: [requestTypeId], references: [id], onDelete: Restrict)
+  program            Program?               @relation(fields: [programId], references: [id], onDelete: Restrict)
+  initiative         Initiative?            @relation(fields: [initiativeId], references: [id], onDelete: Restrict)
   status             RequestStatus          @relation(fields: [statusId], references: [id], onDelete: Restrict)
   assignedSupervisor User?                  @relation("AssignedSupervisor", fields: [assignedSupervisorId], references: [id])
   createdBy          User                   @relation("RequestCreator", fields: [createdById], references: [id])
@@ -384,12 +457,134 @@ model Request {
   completenessChecks CompletenessCheck[]
   comments           Comment[]
   attachments        Attachment[]
+  initiatives        RequestInitiative[]
+  evaluations        RequestEvaluation[]
+  approvals          RequestApproval[]
+  scopeChanges       RequestScopeChange[]
+  seals              RequestSeal[]
 
   @@index([associationId])
+  @@index([trackId])
   @@index([programId])
   @@index([statusId])
   @@index([assignedSupervisorId])
   @@map("requests")
+}
+
+enum ReviewStage {
+  SUPERVISOR
+  MANAGER
+}
+
+// The supervisor's «تقييم واعتماد» (D-116): the acceptance criteria met or not with notes, the
+// reviewer's note, sealed electronically after re-entering the password (D-122). Staff only.
+model RequestEvaluation {
+  id         String    @id @default(cuid())
+  requestId  String
+  reviewerId String
+  // [{ key, met, note }] for the criteria in src/config/review-criteria.ts.
+  criteria   Json
+  note       String?
+  // The unit manager's last change to the criteria or the note (D-120); the seal stays.
+  editedById String?
+  editedAt   DateTime?
+  createdAt  DateTime  @default(now())
+
+  request  Request      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  reviewer User         @relation("RequestEvaluations", fields: [reviewerId], references: [id])
+  editedBy User?        @relation("RequestEvaluationEdits", fields: [editedById], references: [id])
+  seal     RequestSeal?
+
+  @@index([requestId])
+  @@map("request_evaluations")
+}
+
+// The unit manager's final approval (D-117), sealed electronically after re-entering the password (D-122).
+model RequestApproval {
+  id        String   @id @default(cuid())
+  requestId String
+  managerId String
+  createdAt DateTime @default(now())
+
+  request Request      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  manager User         @relation("RequestApprovals", fields: [managerId], references: [id])
+  seal    RequestSeal?
+
+  @@index([requestId])
+  @@map("request_approvals")
+}
+
+enum SealKind {
+  EVALUATION
+  APPROVAL
+}
+
+// The electronic seal of a signing (D-122): the supervisor's evaluation or the unit manager's
+// approval. `payload` is the exact signed statement (canonical JSON: who, when, the fingerprint of
+// the request's content); `signature` is its Ed25519 signature with the server's key `keyId`. An
+// approval seal carries the verification code printed under the document's QR code.
+model RequestSeal {
+  id           String   @id @default(cuid())
+  // RFD-SIG-<hijriYear>-<seq>
+  serial       String   @unique
+  requestId    String
+  kind         SealKind
+  signerId     String
+  evaluationId String?  @unique
+  approvalId   String?  @unique
+  verifyCode   String?  @unique
+  payload      String
+  digest       String
+  signature    String
+  keyId        String
+  createdAt    DateTime @default(now())
+
+  request    Request            @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  signer     User               @relation("RequestSeals", fields: [signerId], references: [id])
+  evaluation RequestEvaluation? @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  approval   RequestApproval?   @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("request_seals")
+}
+
+model SealCounter {
+  hijriYear Int @id
+  lastSeq   Int @default(0)
+
+  @@map("seal_counters")
+}
+
+// A change of the programme or initiatives by the supervisor or the unit manager (D-116). Staff only.
+model RequestScopeChange {
+  id        String   @id @default(cuid())
+  requestId String
+  actorId   String
+  // { program: { number, name }, initiatives: [{ number, name }] }
+  before    Json
+  after     Json
+  note      String?
+  createdAt DateTime @default(now())
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor   User    @relation("RequestScopeChanges", fields: [actorId], references: [id])
+
+  @@index([requestId])
+  @@map("request_scope_changes")
+}
+
+// The initiatives a request covers, all in its programme, in the association's order (D-115).
+model RequestInitiative {
+  requestId    String
+  initiativeId String
+  sortOrder    Int    @default(0)
+
+  request    Request    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  initiative Initiative @relation(fields: [initiativeId], references: [id], onDelete: Restrict)
+
+  @@id([requestId, initiativeId])
+  @@index([initiativeId])
+  @@map("request_initiatives")
 }
 
 model RequestStatusHistory {
@@ -515,9 +710,9 @@ model AttachmentVersion {
   isDemo       Boolean  @default(false)
   createdAt    DateTime @default(now())
 
-  attachment  Attachment  @relation("AttachmentVersions", fields: [attachmentId], references: [id], onDelete: Cascade)
-  currentOf   Attachment? @relation("CurrentVersion")
-  uploadedBy  User        @relation(fields: [uploadedById], references: [id])
+  attachment Attachment  @relation("AttachmentVersions", fields: [attachmentId], references: [id], onDelete: Cascade)
+  currentOf  Attachment? @relation("CurrentVersion")
+  uploadedBy User        @relation(fields: [uploadedById], references: [id])
 
   @@unique([attachmentId, versionNo])
   @@map("attachment_versions")
@@ -527,8 +722,15 @@ model AttachmentVersion {
 // Library, content, notifications
 // ---------------------------------------------------------------------------
 
+// A guide is read for reference; a form is filled in and attached to a request (D-113).
+enum TemplateKind {
+  GUIDE
+  FORM
+}
+
 model Template {
-  id               String    @id @default(cuid())
+  id               String       @id @default(cuid())
+  kind             TemplateKind @default(FORM)
   title            String
   description      String?
   programId        String?
@@ -540,11 +742,12 @@ model Template {
   mime             String
   size             Int
   sha256           String?
-  currentFileId    String?   @unique
-  isPublished      Boolean   @default(false)
+  currentFileId    String?      @unique
+  isPublished      Boolean      @default(false)
   archivedAt       DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  isDemo           Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   program        Program?        @relation(fields: [programId], references: [id])
   initiative     Initiative?     @relation(fields: [initiativeId], references: [id])
@@ -695,6 +898,8 @@ model AssociationRegistration {
   officerEmail      String?
   officerPhone      String
   officerNationalId String?
+  /// The association's logo sent with the application (images/<key>); moved to the association on approval.
+  logoKey           String?
   passwordHash      String?
   pledgeAcceptedAt  DateTime
   decisionNote      String?
@@ -729,4 +934,24 @@ model CoreValue {
   updatedAt   DateTime @updatedAt
 
   @@map("core_values")
+}
+
+/// Leadership statements shown one at a time in the home page hero (D-096), managed by the super
+/// admin. Seeded with the three statements of the strategy outline, whose portraits ship under
+/// public/ (`imagePath`); portraits added later are uploaded to file storage (`imageKey`).
+model HomeQuote {
+  id        String   @id @default(cuid())
+  quote     String
+  honorific String
+  name      String
+  title     String
+  imageKey  String?
+  imagePath String?
+  sortOrder Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("home_quotes")
 }

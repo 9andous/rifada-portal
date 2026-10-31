@@ -46,7 +46,7 @@ async function userFromHeaders(requestHeaders: Headers): Promise<{ user: Current
       avatarKey: true,
       associationId: true,
       association: { select: { name: true, logoKey: true } },
-      supervisedPrograms: { select: { programId: true } },
+      supervisedTracks: { select: { trackId: true } },
     },
   });
   if (!user || !user.isActive || !isRole(user.role)) return null;
@@ -62,7 +62,7 @@ async function userFromHeaders(requestHeaders: Headers): Promise<{ user: Current
     imageUrl:
       imageUrl("user", user.id, user.avatarKey) ??
       (user.associationId ? imageUrl("association", user.associationId, user.association?.logoKey) : null),
-    programIds: user.supervisedPrograms.map((p) => p.programId),
+    trackIds: user.supervisedTracks.map((t) => t.trackId),
     mustChangePassword: user.mustChangePassword,
   };
   return { user: current, sessionId: session.session.id };

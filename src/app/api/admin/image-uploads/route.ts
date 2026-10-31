@@ -5,7 +5,7 @@ import { can } from "@/server/authz/permissions";
 import { jsonResponse as json, sameOrigin, uploadContentLength, uploadFileName } from "@/server/http/upload-route";
 import { stageUpload } from "@/server/uploads/stage";
 
-// Streams one profile picture or association logo into staging, like the template uploads, but
+// Streams one profile picture, association logo or home page portrait into staging, like the template uploads, but
 // with fixed rules: PNG, JPEG or WebP only, at most IMAGE_MAX_MB, whatever the document settings
 // say. The upload is bound to the «image» context, so only the user and association forms take it.
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   const signedIn = await userFromRequest(request);
   if (!signedIn) return json(401, { message: "انتهت الجلسة؛ سجّل الدخول مرة أخرى." });
   const { user, sessionId } = signedIn;
-  if (user.mustChangePassword || !(can(user.role, "users.manage") || can(user.role, "associations.manage"))) {
+  if (user.mustChangePassword || !(can(user.role, "users.manage") || can(user.role, "associations.manage") || can(user.role, "content.manage") || can(user.role, "associations.profile"))) {
     return json(403, { message: "لا تملك صلاحية رفع الصور هنا." });
   }
 

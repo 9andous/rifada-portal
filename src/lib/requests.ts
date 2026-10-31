@@ -5,16 +5,26 @@ import { FILE_TYPES, type AllowedExtension } from "./uploads";
 import type { UploadGroup } from "./validation/settings";
 
 /** The six fixed general fields of every request (D-057). */
-export const GENERAL_FIELDS = ["title", "description", "targetAudience", "location", "startDate", "endDate"] as const;
-export type GeneralField = (typeof GENERAL_FIELDS)[number];
+// The request form of the design handoff (D-123). «الفئة المستهدفة» and «مكان التنفيذ» are no longer
+// asked; requests that have them still show them.
+export const GENERAL_FIELDS = ["title", "description", "goals", "expectedBeneficiaries", "startDate", "endDate", "estimatedBudget", "kpis", "partners"] as const;
+export type GeneralField = (typeof GENERAL_FIELDS)[number] | "targetAudience" | "location";
+
+/** Text fields required at submission, besides the track, the request type, the budget and the period. */
+export const REQUIRED_GENERAL_FIELDS = ["title", "description", "goals", "expectedBeneficiaries"] as const;
 
 export const GENERAL_FIELD_LABELS: Record<GeneralField, string> = {
-  title: "عنوان الطلب",
-  description: "وصف الطلب",
-  targetAudience: "الفئة المستهدفة",
-  location: "مكان التنفيذ",
+  title: "اسم المشروع أو البرنامج",
+  description: "وصف المشروع",
+  goals: "الأهداف والمخرجات المتوقعة",
+  expectedBeneficiaries: "الفئات المستهدفة",
   startDate: "تاريخ البداية",
   endDate: "تاريخ النهاية",
+  estimatedBudget: "الميزانية التقديرية (ر.س)",
+  kpis: "مؤشرات القياس",
+  partners: "الشركاء",
+  targetAudience: "الفئة المستهدفة",
+  location: "مكان التنفيذ",
 };
 
 /** Statuses in which the request waits on the unit (and counts as open workload). */

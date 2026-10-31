@@ -24,7 +24,7 @@ const toRow = (r: OverviewRow): AssignmentRow => ({
   id: r.id,
   referenceNo: r.referenceNo,
   title: r.title,
-  program: { id: r.programId, number: r.program.number, name: r.program.name },
+  track: r.track && r.trackId ? { id: r.trackId, number: r.track.number, name: r.track.name } : null,
   association: r.association.name,
   status: { name: r.status.name, tone: statusTone(r.status.colorToken) },
   submittedAt: r.submittedAt,
@@ -37,21 +37,21 @@ export default async function AssignmentPage() {
   const [overview, supervisors, max] = await Promise.all([assignmentOverview(user), supervisorOptions(user), getSetting("bulk.maxItems")]);
   const openBy = new Map(overview.loads.flatMap((l) => l.supervisors.map((s) => [s.id, s.open] as const)));
   const choices = supervisors.map((s) => ({ ...s, open: openBy.get(s.id) ?? 0 }));
-  const programsWithoutSupervisor = overview.loads.filter((l) => l.supervisors.length === 0);
+  const tracksWithoutSupervisor = overview.loads.filter((l) => l.supervisors.length === 0);
 
   return (
     <>
       <PageBand
         compact
         title="الإسناد"
-        lead="الطلبات المفتوحة بلا مشرف أو المسندة إلى حساب معطل، وأعباء المشرفين في كل برنامج. يُسند كل طلب تلقائيًا عند تقديمه إلى أقل المشرفين طلبات مفتوحة."
+        lead="الطلبات المفتوحة بلا مشرف أو المسندة إلى حساب معطل، وأعباء المشرفين في كل مسار. يُسند كل طلب تلقائيًا عند تقديمه إلى أقل المشرفين طلبات مفتوحة."
         figures={
           <BandFigures
             items={[
               { label: "غير مسندة", value: formatNumber(overview.unassigned.length), attention: overview.unassigned.length > 0 && "warn", caption: "طلبات مفتوحة بلا مشرف" },
               { label: "لدى حسابات معطلة", value: formatNumber(overview.inactiveAssigned.length), caption: "تحتاج إلى إعادة إسناد" },
               { label: "المشرفون النشطون", value: formatNumber(supervisors.length) },
-              { label: "برامج بلا مشرف", value: formatNumber(programsWithoutSupervisor.length), caption: "تبقى طلباتها غير مسندة" },
+              { label: "مسارات بلا مشرف", value: formatNumber(tracksWithoutSupervisor.length), caption: "تبقى طلباتها غير مسندة" },
             ]}
           />
         }
@@ -59,7 +59,7 @@ export default async function AssignmentPage() {
       <PageBody>
         <div className="flex flex-col gap-6">
           <Panel>
-            <PanelHeader title="طلبات بلا مشرف" description="اختر طلبًا أو أكثر ثم أسندها إلى مشرف نشط في برنامجها مع ذكر السبب." />
+            <PanelHeader title="طلبات بلا مشرف" description="اختر طلبًا أو أكثر ثم أسندها إلى مشرف نشط في مسارها مع ذكر السبب." />
             {overview.unassigned.length === 0 ? (
               <EmptyState variant="inline" icon={<CircleCheck strokeWidth={1.75} />} title="لا توجد طلبات غير مسندة" description="جميع الطلبات المفتوحة مسندة إلى مشرفين." />
             ) : (
@@ -75,10 +75,10 @@ export default async function AssignmentPage() {
           ) : null}
 
           <Panel>
-            <PanelHeader title="أعباء المشرفين" description="الطلبات المفتوحة لكل مشرف نشط في كل برنامج، بترتيب الإسناد التلقائي." />
+            <PanelHeader title="أعباء المشرفين" description="الطلبات المفتوحة لكل مشرف نشط في كل مسار، بترتيب الإسناد التلقائي." />
             <DataTable caption="أعباء المشرفين" minWidth="44rem">
               <THead>
-                <Th className="w-72">البرنامج</Th>
+                <Th className="w-72">المسار</Th>
                 <Th>المشرف</Th>
                 <Th>الطلبات المفتوحة</Th>
                 <Th>آخر إسناد</Th>
@@ -86,18 +86,18 @@ export default async function AssignmentPage() {
               <tbody>
                 {overview.loads.map((l) =>
                   l.supervisors.length === 0 ? (
-                    <Tr key={l.program.id}>
+                    <Tr key={l.track.id}>
                       <Td>
-                        {toArabicDigits(l.program.number)}. {l.program.name}
+                        {toArabicDigits(l.track.number)}. {l.track.name}
                       </Td>
                       <Td colSpan={3} className="text-st-warn">
-                        لا يوجد مشرف نشط؛ تبقى طلبات هذا البرنامج غير مسندة.
+                        لا يوجد مشرف نشط؛ تبقى طلبات هذا المسار غير مسندة.
                       </Td>
                     </Tr>
                   ) : (
                     l.supervisors.map((s, i) => (
-                      <Tr key={`${l.program.id}-${s.id}`}>
-                        <Td>{i === 0 ? `${toArabicDigits(l.program.number)}. ${l.program.name}` : null}</Td>
+                      <Tr key={`${l.track.id}-${s.id}`}>
+                        <Td>{i === 0 ? `${toArabicDigits(l.track.number)}. ${l.track.name}` : null}</Td>
                         <Td>
                           <PersonName name={s.name} />
                           {i === 0 ? <span className="t-caption ms-9 block">التالي في الإسناد التلقائي</span> : null}

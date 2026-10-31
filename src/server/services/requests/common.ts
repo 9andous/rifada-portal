@@ -62,23 +62,45 @@ const requirementSelect = {
   attachmentType: { select: { key: true, name: true, allowedMimeGroups: true } },
 } satisfies Prisma.InitiativeRequirementSelect;
 
-/** The initiative's requirements as they stand now, in the snapshot shape (D-077). */
-export async function liveRequirements(client: Client, initiativeId: string): Promise<RequirementSpec[]> {
+/**
+ * The requirements of the chosen initiatives as they stand now, in the snapshot shape (D-077),
+ * combined without repeats (D-115): a field is asked once per key and a file once per attachment
+ * type, required when any initiative requires it. Fields first, then files, in initiative order.
+ */
+export async function liveRequirements(client: Client, initiativeIds: string[]): Promise<RequirementSpec[]> {
   const rows = await client.initiativeRequirement.findMany({
-    where: { initiativeId },
+    where: { initiativeId: { in: initiativeIds } },
     orderBy: [{ kind: "asc" }, { sortOrder: "asc" }, { key: "asc" }],
-    select: requirementSelect,
+    select: { ...requirementSelect, initiativeId: true },
   });
-  return rows.map((r) => ({
-    key: r.key,
-    label: r.label,
-    kind: r.kind,
-    fieldType: r.fieldType,
-    options: Array.isArray(r.options) ? (r.options as string[]) : [],
-    isRequired: r.isRequired,
-    sortOrder: r.sortOrder,
-    attachmentType: r.attachmentType ? { key: r.attachmentType.key, name: r.attachmentType.name, groups: r.attachmentType.allowedMimeGroups } : null,
-  }));
+  const order = (id: string) => initiativeIds.indexOf(id);
+  rows.sort((x, y) => (x.kind === y.kind ? 0 : x.kind === "FIELD" ? -1 : 1) || order(x.initiativeId) - order(y.initiativeId));
+  const specs = new Map<string, RequirementSpec>();
+  for (const r of rows) {
+    const identity = r.kind === "FIELD" ? `field:${r.key}` : `file:${r.attachmentType?.key ?? r.key}`;
+    const seen = specs.get(identity);
+    if (seen) {
+      seen.isRequired ||= r.isRequired;
+      continue;
+    }
+    specs.set(identity, {
+      key: r.key,
+      label: r.label,
+      kind: r.kind,
+      fieldType: r.fieldType,
+      options: Array.isArray(r.options) ? (r.options as string[]) : [],
+      isRequired: r.isRequired,
+      sortOrder: r.sortOrder,
+      attachmentType: r.attachmentType ? { key: r.attachmentType.key, name: r.attachmentType.name, groups: r.attachmentType.allowedMimeGroups } : null,
+    });
+  }
+  return [...specs.values()];
+}
+
+/** The ids of the initiatives a request covers, in the association's order (D-115). */
+export async function requestInitiativeIds(client: Client, requestId: string): Promise<string[]> {
+  const links = await client.requestInitiative.findMany({ where: { requestId }, orderBy: [{ sortOrder: "asc" }, { initiativeId: "asc" }], select: { initiativeId: true } });
+  return links.map((l) => l.initiativeId);
 }
 
 /** The users who act for an association: its active officer account. */

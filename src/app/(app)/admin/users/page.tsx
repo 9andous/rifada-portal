@@ -78,11 +78,11 @@ async function UsersList({
   const params = await searchParams;
   const list = parseUserListParams(params);
   const officers = list.tab === "officers";
-  const [page, programs] = await Promise.all([
+  const [page, tracks] = await Promise.all([
     listUsers(user, list),
-    db.program.findMany({ where: { archivedAt: null }, orderBy: { number: "asc" }, select: { id: true, number: true, name: true } }),
+    db.track.findMany({ where: { archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true } }),
   ]);
-  const filtered = Boolean(list.q || (!officers && list.role) || list.status || (!officers && list.program));
+  const filtered = Boolean(list.q || (!officers && list.role) || list.status || (!officers && list.track));
   const sortProps = { current: list.sort, dir: list.dir, path: PATH, params, className: SORT_TH };
   const statusFilter = {
     name: "status",
@@ -120,11 +120,11 @@ async function UsersList({
                 { name: "role", label: "الدور", allLabel: "جميع الأدوار", value: list.role, options: STAFF_ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] })) },
                 statusFilter,
                 {
-                  name: "program",
-                  label: "برنامج المشرف",
-                  allLabel: "جميع البرامج",
-                  value: list.program,
-                  options: programs.map((p) => ({ value: p.id, label: `${toArabicDigits(p.number)}. ${p.name}` })),
+                  name: "track",
+                  label: "مسار المشرف",
+                  allLabel: "جميع المسارات",
+                  value: list.track,
+                  options: tracks.map((p) => ({ value: p.id, label: `${toArabicDigits(p.number)}. ${p.name}` })),
                 },
               ]
         }
@@ -178,7 +178,7 @@ async function UsersList({
                     {officers ? u.associationName ?? <span className="text-ink-subtle">—</span> : ROLE_LABELS[u.role]}
                     {u.role === "SUPERVISOR" ? (
                       <span className="t-caption mt-0.5 block">
-                        {u.programNumbers.length > 0 ? `البرامج: ${u.programNumbers.map(toArabicDigits).join("، ")}` : "بلا برامج"}
+                        {u.trackNumbers.length > 0 ? `المسارات: ${u.trackNumbers.map(toArabicDigits).join("، ")}` : "بلا مسارات"}
                       </span>
                     ) : null}
                   </Td>

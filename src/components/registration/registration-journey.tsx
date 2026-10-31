@@ -30,6 +30,8 @@ import { SearchSelect } from "@/components/ui/search-select";
 import { Alert } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import { cn } from "@/lib/cn";
+import { citiesOf } from "@/lib/saudi-cities";
+import { ImageField } from "@/components/admin/image-field";
 import { formatNumber, toArabicDigits } from "@/lib/format";
 import { PASSWORD_MIN, type FieldErrors } from "@/lib/validation/auth";
 import { REGISTRATION_CLASSIFICATIONS, REGISTRATION_FIELD_STEP, SAUDI_REGIONS } from "@/lib/validation/registration";
@@ -42,7 +44,7 @@ type Value = { number: number; title: string; description: string };
 type Objective = { number: number; title: string };
 
 const STEPS: { title: string; hint: string; icon: LucideIcon; image: string; alt: string }[] = [
-  { title: "مرحبًا بكم", hint: "رحلة الانضمام", icon: Sparkles, image: "/images/haramain/kaaba-tawaf.jpg", alt: "الكعبة المشرفة" },
+  { title: "مرحبًا بكم", hint: "رحلة الانضمام", icon: Sparkles, image: "/images/haramain/kaaba-tawaf-dark.jpg", alt: "الكعبة المشرفة" },
   { title: "بيانات الجمعية", hint: "الترخيص والموقع والتواصل", icon: Building2, image: "/images/haramain/masjid-al-haram.jpg", alt: "المسجد الحرام" },
   { title: "مجالات العمل", hint: "برامج الرئاسة", icon: ClipboardList, image: "/images/haramain/masjid-an-nabawi.jpg", alt: "المسجد النبوي الشريف" },
   { title: "المسؤول والحساب", hint: "مسؤول الجمعية في المنصة", icon: UserRound, image: "/images/haramain/haram-arches.jpg", alt: "أروقة المسجد الحرام" },
@@ -53,6 +55,7 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
   const { state, onSubmit, pending } = useActionForm<RegistrationFormState>(submitRegistrationAction, {});
   const [step, setStep] = useState(0);
   const [chosen, setChosen] = useState<number[]>([]);
+  const [region, setRegion] = useState("");
   const [summary, setSummary] = useState<Record<string, string>>({});
   const formRef = useRef<HTMLFormElement>(null);
   // Field errors shown in the form: from checking a step on «التالي», or from the submission. A
@@ -294,6 +297,9 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                 <Field id="r-name" label="اسم الجمعية كما في الترخيص" error={e.name} required className="md:col-span-2">
                   <Input id="r-name" name="name" required minLength={3} maxLength={150} aria-invalid={Boolean(e.name)} />
                 </Field>
+                <div className="md:col-span-2">
+                  <ImageField label="شعار الجمعية" shape="square" layout="tile" nameFieldId="r-name" uploadUrl="/api/registration/logo" note="يظهر في ملف الجمعية بعد اعتمادها." error={e.image} />
+                </div>
                 <Field id="r-license" label="رقم الترخيص" hint="من شهادة تسجيل المركز الوطني لتنمية القطاع غير الربحي." error={e.licenseNumber} required>
                   <Input id="r-license" name="licenseNumber" required inputMode="numeric" dir="ltr" maxLength={10} aria-invalid={Boolean(e.licenseNumber)} />
                 </Field>
@@ -301,10 +307,25 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                   <SearchSelect id="r-classification" name="classification" placeholder="اختر التصنيف" searchPlaceholder="ابحث…" aria-invalid={Boolean(e.classification)} onValueChange={() => clearError("classification")} options={REGISTRATION_CLASSIFICATIONS.map((c) => ({ value: c, label: c }))} />
                 </Field>
                 <Field id="r-region" label="المنطقة" error={e.region} required>
-                  <SearchSelect id="r-region" name="region" placeholder="اختر المنطقة" searchPlaceholder="ابحث…" aria-invalid={Boolean(e.region)} onValueChange={() => clearError("region")} options={SAUDI_REGIONS.map((c) => ({ value: c, label: c }))} />
+                  <SearchSelect id="r-region" name="region" placeholder="اختر المنطقة" searchPlaceholder="ابحث…" aria-invalid={Boolean(e.region)} onValueChange={(v) => {
+                      setRegion(v);
+                      clearError("region");
+                      clearError("city");
+                    }} options={SAUDI_REGIONS.map((c) => ({ value: c, label: c }))} />
                 </Field>
                 <Field id="r-city" label="المدينة" error={e.city} required>
-                  <Input id="r-city" name="city" required minLength={2} maxLength={80} aria-invalid={Boolean(e.city)} />
+                  {/* Re-mounted per region, so changing the region clears a city from another region. */}
+                  <SearchSelect
+                    key={region}
+                    id="r-city"
+                    name="city"
+                    placeholder={region ? "اختر المدينة" : "اختر المنطقة أولًا"}
+                    searchPlaceholder="ابحث…"
+                    disabled={!region}
+                    aria-invalid={Boolean(e.city)}
+                    onValueChange={() => clearError("city")}
+                    options={citiesOf(region).map((c) => ({ value: c, label: c }))}
+                  />
                 </Field>
                 <Field id="r-founded" label="سنة التأسيس الهجرية" hint="اختياري، مثل ١٤٣٥." error={e.foundedYear}>
                   <Input id="r-founded" name="foundedYear" inputMode="numeric" dir="ltr" maxLength={4} className="w-40" aria-invalid={Boolean(e.foundedYear)} />
@@ -312,8 +333,8 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                 <Field id="r-phone" label="هاتف الجمعية" error={e.contactPhone} required>
                   <Input id="r-phone" name="contactPhone" required type="tel" inputMode="tel" dir="ltr" placeholder="05xxxxxxxx" aria-invalid={Boolean(e.contactPhone)} />
                 </Field>
-                <Field id="r-email" label="البريد الإلكتروني الرسمي" hint="اختياري." error={e.contactEmail}>
-                  <Input id="r-email" name="contactEmail" type="email" dir="ltr" aria-invalid={Boolean(e.contactEmail)} />
+                <Field id="r-email" label="البريد الإلكتروني الرسمي" error={e.contactEmail} required>
+                  <Input id="r-email" name="contactEmail" type="email" dir="ltr" required aria-invalid={Boolean(e.contactEmail)} />
                 </Field>
                 <Field id="r-website" label="الموقع الإلكتروني" hint="اختياري." error={e.website}>
                   <Input id="r-website" name="website" type="url" dir="ltr" placeholder="https://" aria-invalid={Boolean(e.website)} />
@@ -381,8 +402,8 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                   <Field id="r-ophone" label="جوال المسؤول" error={e.officerPhone} required>
                     <Input id="r-ophone" name="officerPhone" required type="tel" inputMode="tel" dir="ltr" placeholder="05xxxxxxxx" autoComplete="tel" aria-invalid={Boolean(e.officerPhone)} />
                   </Field>
-                  <Field id="r-oemail" label="بريد المسؤول" hint="اختياري؛ لاستعادة كلمة المرور." error={e.officerEmail}>
-                    <Input id="r-oemail" name="officerEmail" type="email" dir="ltr" autoComplete="email" aria-invalid={Boolean(e.officerEmail)} />
+                  <Field id="r-oemail" label="بريد المسؤول" hint="لاستعادة كلمة المرور وإشعارات الحساب." error={e.officerEmail} required>
+                    <Input id="r-oemail" name="officerEmail" type="email" dir="ltr" autoComplete="email" required aria-invalid={Boolean(e.officerEmail)} />
                   </Field>
                 </div>
                 <div className="mt-7 rounded-xl border border-line bg-surface-muted p-5">

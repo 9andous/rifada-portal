@@ -1,32 +1,31 @@
 import { Suspense } from "react";
 import {
-  HeroFigures,
-  HeroFiguresSkeleton,
+  HeroQuotesPanel,
+  HeroQuotesSkeleton,
   HomeHero,
   InitiativeSection,
-  LeadershipSection,
-  ObjectivesSection,
   StrategySkeleton,
   ValuesSection,
   VisionSection,
 } from "@/components/home/home-sections";
-import { getPublicHome } from "@/server/services/public-site";
+import { getHeroQuotes, getPublicHome } from "@/server/services/public-site";
 
-// Public home page (docs/ROADMAP.md Phase 5): the Presidency's strategy (vision, mission, values,
-// objectives) from the database and the supervision initiative. The programmes, «كيف يعمل الإشراف
-// الفني» and the closing band were removed at the owner's request (D-095).
+// Public home page (docs/ROADMAP.md Phase 5): the Presidency's strategy (vision, mission, values)
+// from the database and the supervision initiative. The programmes, «كيف يعمل الإشراف الفني» and the
+// closing band were removed at the owner's request (D-095); the strategic objectives section is
+// hidden at the owner's request (D-098; `ObjectivesSection` is kept for when it returns), and so are
+// the hero's figures (2026-10-28; `HeroFigures` is kept).
 export default function HomePage() {
   const home = getPublicHome();
   return (
     <>
       <HomeHero
-        figures={
-          <Suspense fallback={<HeroFiguresSkeleton />}>
-            <HeroFiguresLoader home={home} />
+        quotes={
+          <Suspense fallback={<HeroQuotesSkeleton />}>
+            <HeroQuotesLoader />
           </Suspense>
         }
       />
-      <LeadershipSection />
       <Suspense fallback={<StrategySkeleton />}>
         <StrategySections home={home} />
       </Suspense>
@@ -35,8 +34,9 @@ export default function HomePage() {
   );
 }
 
-async function HeroFiguresLoader({ home }: { home: ReturnType<typeof getPublicHome> }) {
-  return <HeroFigures home={await home} />;
+async function HeroQuotesLoader() {
+  const { slides, style } = await getHeroQuotes();
+  return <HeroQuotesPanel slides={slides} style={style} />;
 }
 
 async function StrategySections({ home }: { home: ReturnType<typeof getPublicHome> }) {
@@ -45,7 +45,6 @@ async function StrategySections({ home }: { home: ReturnType<typeof getPublicHom
     <>
       <VisionSection home={data} />
       <ValuesSection home={data} />
-      <ObjectivesSection home={data} />
     </>
   );
 }

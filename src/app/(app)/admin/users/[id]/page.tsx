@@ -60,7 +60,7 @@ export default async function UserPage({ params }: PageProps<"/admin/users/[id]"
                 mode="edit"
                 action={updateUserAction.bind(null, detail.id)}
                 isSelf={isSelf}
-                programs={options.programs}
+                tracks={options.tracks}
                 associations={options.associations}
                 defaults={{
                   username: detail.username ?? "",
@@ -68,7 +68,7 @@ export default async function UserPage({ params }: PageProps<"/admin/users/[id]"
                   email: detail.email ?? "",
                   phone: detail.phone ?? "",
                   role: detail.role,
-                  programIds: detail.programIds,
+                  trackIds: detail.trackIds,
                   associationId: detail.associationId ?? "",
                   imageUrl: imageUrl("user", detail.id, detail.avatarKey),
                 }}

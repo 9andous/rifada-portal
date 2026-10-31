@@ -10,7 +10,7 @@ export type WheelSlide = { image: string; alt: string; label: string; text: stri
 // photo round to face the form while its quote fades in over the slice. Sector k sits at
 // k × sweep degrees clockwise from the facing direction, so turning the wheel by −step × sweep
 // brings sector `step` to face it. `--wheel` (set by the page) is the visible width of the slice.
-const DIAMETER = 640;
+const DIAMETER = 760;
 
 /** Rotating wheel of step photos and quotes, at the end edge of the registration page (xl+). */
 export function VisionWheel({ slides, active }: { slides: WheelSlide[]; active: number }) {
@@ -49,7 +49,7 @@ export function VisionWheel({ slides, active }: { slides: WheelSlide[]; active: 
                 <div className="absolute" style={{ left: "50%", width: "50%", top: `${50 - 50 * box}%`, height: `${100 * box}%` }}>
                   <Image src={s.image} alt="" fill sizes="320px" className="object-cover" />
                 </div>
-                <span aria-hidden="true" className={cn("absolute inset-0 transition-colors duration-700", k === active ? "bg-band/55" : "bg-band/85")} />
+                <span aria-hidden="true" className={cn("absolute inset-0 transition-colors duration-700", k === active ? "bg-band/70" : "bg-band/90")} />
                 {/* Gold spoke on the sector's leading edge. */}
                 <span
                   aria-hidden="true"

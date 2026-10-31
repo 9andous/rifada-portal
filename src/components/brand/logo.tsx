@@ -30,10 +30,14 @@ export function Logo({ tone = "auto", height = 48, className, priority }: LogoPr
 /**
  * The Presidency's mark. The file is a full-colour logo for light backgrounds, so in dark mode it
  * sits on a white plate rather than being recoloured; the plate's padding is the mark's clear
- * space, with a hairline so it reads as a deliberate tile.
+ * space, with a hairline so it reads as a deliberate tile. "onDark" uses the white logo instead.
  */
-export function PresidencyLogo({ height = 54, className, priority }: { height?: number; className?: string; priority?: boolean }) {
-  const { src, width: w, height: h, alt } = brand.presidencyLogo;
+export function PresidencyLogo({ tone = "auto", height = 54, className, priority }: Omit<LogoProps, "tone"> & { tone?: "auto" | "onDark" }) {
+  const { src, width: w, height: h, alt, white } = brand.presidencyLogo;
+  if (tone === "onDark") {
+    const width = Math.round((white.width / white.height) * height);
+    return <Image src={white.src} alt={alt} width={width} height={height} priority={priority} className={className} />;
+  }
   const width = Math.round((w / h) * height);
   return (
     <span className={cn("inline-flex shrink-0 dark:rounded-md dark:bg-white dark:p-2 dark:ring-1 dark:ring-line-strong", className)}>

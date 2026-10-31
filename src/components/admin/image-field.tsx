@@ -1,9 +1,9 @@
 "use client";
 
-import { Building2, ImageUp, LoaderCircle, Trash2, Undo2, UserRound } from "lucide-react";
+import { Building2, ImagePlus, ImageUp, LoaderCircle, Trash2, Undo2, UserRound } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
-import { formatNumber } from "@/lib/format";
+import { formatFileSize, formatNumber } from "@/lib/format";
 import { IMAGE_ACCEPT, IMAGE_MAX_MB, initials } from "@/lib/images";
 
 /**
@@ -18,6 +18,8 @@ export function ImageField({
   defaultName = "",
   shape = "circle",
   layout = "inline",
+  uploadUrl = "/api/admin/image-uploads",
+  note,
   error,
 }: {
   label: string;
@@ -26,8 +28,15 @@ export function ImageField({
   nameFieldId: string;
   defaultName?: string;
   shape?: "circle" | "square";
-  /** `stacked`: a large picture with its buttons centred below, for a form's profile column. */
-  layout?: "inline" | "stacked";
+  /**
+   * `stacked`: a large picture with its buttons centred below, for a form's profile column.
+   * `tile`: a bordered drop area with a white preview and the file's state (registration form).
+   */
+  layout?: "inline" | "stacked" | "tile";
+  /** Where the file is staged; the public registration form uses its own route (D-100). */
+  uploadUrl?: string;
+  /** A sentence after the file rules in the `tile` layout. */
+  note?: string;
   error?: string;
 }) {
   const inputId = useId();
@@ -37,6 +46,8 @@ export function ImageField({
   const [removed, setRemoved] = useState(false);
   const [phase, setPhase] = useState<"idle" | "uploading" | "failed">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [picked, setPicked] = useState<{ name: string; size: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Follow the name field so the placeholder letters match what is being typed.
@@ -60,7 +71,7 @@ export function ImageField({
     }
     const local = URL.createObjectURL(file);
     const request = new XMLHttpRequest();
-    request.open("POST", "/api/admin/image-uploads");
+    request.open("POST", uploadUrl);
     request.setRequestHeader("x-file-name", encodeURIComponent(file.name));
     request.setRequestHeader("content-type", file.type || "application/octet-stream");
     request.onload = () => {
@@ -72,6 +83,7 @@ export function ImageField({
       }
       if (request.status === 201 && body.uploadId) {
         setPreview(local);
+        setPicked({ name: file.name, size: file.size });
         setUploadId(body.uploadId);
         setRemoved(false);
         setPhase("idle");
@@ -92,6 +104,7 @@ export function ImageField({
 
   function clear() {
     setPreview(null);
+    setPicked(null);
     setUploadId("");
     setRemoved(Boolean(currentUrl));
     if (fileRef.current) fileRef.current.value = "";
@@ -102,6 +115,113 @@ export function ImageField({
   const round = shape === "circle" ? "rounded-full" : "rounded-2xl";
   const stacked = layout === "stacked";
   const PlaceholderIcon = shape === "square" ? Building2 : UserRound;
+  const help = `PNG أو JPEG أو WebP، حتى ${formatNumber(IMAGE_MAX_MB)} ميغابايت.`;
+
+  if (layout === "tile") {
+    const uploading = phase === "uploading";
+    return (
+      <div className="flex flex-col gap-2">
+        <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+          {label}
+          <span className="rounded-[6px] bg-surface-sunken px-1.5 py-px text-[0.6875rem] font-medium text-ink-subtle">اختياري</span>
+        </span>
+        <input
+          ref={fileRef}
+          id={inputId}
+          type="file"
+          accept={IMAGE_ACCEPT}
+          className="peer sr-only"
+          aria-invalid={Boolean(problem)}
+          aria-describedby={`${inputId}-help`}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) upload(file);
+          }}
+        />
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) upload(file);
+          }}
+          className={cn(
+            "flex flex-wrap items-center gap-4 rounded-xl border bg-surface-muted p-3.5 transition-colors sm:flex-nowrap",
+            "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]",
+            problem ? "border-danger" : dragging ? "border-primary bg-primary-soft" : "border-line",
+          )}
+        >
+          <label
+            htmlFor={inputId}
+            // A chosen logo sits on a white plate in both themes, as logos are drawn for white.
+            className={cn(
+              "relative flex size-[76px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-line shadow-1",
+              shown ? "bg-white" : "bg-surface",
+            )}
+          >
+            {shown ? (
+              // eslint-disable-next-line @next/next/no-img-element -- a local preview of the chosen file
+              <img src={shown} alt="" className="size-full object-contain p-2" />
+            ) : (
+              <ImagePlus aria-hidden="true" strokeWidth={1.5} className="size-7 text-primary" />
+            )}
+            {uploading ? (
+              <span className="absolute inset-0 flex items-center justify-center bg-surface/80">
+                <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-primary" />
+              </span>
+            ) : null}
+          </label>
+          <div className="min-w-0 flex-1">
+            {shown ? (
+              <>
+                <p className="truncate text-sm font-semibold text-ink">{picked?.name ?? "الشعار الحالي"}</p>
+                <p className="t-caption mt-0.5">{picked ? `${formatFileSize(picked.size)} · تم الرفع` : help}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-ink">{uploading ? "جارٍ رفع الشعار…" : "اسحبوا الشعار إلى هنا أو اختاروا ملفًا"}</p>
+                <p id={`${inputId}-help`} className="t-caption mt-0.5">
+                  {note ? `${help} ${note}` : help}
+                </p>
+              </>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <label
+              htmlFor={inputId}
+              className="inline-flex h-[34px] cursor-pointer items-center gap-2 rounded-sm border border-line-strong bg-surface px-3 text-[0.8125rem] font-semibold text-ink transition-colors hover:border-primary hover:text-primary"
+            >
+              <ImageUp aria-hidden="true" className="size-4" strokeWidth={1.75} />
+              {shown ? "تغيير" : "اختيار ملف"}
+            </label>
+            {shown ? (
+              <button
+                type="button"
+                onClick={clear}
+                aria-label="إزالة الشعار"
+                title="إزالة الشعار"
+                className="flex size-[34px] items-center justify-center rounded-sm text-danger transition-colors hover:bg-danger/10"
+              >
+                <Trash2 aria-hidden="true" className="size-4" strokeWidth={1.75} />
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {problem ? (
+          <p role="alert" className="text-xs text-danger">
+            {problem}
+          </p>
+        ) : null}
+        <input type="hidden" name="image.uploadId" value={uploadId} />
+        {removed && !uploadId ? <input type="hidden" name="image.remove" value="on" /> : null}
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex flex-col gap-2", stacked && "items-center text-center")}>

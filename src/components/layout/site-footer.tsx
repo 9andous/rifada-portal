@@ -1,17 +1,16 @@
 import { ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
-import { Logo } from "@/components/brand/logo";
+import { Logo, PresidencyLogo } from "@/components/brand/logo";
 import { brand } from "@/config/brand";
 import { SectionLink } from "./section-link";
 
-const COLUMNS: { title: string; links: { label: string; href: string; external?: boolean }[] }[] = [
+const COLUMNS: { title: string; links: { label: string; href: string; external?: boolean }[]; after?: ReactNode }[] = [
   {
     title: "عن المنصة",
     links: [
       { label: "القيادة", href: "/#leadership" },
       { label: "الرؤية والرسالة", href: "/#vision" },
       { label: "القيم", href: "/#values" },
-      { label: "الأهداف الاستراتيجية", href: "/#objectives" },
       { label: "مبادرة الإشراف الفني", href: "/#initiative" },
     ],
   },
@@ -20,6 +19,7 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
     links: [
       { label: "تسجيل جمعية", href: "/register" },
       { label: "متابعة طلب التسجيل", href: "/register/status" },
+      { label: "التحقق من وثيقة", href: "/verify" },
       { label: "تسجيل الدخول", href: "/login" },
       { label: "استعادة كلمة المرور", href: "/forgot-password" },
     ],
@@ -27,6 +27,7 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
   {
     title: "الرئاسة",
     links: [{ label: "الموقع الرسمي للرئاسة", href: brand.presidencyUrl, external: true }],
+    after: <PresidencyLogo tone="onDark" height={72} className="mt-5" />,
   },
 ];
 
@@ -63,6 +64,7 @@ export function SiteFooter() {
                   </li>
                 ))}
               </ul>
+              {col.after}
             </div>
           ))}
         </div>
@@ -84,10 +86,16 @@ export function FooterBar({ children }: { children?: ReactNode }) {
   );
 }
 
-/** Footer of the signed-in screens: the copyright bar only, so data screens stay dense. */
+/**
+ * Footer of the signed-in and login screens: the Presidency's white logo above the copyright bar
+ * (owner's request, 2026-10-28), kept compact so data screens stay dense.
+ */
 export function AppFooter() {
   return (
     <footer data-print="hide" className="mt-auto bg-band-deep">
+      <div className="flex justify-center pb-1 pt-5">
+        <PresidencyLogo tone="onDark" height={56} />
+      </div>
       <FooterBar />
     </footer>
   );

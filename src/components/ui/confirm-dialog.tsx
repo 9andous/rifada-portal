@@ -4,6 +4,7 @@ import { LoaderCircle, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useState, useTransition, type ReactNode } from "react";
 import { Button, type ButtonProps } from "./button";
+import { toast } from "./toaster";
 
 /**
  * Centred confirmation modal (docs/DESIGN.md: confirmation modal). Esc and the close button cancel.
@@ -66,6 +67,7 @@ export function ConfirmDialog({
                 start(async () => {
                   await onConfirm();
                   setOpen(false);
+                  toast("تم تنفيذ الإجراء", { description: confirmLabel });
                 })
               }
             >

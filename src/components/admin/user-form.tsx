@@ -24,7 +24,7 @@ export type UserFormDefaults = {
   email: string;
   phone: string;
   role: Role | "";
-  programIds: string[];
+  trackIds: string[];
   associationId: string;
   /** The current picture's URL, if any. */
   imageUrl?: string | null;
@@ -38,20 +38,20 @@ const ROLE_CARDS: Record<Role, { icon: LucideIcon; text: string }> = {
   ASSOCIATION_OFFICER: { icon: Building2, text: "يقدّم طلبات جمعيته ويتابعها؛ حساب واحد لكل جمعية." },
 };
 
-const EMPTY: UserFormDefaults = { username: "", name: "", email: "", phone: "", role: "", programIds: [], associationId: "" };
+const EMPTY: UserFormDefaults = { username: "", name: "", email: "", phone: "", role: "", trackIds: [], associationId: "" };
 
 export function UserForm({
   mode,
   action,
   defaults = EMPTY,
-  programs,
+  tracks,
   associations,
   isSelf = false,
 }: {
   mode: "create" | "edit";
   action: (state: AdminFormState, formData: FormData) => Promise<AdminFormState>;
   defaults?: UserFormDefaults;
-  programs: (Option & { number: number })[];
+  tracks: (Option & { number: number })[];
   associations: Option[];
   isSelf?: boolean;
 }) {
@@ -221,21 +221,21 @@ export function UserForm({
             ) : null}
 
             {role === "SUPERVISOR" ? (
-              <fieldset aria-describedby={e.programIds ? "programIds-error" : undefined} className="rounded-lg border border-line bg-surface-muted p-4">
+              <fieldset aria-describedby={e.trackIds ? "trackIds-error" : undefined} className="rounded-lg border border-line bg-surface-muted p-4">
                 <legend className="px-1 text-sm font-semibold text-ink">
-                  البرامج المسندة إلى المشرف
+                  المسارات المسندة إلى المشرف
                   <span className="ms-1 text-danger" aria-hidden="true">
                     *
                   </span>
                 </legend>
-                <p className="t-caption">يرى المشرف طلبات هذه البرامج فقط ويراجعها.</p>
+                <p className="t-caption">تُسند إلى المشرف الطلبات الجديدة في هذه المسارات، ويرى طلباتها فقط ويراجعها.</p>
                 <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-                  {programs.map((p) => (
+                  {tracks.map((p) => (
                     <label
                       key={p.id}
                       className="flex cursor-pointer items-start gap-3 rounded-md border border-line bg-surface px-3 py-2.5 text-sm transition-colors hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40"
                     >
-                      <input type="checkbox" name="programIds" value={p.id} defaultChecked={defaults.programIds.includes(p.id)} className="mt-1 size-4 accent-[var(--primary)]" />
+                      <input type="checkbox" name="trackIds" value={p.id} defaultChecked={defaults.trackIds.includes(p.id)} className="mt-1 size-4 accent-[var(--primary)]" />
                       <span>
                         <span className="t-figure me-1.5 text-accent-ink">{toArabicDigits(p.number)}</span>
                         {p.name}
@@ -243,9 +243,9 @@ export function UserForm({
                     </label>
                   ))}
                 </div>
-                {e.programIds ? (
-                  <p id="programIds-error" role="alert" className="mt-2 text-xs text-danger">
-                    {e.programIds}
+                {e.trackIds ? (
+                  <p id="trackIds-error" role="alert" className="mt-2 text-xs text-danger">
+                    {e.trackIds}
                   </p>
                 ) : null}
               </fieldset>

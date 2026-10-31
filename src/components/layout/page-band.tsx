@@ -104,7 +104,7 @@ export function BandFigures({ items }: { items: BandFigure[] }) {
       {items.map((f) => (
         <div key={f.label} className={cn(FIGURE_TILE, f.href && "card-link")}>
           <dt className="flex items-center gap-2">
-            <span className="min-w-0 truncate text-[0.875rem] font-medium text-ink-muted">{f.label}</span>
+            <span className="min-w-0 truncate text-[0.9375rem] font-bold text-ink">{f.label}</span>
             {f.href ? <FigureChevron /> : null}
           </dt>
           <dd className="flex items-baseline gap-1">

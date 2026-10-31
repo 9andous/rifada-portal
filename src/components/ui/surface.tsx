@@ -25,19 +25,21 @@ export function HeaderDiamond() {
 /**
  * Card header (docs/DESIGN.md: Card header): gold diamond, title and subtitle, tools at the end,
  * and a hairline under it. `flush` drops the padding and the hairline for headings inside a
- * padded box.
+ * padded box. `icon` replaces the diamond with the handoff's 36px icon tile (dashboard cards, D-097).
  */
 export function PanelHeader({
   title,
   description,
   actions,
   flush,
+  icon,
   className,
 }: {
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   flush?: boolean;
+  icon?: ReactNode;
   className?: string;
 }) {
   if (flush) {
@@ -52,13 +54,19 @@ export function PanelHeader({
     );
   }
   return (
-    <header className={cn("panel-head mb-5 flex items-start gap-3 border-b border-line px-5 py-4 sm:px-6", className)}>
-      <HeaderDiamond />
-      <div className="min-w-0 flex-1">
+    <header className={cn("panel-head mb-5 flex gap-3 border-b border-line px-5 py-4 sm:px-6", icon ? "flex-wrap items-center" : "items-start", className)}>
+      {icon ? (
+        <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-[9px] border border-primary-soft bg-surface-muted text-primary [&_svg]:size-[18px]">
+          {icon}
+        </span>
+      ) : (
+        <HeaderDiamond />
+      )}
+      <div className={cn("min-w-0 flex-1", icon && "basis-48")}>
         <h2 className="t-section leading-snug">{title}</h2>
         {description ? <p className="mt-0.5 text-[0.8125rem] text-ink-subtle">{description}</p> : null}
       </div>
-      {actions ? <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-sm">{actions}</div> : null}
+      {actions ? <div className={cn("flex shrink-0 flex-wrap items-center justify-end gap-2 text-sm", icon && "max-sm:w-full max-sm:justify-start")}>{actions}</div> : null}
     </header>
   );
 }
@@ -131,7 +139,8 @@ export function Alert({
       <span aria-hidden="true" className="mt-0.5 shrink-0 [&_svg]:size-[18px]">
         {icon ?? ALERT_ICON[tone]}
       </span>
-      <div className="min-w-0 flex-1">
+      {/* The text keeps at least 15rem: on a narrow screen the buttons move under it rather than squeezing it. */}
+      <div className="min-w-0 flex-1 basis-60">
         {title ? <p className="font-bold text-ink">{title}</p> : null}
         {children ? <div className={cn("text-ink-muted", title && "mt-0.5")}>{children}</div> : null}
       </div>

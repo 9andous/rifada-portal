@@ -1,12 +1,19 @@
-// Profile pictures and association logos: limits shared by the upload field, the upload route and
+// Profile pictures, association logos and the portraits of the home page statements: limits shared by the upload field, the upload route and
 // the services, the URL they are served from, and the letters shown when there is no image.
 
 /** Upload context of a staged image, so a document upload cannot be used as a picture. */
 export const IMAGE_CONTEXT = "image";
+/** The logo sent with a public registration (D-100): no session, so a fixed uploader and context. */
+export const REGISTRATION_LOGO_CONTEXT = "registration-logo";
+export const REGISTRATION_UPLOADER = "public-registration";
 export const IMAGE_MAX_MB = 2;
 export const IMAGE_ACCEPT = ".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
 
-export type ImageOwner = "user" | "association";
+/**
+ * `quote`: a portrait of a home page statement (D-096), the only kind served without a session.
+ * `registration`: the logo sent with an association's application (D-100), for its reviewers.
+ */
+export type ImageOwner = "user" | "association" | "quote" | "registration";
 
 /**
  * Where an owner's image is served. The storage key's tail is part of the URL, so a replaced

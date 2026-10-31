@@ -32,6 +32,7 @@ export function SearchSelect({
   defaultValue = "",
   onValueChange,
   className,
+  disabled,
   "aria-invalid": ariaInvalid,
 }: {
   id?: string;
@@ -42,6 +43,7 @@ export function SearchSelect({
   defaultValue?: string;
   onValueChange?: (value: string) => void;
   className?: string;
+  disabled?: boolean;
   "aria-invalid"?: boolean;
 }) {
   const [value, setValue] = useState(defaultValue);
@@ -100,10 +102,12 @@ export function SearchSelect({
           aria-controls={open ? listId : undefined}
           aria-haspopup="listbox"
           aria-invalid={ariaInvalid}
+          disabled={disabled}
           className={cn(
             "relative flex h-10 w-full items-center rounded-md border border-line-strong bg-surface ps-3 pe-9 text-start text-sm",
             "transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/20 aria-[invalid=true]:border-danger",
             "data-[state=open]:border-primary data-[state=open]:ring-[3px] data-[state=open]:ring-primary/20",
+            "disabled:cursor-not-allowed disabled:bg-surface-muted",
             selected ? "text-ink" : "text-ink-subtle",
             className,
           )}

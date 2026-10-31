@@ -52,22 +52,20 @@ function form(values: Record<string, string>) {
 
 const draftForm = (overrides: Record<string, unknown> = {}) => {
   const d = validDraft(overrides);
-  const fd = form({ title: d.title as string, description: d.description as string, targetAudience: d.targetAudience as string, location: d.location as string, startDate: d.startDate as string, endDate: d.endDate as string });
-  for (const [k, v] of Object.entries(d.custom as Record<string, string>)) fd.append(`custom.${k}`, v);
-  return fd;
+  return form(Object.fromEntries(Object.entries(d).map(([k, v]) => [k, String(v)])));
 };
 
 describe("officer actions", () => {
   it("create, save and submit; a blocked submission returns the precise list", async () => {
     signIn(w.actors.officer);
-    const created = await a.createDraftAction({}, form({ programId: w.p1.id, initiativeId: w.i1.id }));
+    const created = await a.createDraftAction({}, form({ trackId: w.t1.id, requestTypeId: w.requestTypes[0].id, title: "مشروع" }));
     expect(created.ok).toBe(true);
     const id = created.createdId!;
     expect(await a.saveDraftAction(id, {}, draftForm())).toMatchObject({ ok: true });
-    const blocked = await a.submitRequestAction(id, {}, draftForm());
+    const blocked = await a.submitRequestAction(id, {}, draftForm({ description: "" }));
     expect(blocked.ok).toBe(false);
-    expect(blocked.missing?.map((m) => m.field)).toEqual(["attachment.program_plan"]);
-    expect(await a.attachFileAction(id, "program_plan", await stageFor(w.actors.officer, id))).toEqual({ ok: true });
+    expect(blocked.missing?.map((m) => m.field)).toEqual(["description"]);
+    expect(await a.attachOwnFileAction(id, await stageFor(w.actors.officer, id))).toEqual({ ok: true });
     const done = await a.submitRequestAction(id, {}, draftForm());
     expect(done).toMatchObject({ ok: true });
     expect(done.referenceNo).toMatch(/^RF-\d{4}-00001$/);
@@ -78,7 +76,7 @@ describe("officer actions", () => {
     const id = await newDraft(w);
     for (const actor of [w.actors.admin, w.actors.manager, w.actors.supervisor]) {
       signIn(actor);
-      expect(await a.createDraftAction({}, form({ programId: w.p1.id, initiativeId: w.i1.id }))).toMatchObject({ ok: false, message: FORBIDDEN_MESSAGE });
+      expect(await a.createDraftAction({}, form({ trackId: w.t1.id, requestTypeId: w.requestTypes[0].id, title: "مشروع" }))).toMatchObject({ ok: false, message: FORBIDDEN_MESSAGE });
       expect(await a.saveDraftAction(id, {}, draftForm())).toMatchObject({ ok: false, message: FORBIDDEN_MESSAGE });
       expect(await a.submitRequestAction(id, {}, draftForm())).toMatchObject({ ok: false, message: FORBIDDEN_MESSAGE });
       expect(await a.discardDraftAction(id)).toMatchObject({ ok: false, message: FORBIDDEN_MESSAGE });
@@ -87,7 +85,7 @@ describe("officer actions", () => {
     expect((await a.saveDraftAction(id, {}, draftForm())).ok).toBe(false);
     expect((await a.discardDraftAction(id)).ok).toBe(false);
     expect((await a.removeFileAction(id, "c".repeat(25))).ok).toBe(false);
-    expect(await db.request.findUniqueOrThrow({ where: { id } })).toMatchObject({ title: "" });
+    expect(await db.request.findUniqueOrThrow({ where: { id } })).toMatchObject({ title: "دورة تأهيل المؤذنين", description: null });
   });
 
   it("refuse malformed ids before reaching the services", async () => {

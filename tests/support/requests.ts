@@ -3,12 +3,14 @@
 
 import { Readable } from "node:stream";
 import { seedStatuses } from "../../prisma/seed/statuses";
+import { REVIEW_CRITERIA } from "@/config/review-criteria";
 import type { Actor } from "@/server/authz/scope";
-import { addAttachmentVersion, attachRequirementFile, uploadContext } from "@/server/services/requests/attachments";
+import { addAttachmentVersion, attachOwnFile, uploadContext } from "@/server/services/requests/attachments";
 import { createDraft, saveDraft } from "@/server/services/requests/drafts";
+import { approveRequests, evaluateRequest, type EvaluationInput } from "@/server/services/requests/review";
 import { submitRequest } from "@/server/services/requests/submit";
 import { stageUpload } from "@/server/uploads/stage";
-import { actorOf, makeAssociation, makeRoleActors, makeUser } from "./admin";
+import { actorOf, makeAssociation, makeRequestTypes, makeRoleActors, makeUser, TEST_PASSWORD } from "./admin";
 import { db } from "./db";
 import { FIXTURES } from "./files";
 import { makeTaxonomy } from "./taxonomy";
@@ -27,6 +29,8 @@ export async function makeRequestWorld() {
   await seedStatuses(db);
   const tax = await makeTaxonomy();
   const ctx = await makeRoleActors();
+  const [t1, t2] = ctx.tracks;
+  const requestTypes = await makeRequestTypes();
   const [p1, p2] = tax.programs;
   const [i1, i2] = tax.initiatives; // both in program 1
   const iP2 = tax.initiatives.find((i) => i.programId === p2.id)!;
@@ -43,9 +47,9 @@ export async function makeRequestWorld() {
     ],
   });
 
-  // makeRoleActors' supervisor is on programs[0] (= p1 here). Add a second supervisor on p1 and one on p2.
-  const supervisor2 = await makeUser("SUPERVISOR", { username: "zz.supervisor", programIds: [p1.id] });
-  const supervisorP2 = await makeUser("SUPERVISOR", { programIds: [p2.id] });
+  // makeRoleActors' supervisor is on track 1 (programme p1). Add a second supervisor on track 1 and one on track 2.
+  const supervisor2 = await makeUser("SUPERVISOR", { username: "zz.supervisor", trackIds: [t1.id] });
+  const supervisorP2 = await makeUser("SUPERVISOR", { trackIds: [t2.id] });
   const association2 = await makeAssociation("جمعية أخرى");
   const officer2 = await makeUser("ASSOCIATION_OFFICER", { associationId: association2.id });
   const manager2 = await makeUser("UNIT_MANAGER");
@@ -53,6 +57,9 @@ export async function makeRequestWorld() {
   return {
     ...ctx,
     tax,
+    t1,
+    t2,
+    requestTypes,
     p1,
     p2,
     i1,
@@ -65,8 +72,8 @@ export async function makeRequestWorld() {
       manager: ctx.actors.UNIT_MANAGER,
       supervisor: ctx.actors.SUPERVISOR,
       officer: ctx.actors.ASSOCIATION_OFFICER,
-      supervisor2: actorOf(supervisor2, [p1.id]),
-      supervisorP2: actorOf(supervisorP2, [p2.id]),
+      supervisor2: actorOf(supervisor2, [t1.id]),
+      supervisorP2: actorOf(supervisorP2, [t2.id]),
       officer2: actorOf(officer2),
       manager2: actorOf(manager2),
     },
@@ -92,22 +99,26 @@ export async function stageFor(actor: Actor, requestId: string | null, fileName 
 export const validDraft = (overrides: Record<string, unknown> = {}) => ({
   title: "دورة تأهيل المؤذنين",
   description: "برنامج تدريبي لتأهيل المؤذنين الجدد.",
-  targetAudience: "المؤذنون الجدد",
-  location: "مكة المكرمة",
+  goals: "تأهيل المؤذنين الجدد على الأداء الصحيح للأذان.",
+  expectedBeneficiaries: "المؤذنون الجدد\nطلاب العلم",
   startDate: FUTURE.start,
   endDate: FUTURE.end,
-  custom: { participants: "٢٥", level: "مبتدئ", notes: "" },
+  estimatedBudget: "٤٨٠٬٠٠٠",
+  kpis: "عدد المتدربين، نسبة الحضور",
+  partners: "",
   ...overrides,
 });
 
-export async function newDraft(w: RequestWorld, actor: Actor = w.actors.officer, initiative = w.i1) {
-  const r = await createDraft(actor, { programId: initiative.programId, initiativeId: initiative.id });
+/** A draft in a track (D-123): track 1 by default, whose supervisors are `supervisor` and `supervisor2`. */
+export async function newDraft(w: RequestWorld, actor: Actor = w.actors.officer, track: { id: string } = w.t1) {
+  const r = await createDraft(actor, { trackId: track.id, requestTypeId: w.requestTypes[0].id, title: "دورة تأهيل المؤذنين" });
   if (!r.ok) throw new Error(r.message ?? JSON.stringify(r.errors));
   return r.id;
 }
 
-export async function attachPlan(actor: Actor, requestId: string, key = "program_plan", revision?: string) {
-  const r = await attachRequirementFile(actor, requestId, key, await stageFor(actor, requestId, "خطة.pdf", FIXTURES.pdf(revision)));
+/** The association's plan as one of its own files (D-123: no initiative requirements). */
+export async function attachPlan(actor: Actor, requestId: string, revision?: string) {
+  const r = await attachOwnFile(actor, requestId, await stageFor(actor, requestId, "خطة.pdf", FIXTURES.pdf(revision)));
   if (!r.ok) throw new Error(r.message ?? JSON.stringify(r.errors));
   return r.attachmentId;
 }
@@ -117,12 +128,28 @@ export async function addVersion(actor: Actor, requestId: string, attachmentId: 
 }
 
 /** A complete draft of `actor`, submitted. Returns the id and reference number. */
-export async function submittedRequest(w: RequestWorld, actor: Actor = w.actors.officer, initiative = w.i1) {
-  const id = await newDraft(w, actor, initiative);
+export async function submittedRequest(w: RequestWorld, actor: Actor = w.actors.officer, track: { id: string } = w.t1) {
+  const id = await newDraft(w, actor, track);
   const saved = await saveDraft(actor, id, validDraft());
   if (!saved.ok) throw new Error(JSON.stringify(saved));
-  if (initiative.id === w.i1.id) await attachPlan(actor, id);
+  await attachPlan(actor, id);
   const result = await submitRequest(actor, id);
   if (!result.ok) throw new Error(`${result.message} ${JSON.stringify("missing" in result ? result.missing : [])}`);
   return { id, referenceNo: result.referenceNo };
+}
+
+/** A complete «تقييم واعتماد» input; `met` marks every criterion. */
+export function evaluationInput(overrides: Partial<EvaluationInput> = {}, met = true): EvaluationInput {
+  return { criteria: REVIEW_CRITERIA.map((c) => ({ key: c.key, met, note: "" })), note: "", password: TEST_PASSWORD, ...overrides };
+}
+
+/** The unit manager's password confirming the final approval (D-117); the server seals it (D-122). */
+export const managerSignature = () => ({ password: TEST_PASSWORD });
+
+/** The assigned supervisor evaluates and signs, then the unit manager approves (D-116). */
+export async function evaluateAndApprove(w: RequestWorld, id: string, supervisor: Actor = w.actors.supervisor) {
+  const evaluated = await evaluateRequest(supervisor, id, evaluationInput());
+  if (!evaluated.ok) throw new Error(evaluated.message ?? JSON.stringify(evaluated.errors));
+  const approved = await approveRequests(w.actors.manager, [id], managerSignature());
+  if (!approved.ok || approved.outcome.done.length !== 1) throw new Error(JSON.stringify(approved));
 }

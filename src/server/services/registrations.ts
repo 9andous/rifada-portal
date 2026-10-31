@@ -1,4 +1,6 @@
 import "server-only";
+import { commitRegistrationLogo, registrationLogoUsable } from "@/server/services/images";
+import { NOT_USABLE } from "@/server/uploads/stage";
 import { randomInt } from "node:crypto";
 import type { Prisma, RegistrationStatus } from "@/generated/prisma/client";
 import { pageWindow, type Page } from "@/lib/list-params";
@@ -102,9 +104,14 @@ export async function checkRegistrationAvailability(v: { licenseNumber?: string;
 }
 
 /** Public: stores a new application. The password is hashed here and never stored in clear. */
-export async function submitRegistration(input: RegistrationInput, now: Date = new Date()): Promise<Result<{ referenceNo: string }>> {
+/**
+ * Records an application. `logoUploadId` is an optional logo staged through the public upload route
+ * (D-100); it is checked first and moved into storage once the application exists.
+ */
+export async function submitRegistration(input: RegistrationInput, now: Date = new Date(), logoUploadId?: string): Promise<Result<{ referenceNo: string }>> {
+  if (logoUploadId && !(await registrationLogoUsable(logoUploadId))) return fieldRefusal("image", NOT_USABLE);
   const passwordHash = await hashPassword(input.password);
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx): Promise<Result<{ referenceNo: string; id: string }>> => {
     await lockAdminWrites(tx);
     const programs = await tx.program.findMany({ where: { number: { in: input.programNumbers }, archivedAt: null, isActive: true }, select: { number: true } });
     if (programs.length !== input.programNumbers.length) return fieldRefusal("programNumbers", "اختاروا من برامج الرئاسة المتاحة.");
@@ -137,8 +144,14 @@ export async function submitRegistration(input: RegistrationInput, now: Date = n
       },
     });
     await audit({ actorId: null, action: "registration.submitted", entityType: "AssociationRegistration", entityId: created.id, after: registrationSnapshot(created) }, tx);
-    return { ok: true, referenceNo };
+    return { ok: true, referenceNo, id: created.id };
   });
+  if (!result.ok) return result;
+  if (logoUploadId) {
+    const logoKey = await commitRegistrationLogo(logoUploadId);
+    if (logoKey) await db.associationRegistration.update({ where: { id: result.id }, data: { logoKey } });
+  }
+  return { ok: true, referenceNo: result.referenceNo };
 }
 
 export type RegistrationLookup = {
@@ -242,6 +255,9 @@ export async function approveRegistration(actor: Actor, id: string, note: string
         contactName: r.officerName,
         contactEmail: r.contactEmail,
         contactPhone: r.contactPhone,
+        // The logo moves to the association (the application's key is cleared below), so a later
+        // change of the association's logo never leaves the application pointing at a removed file.
+        logoKey: r.logoKey,
       },
     });
     await audit({ actorId: actor.id, action: "association.created", entityType: "Association", entityId: association.id, after: associationSnapshot(association) }, tx);
@@ -261,7 +277,7 @@ export async function approveRegistration(actor: Actor, id: string, note: string
 
     const updated = await tx.associationRegistration.update({
       where: { id },
-      data: { status: "APPROVED", associationId: association.id, reviewedById: actor.id, reviewedAt: now, decisionNote: note.trim() || null, passwordHash: null },
+      data: { status: "APPROVED", associationId: association.id, reviewedById: actor.id, reviewedAt: now, decisionNote: note.trim() || null, passwordHash: null, logoKey: null },
     });
     await audit(
       { actorId: actor.id, action: "registration.approved", entityType: "AssociationRegistration", entityId: id, before: registrationSnapshot(r), after: registrationSnapshot(updated) },

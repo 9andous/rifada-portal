@@ -1,16 +1,17 @@
-import { CalendarDays, CircleCheck, CircleDashed, ClipboardCheck, Clock, PenLine, UserRound } from "lucide-react";
+import { CalendarDays, CircleDashed, ClipboardCheck, Clock, Printer, UserRound } from "lucide-react";
 import Link from "next/link";
+import { buttonClasses } from "@/components/ui/button";
 import type { ReactNode } from "react";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { PersonName } from "@/components/ui/avatar";
-import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
 import { RefNumber } from "@/components/ui/ref-number";
-import { Alert, HeaderDiamond, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
+import { Alert, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { DataTable, THead, Td, Th, Tr } from "@/components/ui/table";
 import { auditActionLabel } from "@/lib/audit-labels";
 import { acceptedGroups } from "@/lib/completeness";
+import { cn } from "@/lib/cn";
 import { arabicList, formatGregorian, formatHijri, formatNumber, toArabicDigits } from "@/lib/format";
 import { acceptAttribute } from "@/lib/uploads";
 import { UPLOAD_GROUP_LABELS } from "@/lib/validation/settings";
@@ -19,8 +20,12 @@ import type { RequestDetail } from "@/server/services/requests/read";
 import { Conversation } from "./conversation";
 import { DecisionPanel } from "./decision-panel";
 import { FileItem } from "./file-list";
-import { DiscardDraftButton, ReassignButton } from "./request-actions";
+import { MarkRequestSeen } from "./mark-request-seen";
+import { ReassignButton } from "./request-actions";
 import { RequestStepper } from "./request-stepper";
+import { EvaluationEditDialog } from "./evaluation-dialog";
+import { EvaluationCard, RequestLog, ScopeCards } from "./review-cards";
+import { ScopeEditor, type ScopeProgram } from "./scope-editor";
 import { StatusTimeline } from "./timeline";
 
 const DAY_UNIT = (n: number) => (n === 1 ? "يوم عمل واحد" : n === 2 ? "يوما عمل" : n >= 3 && n <= 10 ? `${formatNumber(n)} أيام عمل` : `${formatNumber(n)} يوم عمل`);
@@ -63,6 +68,16 @@ function Info({ label, children, wide }: { label: string; children: ReactNode; w
   );
 }
 
+/** One clearly separated box of the project data: a bold heading, then its content. */
+function Block({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
+  return (
+    <section className={cn("rounded-lg border border-line bg-surface-muted p-5", className)}>
+      <h3 className="text-base font-bold leading-tight text-brand-ink">{label}</h3>
+      <div className="mt-2 whitespace-pre-line text-[0.9375rem] leading-[1.9] text-ink">{children}</div>
+    </section>
+  );
+}
+
 const dateOnly = (d: Date | null) => (d ? <DateDisplay date={d} /> : <span className="text-ink-subtle">—</span>);
 
 /** A stored field value for display: dates Hijri first, digits Arabic-Indic. */
@@ -85,19 +100,23 @@ export type RequestViewProps = {
   listHref: string;
   listLabel: string;
   uploads: { maxMb: number; allowedGroups: string[] };
-  /** The officer arrived right after submitting. */
-  justSubmitted?: boolean;
+  /** Programmes and initiatives the request may move to, when the user may move it (D-116). */
+  scopePrograms?: ScopeProgram[];
   now?: Date;
 };
 
-/** The request page for every role (docs/DESIGN.md: Request detail). What it shows comes from the server, per role. */
-export function RequestView({ request: r, listHref, listLabel, uploads, justSubmitted, now = new Date() }: RequestViewProps) {
+/**
+ * The request page of the unit's staff (docs/DESIGN.md: Request detail). What it shows comes from
+ * the server, per role. Association officers have their own page (AssociationRequestView, D-102).
+ */
+export function RequestView({ request: r, listHref, listLabel, uploads, scopePrograms = [], now = new Date() }: RequestViewProps) {
   const caps = r.capabilities;
   const isStaff = r.assignment !== null;
   const fields = r.requirements.filter((x) => x.kind === "FIELD");
   const attachments = r.requirements.filter((x) => x.kind === "ATTACHMENT");
   const submitted = r.referenceNo !== null;
   const dialogRequest = { id: r.id, title: r.title, referenceNo: r.referenceNo };
+  const acts = caps.canDecide || caps.canEvaluate || caps.canApprove;
 
   const facts: [string, ReactNode, ReactNode][] = [
     ["تاريخ التقديم", r.submittedAt ? formatHijri(r.submittedAt) : "لم يُقدَّم بعد", <CalendarDays key="i" strokeWidth={1.75} />],
@@ -121,67 +140,95 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
         }
         title={r.title || "طلب بلا عنوان"}
         actions={
-          <StatusText tone={r.status.tone} className="px-3 py-1 text-sm">
-            {r.status.name}
-          </StatusText>
+          <>
+            <StatusText tone={r.status.tone} className="px-3 py-1 text-sm">
+              {r.status.name}
+            </StatusText>
+            {caps.canPrint ? (
+              <Link href={`/account/requests/${r.id}/print`} className={buttonClasses("outline", "md")}>
+                <Printer aria-hidden="true" strokeWidth={1.75} />
+                طباعة الطلب (PDF)
+              </Link>
+            ) : null}
+          </>
         }
-        lead={`${isStaff ? `${r.association.name} · ` : ""}${toArabicDigits(r.program.number)}. ${r.program.name}`}
+        lead={isStaff ? r.association.name : (r.track?.name ?? undefined)}
         figures={
-          <Panel>
-            <div className="px-4 pb-6 pt-6 sm:px-8">
-              <RequestStepper statusKey={r.status.key} />
-            </div>
-            <dl className={`grid grid-cols-1 border-t border-line sm:grid-cols-2 ${facts.length > 3 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
-              {facts.map(([k, v, icon], i) => (
-                <div key={k} className={`flex items-center gap-3 px-6 py-4 ${i > 0 ? "border-t border-line sm:border-t-0 sm:border-s" : ""}`}>
-                  <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-sunken text-ink-muted [&_svg]:size-[18px]">
-                    {icon}
-                  </span>
-                  <span className="min-w-0">
-                    <dt className="text-xs text-ink-subtle">{k}</dt>
-                    <dd className="mt-0.5 truncate text-sm font-semibold text-ink">{v}</dd>
-                  </span>
-                </div>
-              ))}
-            </dl>
-          </Panel>
+          <div className="flex flex-col gap-4">
+            <Panel>
+              <div className="px-4 pb-6 pt-6 sm:px-8">
+                <RequestStepper statusKey={r.status.key} reviewStage={r.review?.stage} />
+              </div>
+              <dl className={`grid grid-cols-1 border-t border-line sm:grid-cols-2 ${facts.length > 3 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+                {facts.map(([k, v, icon], i) => (
+                  <div key={k} className={`flex items-center gap-3 px-6 py-4 ${i > 0 ? "border-t border-line sm:border-t-0 sm:border-s" : ""}`}>
+                    <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-sunken text-ink-muted [&_svg]:size-[18px]">
+                      {icon}
+                    </span>
+                    <span className="min-w-0">
+                      <dt className="text-xs text-ink-subtle">{k}</dt>
+                      <dd className="mt-0.5 truncate text-sm font-semibold text-ink">{v}</dd>
+                    </span>
+                  </div>
+                ))}
+              </dl>
+            </Panel>
+            {/* Where the request belongs, right under the stepper (owner's request, D-118). */}
+            {isStaff ? (
+              <ScopeCards
+                track={r.track}
+                requestType={r.requestType?.name ?? null}
+                trackPrograms={r.trackPrograms}
+                program={r.program}
+                initiatives={r.initiatives}
+                editor={
+                  caps.canChangeScope && scopePrograms.length ? (
+                    <ScopeEditor requestId={r.id} programs={scopePrograms} programId={r.program?.id ?? ""} initiativeIds={r.initiatives.map((i) => i.id)} />
+                  ) : null
+                }
+              />
+            ) : null}
+          </div>
         }
       />
-      <PageBody className={caps.canDecide ? "pb-28 lg:pb-10" : undefined}>
+      <PageBody className={acts ? "pb-28 lg:pb-10" : undefined}>
+        <MarkRequestSeen requestId={r.id} />
         <div className="flex flex-col gap-4">
-          {justSubmitted && r.referenceNo ? (
-            <Alert tone="success" title="قُدِّم الطلب بنجاح" icon={<CircleCheck strokeWidth={1.75} />}>
-              رقم الطلب <RefNumber value={r.referenceNo} />. يمكنكم متابعة حالته ومراحل مراجعته من هذه الصفحة.
-            </Alert>
-          ) : null}
           {caps.returnedNotice ? <Alert tone="warning" title="قيد التعديل لدى الجمعية — قد يتغير محتوى الطلب قبل إعادة التقديم" /> : null}
-          {!isStaff && r.status.key === "RETURNED" ? (
-            <Alert tone="warning" title="أُعيد الطلب إليكم للتعديل">
-              {r.timeline.filter((t) => t.to.key === "RETURNED").at(-1)?.note ?? "عدّلوا الطلب ثم أعيدوا تقديمه."}
-            </Alert>
-          ) : null}
-          {!isStaff && r.status.key === "DRAFT" ? (
-            <Alert tone="info" title="هذه مسودة لم تُقدَّم بعد">
-              لا تطّلع الوحدة الإشرافية على المسودة حتى تقدّموها.
-            </Alert>
-          ) : null}
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_23rem]">
           <div className="flex min-w-0 flex-col gap-5">
-            <Section title="وصف الطلب">
-              {r.description ? <p className="t-body max-w-3xl whitespace-pre-line">{r.description}</p> : <p className="t-body text-ink-subtle">لم يُكتب وصف بعد.</p>}
-              <dl className="mt-6 grid grid-cols-1 gap-x-8 gap-y-5 rounded-lg border border-line bg-surface-muted p-5 sm:grid-cols-2">
-                <Info label="المبادرة" wide>
-                  {toArabicDigits(r.initiative.number)}. {r.initiative.name}
-                </Info>
-                {isStaff ? <Info label="الجمعية">{r.association.name}</Info> : null}
-                <Info label="الفئة المستهدفة">{r.targetAudience || <span className="text-ink-subtle">—</span>}</Info>
-                <Info label="مكان التنفيذ">{r.location || <span className="text-ink-subtle">—</span>}</Info>
-                <Info label="تاريخ البداية">{dateOnly(r.startDate)}</Info>
-                <Info label="تاريخ النهاية">{dateOnly(r.endDate)}</Info>
-                <Info label="أنشأه">{r.createdBy}</Info>
-              </dl>
+            <Section title="بيانات المشروع">
+              {/* One box per item, in reading order (owner's request): who and under which initiative,
+                  the project's name and description, who it serves and what it aims at, where and when. */}
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {isStaff ? <Block label="الجمعية" className="sm:col-span-2">{r.association.name}</Block> : null}
+                  {isStaff ? null : (
+                    <>
+                      <Block label="المسار المستهدف">{r.track?.name ?? "—"}</Block>
+                      <Block label="نوع الطلب">{r.requestType?.name ?? "—"}</Block>
+                    </>
+                  )}
+                </div>
+                <Block label="اسم المشروع أو البرنامج">{r.title || <span className="text-ink-subtle">—</span>}</Block>
+                <Block label="وصف المشروع">{r.description || <span className="text-ink-subtle">لم يُكتب وصف بعد.</span>}</Block>
+                <Block label="الأهداف والمخرجات المتوقعة">{r.goals || <span className="text-ink-subtle">—</span>}</Block>
+                {r.targetAudience ? <Block label="الفئة المستهدفة">{r.targetAudience}</Block> : null}
+                {r.location ? <Block label="مكان التنفيذ">{r.location}</Block> : null}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Block label="الفئات المستهدفة"><span className="whitespace-pre-line">{r.expectedBeneficiaries || "—"}</span></Block>
+                  <Block label="الميزانية التقديرية">{r.estimatedBudget !== null ? `${formatNumber(r.estimatedBudget)} ر.س` : "—"}</Block>
+                  <Block label="تاريخ البداية">{dateOnly(r.startDate)}</Block>
+                  <Block label="تاريخ النهاية">{dateOnly(r.endDate)}</Block>
+                </div>
+                <Block label="مؤشرات القياس">{r.kpis || <span className="text-ink-subtle">—</span>}</Block>
+                <Block label="الشركاء">{r.partners || <span className="text-ink-subtle">—</span>}</Block>
+                <p className="text-sm text-ink-muted">
+                  أنشأه: <span className="font-semibold text-ink">{r.createdBy}</span>
+                </p>
+              </div>
             </Section>
 
             {fields.length || r.otherValues.length ? (
@@ -202,7 +249,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
             ) : null}
 
             <Section
-              title="المتطلبات والمرفقات"
+              title="المرفقات"
               flushBody={attachments.length > 0 || r.otherFiles.length > 0}
               aside={
                 attachments.length
@@ -211,7 +258,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
               }
             >
               {attachments.length === 0 && r.otherFiles.length === 0 ? (
-                <p className="t-body text-sm">لا تتطلب هذه المبادرة مرفقات.</p>
+                <p className="t-body text-sm">لم تُرفق الجمعية ملفات.</p>
               ) : (
                 <div>
                   <DataTable caption="المتطلبات والمرفقات" minWidth="36rem">
@@ -255,7 +302,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
                       {r.otherFiles.length ? (
                         <Tr>
                           <Td>
-                            <span className="font-semibold text-ink">مرفقات أخرى</span>
+                            <span className="font-semibold text-ink">ملفات إضافية من الجمعية</span>
                             <span className="t-caption block">لم تعد ضمن متطلبات المبادرة</span>
                           </Td>
                           <Td>
@@ -326,22 +373,16 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
           {/* The side column stays in view while the main column scrolls; it scrolls on its own when
               taller than the screen, so the «القرار» panel at its top never covers the timeline. */}
           <aside className="flex flex-col gap-5 lg:sticky lg:top-[168px] lg:max-h-[calc(100vh-11.5rem)] lg:self-start lg:overflow-y-auto lg:pb-1 [&>*]:shrink-0">
-            {caps.canDecide ? <DecisionPanel request={dialogRequest} /> : null}
-
-            {caps.canEdit || caps.canDiscard ? (
-              <Panel className="flex flex-col gap-3 p-5">
-                <div className="mb-1 flex items-start gap-3">
-                  <HeaderDiamond />
-                  <h2 className="t-section">إجراءات الطلب</h2>
-                </div>
-                {caps.canEdit ? (
-                  <Link href={`/association/requests/${r.id}/edit`} className={buttonClasses("primary", "md", "w-full")}>
-                    <PenLine aria-hidden="true" strokeWidth={1.75} />
-                    {r.status.key === "RETURNED" ? "تعديل الطلب وإعادة تقديمه" : "متابعة تعبئة الطلب"}
-                  </Link>
-                ) : null}
-                {caps.canDiscard ? <DiscardDraftButton requestId={r.id} title={r.title} /> : null}
-              </Panel>
+            {acts ? <DecisionPanel request={dialogRequest} canEvaluate={caps.canEvaluate} canApprove={caps.canApprove} canDecide={caps.canDecide} /> : null}
+            {r.review ? (
+              <EvaluationCard
+                review={r.review}
+                editor={
+                  caps.canEditEvaluation && r.review.evaluations.length ? (
+                    <EvaluationEditDialog requestId={r.id} criteria={r.review.evaluations.at(-1)!.criteria} note={r.review.evaluations.at(-1)!.note} />
+                  ) : null
+                }
+              />
             ) : null}
 
             {r.assignment ? (
@@ -351,7 +392,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
                   caps.canReassign ? (
                     <ReassignButton
                       request={dialogRequest}
-                      supervisors={r.assignment.candidates.map((c) => ({ id: c.id, name: c.name, programIds: [r.program.id], open: c.open }))}
+                      supervisors={r.assignment.candidates.map((c) => ({ id: c.id, name: c.name, trackIds: r.track ? [r.track.id] : [], open: c.open }))}
                     />
                   ) : null
                 }
@@ -382,8 +423,8 @@ export function RequestView({ request: r, listHref, listLabel, uploads, justSubm
               </SideCard>
             ) : null}
 
-            <SideCard title="مسار الطلب">
-              <StatusTimeline entries={r.timeline} />
+            <SideCard title={r.review ? "سجل الطلب" : "مسار الطلب"}>
+              {r.review ? <RequestLog timeline={r.timeline} review={r.review} /> : <StatusTimeline entries={r.timeline} />}
             </SideCard>
 
             {r.auditTrail ? (

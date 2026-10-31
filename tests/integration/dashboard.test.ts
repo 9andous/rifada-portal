@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "@/server/authz/scope";
 import { getByProgram, getMonthly, getOverdue, getOverview, getWorkload } from "@/server/services/dashboard";
+import { listRequests, parseRequestListParams } from "@/server/services/requests/read";
 import { db, resetDatabase } from "../support/db";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -26,6 +27,10 @@ async function fixtures() {
     db.program.create({ data: { number: 1, name: "برنامج الأول" } }),
     db.program.create({ data: { number: 2, name: "برنامج الثاني" } }),
   ]);
+  const [t1, t2] = await Promise.all([
+    db.track.create({ data: { number: 1, name: "المسار الأول", programs: { create: [{ programId: p1.id }] } } }),
+    db.track.create({ data: { number: 2, name: "المسار الثاني", programs: { create: [{ programId: p2.id }] } } }),
+  ]);
   const [i1, i2] = await Promise.all([
     db.initiative.create({ data: { programId: p1.id, number: 1, name: "مبادرة ١" } }),
     db.initiative.create({ data: { programId: p2.id, number: 1, name: "مبادرة ٢" } }),
@@ -38,7 +43,7 @@ async function fixtures() {
     user("off2", "ASSOCIATION_OFFICER", a2.id),
     user("mgr", "UNIT_MANAGER"),
   ]);
-  await db.supervisorProgram.create({ data: { userId: supervisor.id, programId: p1.id } });
+  await db.supervisorTrack.create({ data: { userId: supervisor.id, trackId: t1.id } });
 
   const request = (data: {
     association: string;
@@ -55,6 +60,7 @@ async function fixtures() {
     db.request.create({
       data: {
         associationId: data.association,
+        trackId: data.program === p1.id ? t1.id : t2.id,
         programId: data.program,
         initiativeId: data.initiative,
         statusId: statuses[data.status],
@@ -74,10 +80,10 @@ async function fixtures() {
   await request({ title: "waiting", association: a2.id, program: p2.id, initiative: i2.id, status: "UNDER_REVIEW", submittedAt: daysAgo(1), slaDueAt: new Date(NOW.getTime() + 5 * DAY), createdBy: officer2.id });
   await request({ title: "draft", association: a1.id, program: p1.id, initiative: i1.id, status: "DRAFT", createdBy: officer1.id });
 
-  const actor = (id: string, role: Actor["role"], extra: Partial<Actor> = {}): Actor => ({ id, role, associationId: null, programIds: [], ...extra });
+  const actor = (id: string, role: Actor["role"], extra: Partial<Actor> = {}): Actor => ({ id, role, associationId: null, trackIds: [], ...extra });
   return {
     manager: actor(manager.id, "UNIT_MANAGER"),
-    supervisor: actor(supervisor.id, "SUPERVISOR", { programIds: [p1.id] }),
+    supervisor: actor(supervisor.id, "SUPERVISOR", { trackIds: [t1.id] }),
     officer1: actor(officer1.id, "ASSOCIATION_OFFICER", { associationId: a1.id }),
     officer2: actor(officer2.id, "ASSOCIATION_OFFICER", { associationId: a2.id }),
     supervisorId: supervisor.id,
@@ -90,10 +96,11 @@ beforeEach(async () => {
 
 describe("dashboard figures", () => {
   it("are all zero (and averages null) on an empty database", async () => {
-    const manager: Actor = { id: "m", role: "UNIT_MANAGER", associationId: null, programIds: [] };
+    const manager: Actor = { id: "m", role: "UNIT_MANAGER", associationId: null, trackIds: [] };
     const overview = await getOverview(manager, NOW);
     expect(overview).toMatchObject({ total: 0, open: 0, overdue: 0, unassigned: 0, avgHandlingDays: null, approvalRate: null });
-    expect((await getMonthly(manager, 6, NOW)).map((m) => m.count)).toEqual([0, 0, 0, 0, 0, 0]);
+    expect((await getMonthly(manager, 6, NOW)).map((m) => [m.count, m.decided])).toEqual(Array(6).fill([0, 0]));
+    expect(await getMonthly(manager, 12, NOW)).toHaveLength(12);
     expect(await getByProgram(manager)).toEqual([]);
     expect(await getWorkload(NOW)).toEqual([]);
     expect(await getOverdue(manager, 6, NOW)).toEqual([]);
@@ -113,20 +120,37 @@ describe("dashboard figures", () => {
       avgHandlingDays: 5,
       approvalRate: 50,
     });
-    expect((await getMonthly(f.manager, 6, NOW)).reduce((n, m) => n + m.count, 0)).toBe(4);
-    expect((await getByProgram(f.manager)).map((p) => p.count)).toEqual([2, 2]);
-    expect(await getWorkload(NOW)).toEqual([expect.objectContaining({ id: f.supervisorId, open: 1, overdue: 1, programs: ["برنامج الأول"] })]);
+    const monthly = await getMonthly(f.manager, 6, NOW);
+    expect(monthly.reduce((n, m) => n + m.count, 0)).toBe(4);
+    expect(monthly.reduce((n, m) => n + m.decided, 0)).toBe(2);
+    expect((await getByProgram(f.manager)).map((p) => [p.count, p.open, p.decided])).toEqual([
+      [2, 1, 1],
+      [2, 1, 1],
+    ]);
+    expect(await getWorkload(NOW)).toEqual([expect.objectContaining({ id: f.supervisorId, open: 1, overdue: 1, tracks: ["المسار الأول"] })]);
     const overdue = await getOverdue(f.manager, 6, NOW);
     expect(overdue.map((r) => [r.title, r.association])).toEqual([["overdue", "جمعية أ"]]);
   });
 
-  it("stay inside a supervisor's programs", async () => {
+  it("stay inside a supervisor's tracks", async () => {
     const f = await fixtures();
     const o = await getOverview(f.supervisor, NOW);
     // Drafts are not shown on staff dashboards; whether staff may read drafts at all is an open
     // Phase 3 item (DECISIONS.md D-026), so `drafts` is not asserted here.
     expect(o).toMatchObject({ total: 2, underReview: 1, approved: 1, rejected: 0, overdue: 1, approvalRate: 100 });
-    expect((await getByProgram(f.supervisor)).map((p) => p.count)).toEqual([2, 0]);
+    expect((await getByProgram(f.supervisor)).map((p) => [p.count, p.open, p.decided])).toEqual([
+      [2, 1, 1],
+      [0, 0, 0],
+    ]);
+  });
+
+  it("filter request lists to the overdue ones", async () => {
+    const f = await fixtures();
+    const overdue = await listRequests(f.manager, parseRequestListParams({ overdue: "1" }, "scope"), "scope", NOW);
+    expect(overdue.items.map((r) => r.title)).toEqual(["overdue"]);
+    const queue = await listRequests(f.supervisor, parseRequestListParams({ overdue: "1" }, "queue"), "queue", NOW);
+    expect(queue.total).toBe(1);
+    expect((await listRequests(f.officer2, parseRequestListParams({ overdue: "1" }, "mine"), "mine", NOW)).total).toBe(0);
   });
 
   it("stay inside an officer's association and count its drafts separately", async () => {

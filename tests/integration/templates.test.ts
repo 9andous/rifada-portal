@@ -14,6 +14,8 @@ import {
   getTemplateDetail,
   listTemplates,
   parseTemplateListParams,
+  readerTemplateFilters,
+  readerTemplates,
   replaceTemplateFile,
   setTemplateArchived,
   setTemplatePublished,
@@ -58,7 +60,7 @@ async function stagedId(actor: Actor, fileName = "نموذج الخطة.pdf", by
   return r.uploadId;
 }
 
-const meta = (overrides: Record<string, unknown> = {}) => ({ title: "نموذج خطة البرنامج", description: null, programId: null, initiativeId: null, attachmentTypeId: null, ...overrides });
+const meta = (overrides: Record<string, unknown> = {}) => ({ kind: "FORM" as const, title: "نموذج خطة البرنامج", description: null, programId: null, initiativeId: null, attachmentTypeId: null, ...overrides });
 
 async function makeTemplate(overrides: Record<string, unknown> = {}, publish = false) {
   const r = await createTemplate(admin, meta(overrides), await stagedId(admin));
@@ -155,7 +157,7 @@ describe("staged uploads", () => {
   it("cannot be used by another super admin to create a template", async () => {
     const other = await makeUser("SUPER_ADMIN");
     const id = await stagedId(admin);
-    const r = await createTemplate({ id: other.id, role: "SUPER_ADMIN", associationId: null, programIds: [] }, meta(), id);
+    const r = await createTemplate({ id: other.id, role: "SUPER_ADMIN", associationId: null, trackIds: [] }, meta(), id);
     expect(r).toMatchObject({ ok: false, errors: { file: expect.any(String) } });
     expect(await db.template.count()).toBe(0);
   });
@@ -259,6 +261,21 @@ describe("templates", () => {
       for (const call of calls) await expect(call(), role).rejects.toBeInstanceOf(ForbiddenError);
     }
     expect((await listTemplates(admin, parseTemplateListParams({ state: "unpublished" }), "admin")).items.map((t) => t.id)).toEqual([draft]);
+  });
+
+  it("«الأدلة والنماذج»: readers filter by guide or form, and the counts follow the chosen kind", async () => {
+    const [p1] = tax.programs;
+    const guide = await makeTemplate({ kind: "GUIDE", title: "دليل عام" }, true);
+    const form = await makeTemplate({ kind: "FORM", title: "نموذج للبرنامج", programId: p1.id }, true);
+    await makeTemplate({ kind: "GUIDE", title: "دليل غير منشور" });
+    const reader = ctx.actors.ASSOCIATION_OFFICER;
+    expect((await readerTemplates(reader, { kind: "GUIDE" })).map((t) => t.id)).toEqual([guide]);
+    expect((await readerTemplates(reader, { kind: "FORM", program: p1.id })).map((t) => t.id)).toEqual([form]);
+    expect((await readerTemplates(reader, { kind: "GUIDE", program: p1.id })).map((t) => t.id)).toEqual([]);
+    expect(await readerTemplateFilters(reader)).toMatchObject({ all: 2, guides: 1, forms: 1, total: 2, general: 1 });
+    expect(await readerTemplateFilters(reader, "FORM")).toMatchObject({ all: 2, total: 1, general: 0, programs: [{ id: p1.id, count: 1 }] });
+    expect(await updateTemplate(admin, form, meta({ kind: "GUIDE", title: "نموذج للبرنامج", programId: p1.id }))).toEqual({ ok: true });
+    expect((await db.template.findUniqueOrThrow({ where: { id: form } })).kind).toBe("GUIDE");
   });
 
   it("download lookup: published for every role; unpublished, archived and old versions for the super admin only", async () => {

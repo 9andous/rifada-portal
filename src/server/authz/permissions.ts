@@ -4,8 +4,8 @@
 
 import type { Role } from "./roles";
 
-/** all = every record; programs = records in the supervisor's programs; own = the officer's association. */
-export type Scope = "all" | "programs" | "own";
+/** all = every record; tracks = records in the supervisor's tracks (D-123); own = the officer's association. */
+export type Scope = "all" | "tracks" | "own";
 
 export type Permission = {
   description: string;
@@ -31,7 +31,11 @@ export const PERMISSIONS = {
   },
   "associations.read": {
     description: "عرض بيانات الجمعيات",
-    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "programs", ASSOCIATION_OFFICER: "own" },
+    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "tracks", ASSOCIATION_OFFICER: "own" },
+  },
+  "associations.profile": {
+    description: "تعديل بيانات التواصل وشعار الجمعية من ملفها",
+    grants: { ASSOCIATION_OFFICER: "own" },
   },
   "taxonomy.manage": {
     description: "تعديل البرامج والمبادرات والأهداف ومتطلبات المبادرات وأنواع المرفقات",
@@ -58,12 +62,12 @@ export const PERMISSIONS = {
     grants: { SUPER_ADMIN: "all" },
   },
   "content.manage": {
-    description: "إدارة الإعلانات والأدلة والنماذج",
+    description: "إدارة الإعلانات والأدلة والنماذج وكلمات الصفحة الرئيسية",
     grants: { SUPER_ADMIN: "all" },
   },
   "requests.read": {
     description: "عرض الطلبات وتفاصيلها",
-    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "programs", ASSOCIATION_OFFICER: "own" },
+    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "tracks", ASSOCIATION_OFFICER: "own" },
   },
   "requests.create": {
     description: "إنشاء طلب جديد وحفظه كمسودة",
@@ -75,7 +79,7 @@ export const PERMISSIONS = {
   },
   "requests.review": {
     description: "إعادة الطلب للتعديل أو اعتماده أو رفضه",
-    grants: { UNIT_MANAGER: "all", SUPERVISOR: "programs" },
+    grants: { UNIT_MANAGER: "all", SUPERVISOR: "tracks" },
   },
   "requests.auditTrail": {
     description: "عرض سجل الاطلاع والتدقيق في صفحة الطلب",
@@ -87,27 +91,27 @@ export const PERMISSIONS = {
   },
   "comments.write": {
     description: "إضافة تعليق على الطلب",
-    grants: { UNIT_MANAGER: "all", SUPERVISOR: "programs", ASSOCIATION_OFFICER: "own" },
+    grants: { UNIT_MANAGER: "all", SUPERVISOR: "tracks", ASSOCIATION_OFFICER: "own" },
   },
   "comments.readInternal": {
     description: "قراءة الملاحظات الداخلية للفريق الإشرافي",
-    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "programs" },
+    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "tracks" },
   },
   "comments.writeInternal": {
     description: "إضافة ملاحظة داخلية لا تظهر للجمعية",
-    grants: { UNIT_MANAGER: "all", SUPERVISOR: "programs" },
+    grants: { UNIT_MANAGER: "all", SUPERVISOR: "tracks" },
   },
   "attachments.read": {
     description: "تنزيل مرفقات الطلب",
-    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "programs", ASSOCIATION_OFFICER: "own" },
+    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "tracks", ASSOCIATION_OFFICER: "own" },
   },
   "attachments.upload": {
     description: "رفع مرفق أو إصدار جديد منه",
-    grants: { ASSOCIATION_OFFICER: "own", SUPERVISOR: "programs", UNIT_MANAGER: "all" },
+    grants: { ASSOCIATION_OFFICER: "own", SUPERVISOR: "tracks", UNIT_MANAGER: "all" },
   },
   "reports.read": {
     description: "عرض التقارير وتصديرها",
-    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "programs", ASSOCIATION_OFFICER: "own" },
+    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all", SUPERVISOR: "tracks", ASSOCIATION_OFFICER: "own" },
   },
   "dashboard.management": {
     description: "لوحات المؤشرات الإدارية الشاملة",

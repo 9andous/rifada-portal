@@ -5,7 +5,7 @@
     { "key": "COMPLETENESS_CHECK", "name": "فحص الاكتمال", "colorToken": "info", "isTerminal": false, "sortOrder": 3 },
     { "key": "UNDER_REVIEW", "name": "قيد المراجعة", "colorToken": "primary", "isTerminal": false, "sortOrder": 4 },
     { "key": "RETURNED", "name": "معاد للتعديل", "colorToken": "warning", "isTerminal": false, "sortOrder": 5 },
-    { "key": "APPROVED", "name": "معتمد", "colorToken": "success", "isTerminal": true, "sortOrder": 6 },
+    { "key": "APPROVED", "name": "مقبول", "colorToken": "success", "isTerminal": true, "sortOrder": 6 },
     { "key": "REJECTED", "name": "مرفوض", "colorToken": "danger", "isTerminal": true, "sortOrder": 7 }
   ],
   "transitions": [

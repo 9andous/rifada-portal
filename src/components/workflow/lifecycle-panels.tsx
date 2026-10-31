@@ -19,7 +19,7 @@ export function LifecyclePanels({ lifecycle, readOnly }: { lifecycle: Lifecycle;
         </Alert>
       ) : null}
       <Panel>
-        <PanelHeader title="دورة حياة الطلب" description="من «مسودة» حتى «معتمد» أو «مرفوض». الأسهم الخفيفة انتقالات تلقائية ينفذها النظام." />
+        <PanelHeader title="دورة حياة الطلب" description="من «مسودة» حتى «مقبول» أو «مرفوض». الأسهم الخفيفة انتقالات تلقائية ينفذها النظام." />
         <div className="overflow-x-auto px-6 pb-6">
           <LifecycleDiagram statuses={statuses} transitions={transitions} className="min-w-[44rem]" />
         </div>

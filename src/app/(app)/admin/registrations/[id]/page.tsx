@@ -12,6 +12,8 @@ import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
 import { Alert, HeaderDiamond, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { toArabicDigits } from "@/lib/format";
+import { imageUrl } from "@/lib/images";
+import { Avatar } from "@/components/ui/avatar";
 import { REGISTRATION_STATUS } from "@/lib/registrations";
 import { approveRegistrationAction, rejectRegistrationAction } from "@/server/actions/registration";
 import { requireUser } from "@/server/auth/session";
@@ -68,6 +70,16 @@ export default async function RegistrationPage({ params }: PageProps<"/admin/reg
           <div className="flex min-w-0 flex-col gap-5">
             <Panel>
               <PanelHeader title="بيانات الجمعية" />
+              <div className="flex items-center gap-4 px-6 pb-5">
+                <Avatar
+                  name={r.name}
+                  src={imageUrl("registration", r.id, r.logoKey)}
+                  className="size-16 rounded-xl border border-line bg-surface text-lg [&>img]:object-contain"
+                />
+                <p className="t-caption">
+                  {r.logoKey ? "شعار الجمعية المرفق بالطلب." : r.status === "APPROVED" ? "انتقل شعار الجمعية، إن وُجد، إلى ملفها بعد الاعتماد." : "لم ترفق الجمعية شعارًا."}
+                </p>
+              </div>
               <dl className="grid gap-x-8 gap-y-5 px-6 pb-6 sm:grid-cols-2">
                 <Info label="اسم الجمعية">{r.name}</Info>
                 <Info label="رقم الترخيص">{toArabicDigits(r.licenseNumber)}</Info>

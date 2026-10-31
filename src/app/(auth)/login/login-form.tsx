@@ -81,7 +81,7 @@ export function LoginForm() {
             نسيت كلمة المرور؟
           </Link>
         </div>
-        <Button type="submit" variant="dark" size="lg" disabled={pending} className="mt-1">
+        <Button type="submit" variant="gold" size="lg" disabled={pending} className="mt-1">
           {pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <LogIn aria-hidden="true" />}
           {pending ? "جارٍ التحقق…" : "تسجيل الدخول"}
         </Button>

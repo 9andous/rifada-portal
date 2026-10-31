@@ -2,18 +2,16 @@
 
 import type { MouseEvent, ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 /**
  * Link to a home-page section ("/#values"). On the home page it glides to the section instead of
  * letting the router jump there; elsewhere it navigates to the home page as a normal link.
- * Reduced motion keeps the instant jump.
+ * Reduced motion keeps the instant jump. The path is read on click, not with usePathname, so the
+ * header and footer stay prerenderable above pages with request-time params (/verify/[code]).
  */
 export function SectionLink({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
-  const pathname = usePathname();
-
   function onClick(event: MouseEvent<HTMLAnchorElement>) {
-    if (pathname !== "/" || !href.includes("#") || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    if (window.location.pathname !== "/" || !href.includes("#") || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
     const hash = href.slice(href.indexOf("#"));
     const target = document.getElementById(hash.slice(1));
     if (!target) return;

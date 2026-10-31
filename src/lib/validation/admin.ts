@@ -34,6 +34,8 @@ export const fullNameSchema = z.string().trim().min(2, "أدخل الاسم ال
 
 const emailSchema = z.email("أدخل بريدًا إلكترونيًا صحيحًا.").max(254, "البريد الإلكتروني طويل جدًا.");
 
+export const requiredEmail = z.string().trim().toLowerCase().min(1, "أدخل البريد الإلكتروني.").pipe(emailSchema);
+
 export const optionalEmail = z
   .string()
   .trim()
@@ -45,6 +47,15 @@ export const optionalEmail = z
 
 const PHONE = /^\+?[0-9][0-9 -]{6,18}$/;
 const phoneMessage = "أدخل رقم هاتف صحيحًا (أرقام فقط، ويجوز أن يبدأ بعلامة +).";
+
+const SAUDI_MOBILE = /^(\+?966|0)?5[0-9]{8}$/;
+
+/** A Saudi mobile number, required (registration and «ملف الجمعية»). */
+export const requiredPhone = z
+  .string()
+  .trim()
+  .transform((v) => toWesternDigits(v).replace(/[\s-]/g, ""))
+  .refine((v) => SAUDI_MOBILE.test(v), "أدخل رقم جوال سعوديًا صحيحًا، مثل ٠٥٠١٢٣٤٥٦٧.");
 
 export const optionalPhone = z
   .string()
@@ -63,7 +74,7 @@ export const userFormSchema = z
     email: optionalEmail,
     phone: optionalPhone,
     role: roleSchema,
-    programIds: z.array(z.string().min(1)).default([]),
+    trackIds: z.array(z.string().min(1)).default([]),
     associationId: z
       .string()
       .trim()
@@ -72,8 +83,8 @@ export const userFormSchema = z
       .default(null),
   })
   .superRefine((v, ctx) => {
-    if (v.role === "SUPERVISOR" && v.programIds.length === 0) {
-      ctx.addIssue({ code: "custom", path: ["programIds"], message: "اختر برنامجًا واحدًا على الأقل للمشرف." });
+    if (v.role === "SUPERVISOR" && v.trackIds.length === 0) {
+      ctx.addIssue({ code: "custom", path: ["trackIds"], message: "اختر مسارًا واحدًا على الأقل للمشرف." });
     }
     if (v.role === "ASSOCIATION_OFFICER" && !v.associationId) {
       ctx.addIssue({ code: "custom", path: ["associationId"], message: "اختر الجمعية التي يمثلها هذا الحساب." });
@@ -81,7 +92,7 @@ export const userFormSchema = z
   })
   .transform((v) => ({
     ...v,
-    programIds: v.role === "SUPERVISOR" ? [...new Set(v.programIds)] : [],
+    trackIds: v.role === "SUPERVISOR" ? [...new Set(v.trackIds)] : [],
     associationId: v.role === "ASSOCIATION_OFFICER" ? v.associationId : null,
   }));
 

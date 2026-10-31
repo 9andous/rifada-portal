@@ -8,9 +8,11 @@ import { useEffect, useState } from "react";
 import { activeNavHref, UNAVAILABLE_HINT, type NavItem } from "@/config/nav";
 import { cn } from "@/lib/cn";
 import { NavIcon } from "./nav-icon";
+import { SignOutButton } from "./sign-out-button";
+import { TextSizeControl } from "./text-size";
 
 /** Navigation drawer for widths where the band cannot fit every item (tablet and below). */
-export function MobileNav({ items, root, roleLabel }: { items: NavItem[]; root: string; roleLabel: string }) {
+export function MobileNav({ items, root, roleLabel, cta }: { items: NavItem[]; root: string; roleLabel: string; cta?: NavItem }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   // eslint-disable-next-line react-hooks/set-state-in-effect -- close the drawer after navigation
@@ -37,6 +39,20 @@ export function MobileNav({ items, root, roleLabel }: { items: NavItem[]; root: 
             </Dialog.Close>
           </div>
           <Dialog.Description className="sr-only">روابط التنقل الرئيسية</Dialog.Description>
+          {cta?.href ? (
+            <div className="px-4 pt-4">
+              <Link
+                href={cta.href}
+                className="flex h-12 items-center justify-center gap-2.5 rounded-md bg-gold-action px-4 text-base font-bold text-on-gold-action hover:bg-gold-action-hover [&_svg]:size-[18px]"
+              >
+                <NavIcon name={cta.icon} />
+                {cta.label}
+              </Link>
+            </div>
+          ) : null}
+          <div className="mx-4 mt-4 rounded-md bg-surface p-2.5 text-ink">
+            <TextSizeControl />
+          </div>
           <ul className="flex flex-col p-3">
             {items.map((item) => {
               const active = Boolean(item.href) && item.href === activeNavHref(items, root, pathname);
@@ -64,6 +80,9 @@ export function MobileNav({ items, root, roleLabel }: { items: NavItem[]; root: 
               );
             })}
           </ul>
+          <div className="mt-auto border-t border-white/10 p-4">
+            <SignOutButton variant="band" labelled />
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

@@ -20,8 +20,12 @@ Never start a phase that has not been approved.
 | Phase 2b stop 2 — Statuses, transitions and templates | **Done**: verified by the owner on 2026-10-24 | Review changes applied: file-type lists isolate Latin names (no stray «و»), a replacement identical to the current version is refused, «نموذج جديد» in the empty templates list. Decisions D-059 to D-069; review screenshots kept privately. |
 | **Phase 2 overall** | **Complete**, except the deferred CSV import (2a stop 2) | |
 | Phase 3 — Requests core | **Done**: verified by the owner on 2026-10-25 | Merged from `phase-3` with its milestone commits. Decisions D-070 to D-091; review screenshots kept privately. The intermittent hydration error (D-090) stays under «Open items before production». |
-| Phase 4 — Dashboards and notifications | Not started | |
+| Phase 4 — Dashboards and notifications | **In progress**: the three role dashboards redrawn after the handoff on 2026-10-27 (D-097); the association area rebuilt for older users on 2026-10-28 (D-102), awaiting the owner's review | Notifications, CSV export, working-day average not started. |
 | Phase 5 — Public site, announcements, guides | **In progress**: home page built on 2026-10-25 with the design handoff v2 (D-092), awaiting the owner's review | Announcements, guides and programme pages not started. |
+| Review workflow change, phase 1 — «الأدلة والنماذج» | **Done**: accepted by the owner on 2026-10-29 | Guides and forms, filters, sample data (D-113); association prints only approved requests (D-114). |
+| Review workflow change, phase 2 — Several initiatives per request, the association's own files | **Done**: accepted by the owner on 2026-10-29 | D-115. |
+| Review workflow change, phase 3 — Supervisor evaluation, signature, unit manager approval | **Built** on 2026-10-29; signatures revised on 2026-10-30 (electronic seals and QR verification instead of drawn signatures), awaiting the owner's review | D-116, D-117, D-120, D-122. |
+| Review workflow change, phase 4 — «المسارات» above the programmes | **Built** on 2026-10-30, awaiting the owner's review | D-119. |
 | Phase 6 — Reports, print and PDF | Not started | |
 | Phase 7 — Demo mode, hardening, docs | Not started | |
 

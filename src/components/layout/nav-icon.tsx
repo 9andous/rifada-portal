@@ -1,6 +1,7 @@
 import {
   Building2,
   ChartColumn,
+  CircleHelp,
   ClipboardList,
   FilePlus2,
   FileStack,
@@ -36,6 +37,7 @@ const ICONS: Record<NavIconName, LucideIcon> = {
   requests: Inbox,
   newRequest: FilePlus2,
   folder: FileStack,
+  help: CircleHelp,
 };
 
 export function NavIcon({ name, className }: { name: NavIconName; className?: string }) {

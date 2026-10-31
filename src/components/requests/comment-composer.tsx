@@ -2,6 +2,7 @@
 
 import { LoaderCircle, Paperclip, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/toaster";
 import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
@@ -70,6 +71,7 @@ export function CommentComposer({
       setFiles([]);
       setInternal(false);
       onCancelReply();
+      toast("أُرسل التعليق");
       router.refresh();
     });
   }

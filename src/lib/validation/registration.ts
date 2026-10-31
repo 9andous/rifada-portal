@@ -2,7 +2,8 @@
 // service and the tests.
 
 import * as z from "zod";
-import { fullNameSchema, optionalEmail, toWesternDigits, usernameSchema } from "./admin";
+import { citiesOf } from "../saudi-cities";
+import { fullNameSchema, requiredEmail, requiredPhone, toWesternDigits, usernameSchema } from "./admin";
 import { newPasswordSchema } from "./auth";
 
 /** Classifications of the supervision initiative (initiative document, page 3), plus «أخرى». */
@@ -29,12 +30,6 @@ export const SAUDI_REGIONS = [
   "منطقة الجوف",
 ] as const;
 
-const PHONE = /^(\+?966|0)?5[0-9]{8}$/;
-const requiredPhone = z
-  .string()
-  .trim()
-  .transform((v) => toWesternDigits(v).replace(/[\s-]/g, ""))
-  .refine((v) => PHONE.test(v), "أدخل رقم جوال سعوديًا صحيحًا، مثل ٠٥٠١٢٣٤٥٦٧.");
 
 const optionalUrl = z
   .string()
@@ -54,7 +49,7 @@ const registrationFields = z.object({
     .pipe(z.string().regex(/^[0-9]{1,10}$/, "رقم الترخيص أرقام فقط، كما في شهادة تسجيل المركز الوطني لتنمية القطاع غير الربحي.")),
   classification: z.enum(REGISTRATION_CLASSIFICATIONS, { error: "اختر تصنيف الجمعية." }),
   region: z.enum(SAUDI_REGIONS, { error: "اختر المنطقة." }),
-  city: z.string().trim().min(2, "أدخل المدينة.").max(80, "اسم المدينة طويل جدًا."),
+  city: z.string().trim().min(1, "اختر المدينة."),
   foundedYear: z
     .string()
     .trim()
@@ -63,7 +58,7 @@ const registrationFields = z.object({
     .nullable()
     .default(null),
   contactPhone: requiredPhone,
-  contactEmail: optionalEmail,
+  contactEmail: requiredEmail,
   website: optionalUrl,
   programNumbers: z
     .array(z.coerce.number().int().min(1).max(99))
@@ -78,7 +73,7 @@ const registrationFields = z.object({
     .nullable()
     .default(null),
   officerPhone: requiredPhone,
-  officerEmail: optionalEmail,
+  officerEmail: requiredEmail,
   username: usernameSchema,
   password: newPasswordSchema,
   confirmPassword: z.string(),
@@ -87,7 +82,12 @@ const registrationFields = z.object({
 
 const passwordsMatch = { path: ["confirmPassword"], message: "كلمتا المرور غير متطابقتين." };
 
-export const registrationSchema = registrationFields.refine((v) => v.password === v.confirmPassword, passwordsMatch);
+/** The city must be one of the chosen region's cities (the form offers them as a dropdown). */
+const cityInRegion = { path: ["city"], message: "اختر مدينة من مدن المنطقة المختارة." };
+
+export const registrationSchema = registrationFields
+  .refine((v) => citiesOf(v.region).includes(v.city), cityInRegion)
+  .refine((v) => v.password === v.confirmPassword, passwordsMatch);
 
 export type RegistrationInput = z.infer<typeof registrationSchema>;
 
@@ -124,9 +124,16 @@ export function registrationStepFields(step: number): RegistrationField[] {
 export function registrationStepSchema(step: number) {
   const keys = registrationStepFields(step);
   const picked = registrationFields.pick(Object.fromEntries(keys.map((k) => [k, true])) as Partial<Record<RegistrationField, true>>);
-  return keys.includes("confirmPassword")
-    ? picked.refine((v) => (v as { password?: string }).password === (v as { confirmPassword?: string }).confirmPassword, passwordsMatch)
-    : picked;
+  if (keys.includes("confirmPassword")) {
+    return picked.refine((v) => (v as { password?: string }).password === (v as { confirmPassword?: string }).confirmPassword, passwordsMatch);
+  }
+  if (keys.includes("city")) {
+    return picked.refine((v) => {
+      const { region, city } = v as { region?: string; city?: string };
+      return citiesOf(region ?? "").includes(city ?? "");
+    }, cityInRegion);
+  }
+  return picked;
 }
 
 export const registrationLookupSchema = z.object({

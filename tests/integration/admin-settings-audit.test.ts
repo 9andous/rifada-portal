@@ -12,7 +12,7 @@ let ctx: Awaited<ReturnType<typeof makeRoleActors>>;
 let admin: Actor;
 
 const valid = {
-  "sla.workingDays": 7,
+  "sla.workingDays": 3,
   "uploads.maxFileMb": 25,
   "uploads.allowedGroups": ["pdf", "word", "excel", "image"],
   "uploads.associationQuotaMb": 2048,
@@ -43,7 +43,7 @@ describe("settings", () => {
   it("rejects invalid values without writing or auditing anything", async () => {
     const result = await updateSettings(admin, { ...valid, "sla.workingDays": 0, "uploads.allowedGroups": ["video"] });
     expect(result).toMatchObject({ ok: false, errors: { "sla.workingDays": expect.any(String), "uploads.allowedGroups": expect.any(String) } });
-    expect(await getSetting("sla.workingDays")).toBe(7);
+    expect(await getSetting("sla.workingDays")).toBe(3);
     expect(await db.auditLog.count()).toBe(0);
   });
 
@@ -57,7 +57,7 @@ describe("settings", () => {
     const entries = await db.auditLog.findMany({ where: { action: "setting.updated" }, orderBy: { entityId: "asc" } });
     expect(entries.map((e) => [e.entityId, e.before, e.after])).toEqual([
       ["public.showInitiatives", { key: "public.showInitiatives", value: false }, { key: "public.showInitiatives", value: true }],
-      ["sla.workingDays", { key: "sla.workingDays", value: 7 }, { key: "sla.workingDays", value: 10 }],
+      ["sla.workingDays", { key: "sla.workingDays", value: 3 }, { key: "sla.workingDays", value: 10 }],
     ]);
 
     expect(await updateSettings(admin, { ...valid, "sla.workingDays": 10, "public.showInitiatives": true })).toEqual({ ok: true, changed: [] });

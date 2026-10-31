@@ -171,3 +171,82 @@
   color-scheme: dark;
 }
 }
+
+/*
+ * High contrast (D-107, «التباين العالي» in the accessibility panel): near-black text, darker
+ * actions and statuses, visible borders and a black focus ring, on top of either theme. Screen only,
+ * like the dark theme; the `:not` keeps the light set from winning over the dark one.
+ */
+@media screen {
+:root[data-contrast="high"]:not([data-theme="dark"]) {
+  --canvas: #ffffff;
+  --surface-muted: #f2f4f3;
+  --surface-sunken: #e4e8e6;
+  --line: #6b7570;
+  --line-strong: #1f2622;
+
+  --ink: #000000;
+  --ink-muted: #1f2622;
+  --ink-subtle: #2c3530;
+  --brand-ink: #03281a;
+
+  --band: #03281a;
+  --band-2: #053521;
+  --band-ink-muted: #ffffff;
+  --band-gold: #f0dca8;
+
+  --primary: #0d5c38;
+  --primary-hover: #0a4a2d;
+  --primary-soft-ink: #03281a;
+
+  --accent-ink: #5e4a1c;
+  --gold-action: #6e5821;
+  --gold-action-hover: #5a481b;
+
+  --st-neutral: #2c3530;
+  --st-info: #134f85;
+  --st-review: #0b4d42;
+  --st-warn: #6e4100;
+  --st-ok: #0d5634;
+  --st-bad: #8f1a12;
+
+  --focus: #000000;
+}
+
+:root[data-contrast="high"][data-theme="dark"] {
+  --canvas: #000000;
+  --surface: #000000;
+  --surface-muted: #0d110f;
+  --surface-sunken: #1a201d;
+  --line: #8a9690;
+  --line-strong: #d0d8d4;
+
+  --ink: #ffffff;
+  --ink-muted: #e6ece9;
+  --ink-subtle: #d0d8d4;
+  --brand-ink: #ffffff;
+
+  --band: #03180f;
+  --band-2: #052117;
+  --band-deep: #000000;
+  --band-ink-muted: #ffffff;
+  --band-gold: #f0dca8;
+
+  --primary: #7fe0b0;
+  --primary-hover: #9be8c2;
+  --primary-soft-ink: #b5f0d2;
+
+  --accent-ink: #f0dca8;
+  --gold-action: #e0c27a;
+  --gold-action-hover: #ecd08f;
+
+  --st-neutral: #e6ece9;
+  --st-info: #9cc8f0;
+  --st-review: #8fe0cc;
+  --st-warn: #f5c27a;
+  --st-ok: #7fe0b0;
+  --st-bad: #ffa69e;
+
+  --focus: #ffe08a;
+}
+}

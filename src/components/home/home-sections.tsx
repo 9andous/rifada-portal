@@ -1,10 +1,8 @@
 import {
   ArrowLeft,
-  CircleCheck,
   Compass,
   Eye,
   LogIn,
-  Quote,
   Target,
 } from "lucide-react";
 import Image from "next/image";
@@ -15,10 +13,12 @@ import { GeometricPattern } from "@/components/brand/geometric-pattern";
 import { buttonClasses } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/surface";
 import { brand } from "@/config/brand";
-import { INITIATIVE, LEADERSHIP_QUOTES, PRESIDENT_WORD, STRATEGY_MOTTO } from "@/config/initiative";
+import { INITIATIVE, STRATEGY_MOTTO } from "@/config/initiative";
 import { cn } from "@/lib/cn";
 import { formatNumber, toArabicDigits } from "@/lib/format";
-import type { PublicHome } from "@/server/services/public-site";
+import type { HeroQuoteStyle } from "@/server/settings/defaults";
+import type { HeroQuote, PublicHome } from "@/server/services/public-site";
+import { HeroQuotes } from "./hero-quotes";
 
 const WRAP = "mx-auto w-full max-w-[1360px] px-4 sm:px-8";
 
@@ -41,13 +41,17 @@ function SectionHead({ eyebrow, title, lead, tone = "surface", align = "start", 
 
 /* ───────── Hero ───────── */
 
-export function HomeHero({ figures }: { figures: ReactNode }) {
+/**
+ * `quotes`: the leadership statements panel, usually <HeroQuotesPanel> under a Suspense boundary.
+ * `figures` (<HeroFigures>) is optional; the home page no longer shows them (owner's request).
+ */
+export function HomeHero({ figures, quotes }: { figures?: ReactNode; quotes: ReactNode }) {
   return (
     <section aria-labelledby="hero-title" className="band-scope relative overflow-hidden bg-band text-band-ink">
       <GeometricPattern size={96} />
       <div className={cn(WRAP, "relative grid items-center gap-10 py-14 lg:grid-cols-[1.15fr_1fr] lg:py-20")}>
-        <div className="fade-up text-center">
-          <p className="flex items-center justify-center gap-2 text-sm font-medium text-band-gold">
+        <div className="fade-up text-center lg:ps-12">
+          <p className="flex items-center justify-center gap-2 text-base font-medium text-band-gold">
             <Diamond className="bg-band-gold" />
             {brand.presidencyName}
           </p>
@@ -65,29 +69,40 @@ export function HomeHero({ figures }: { figures: ReactNode }) {
               الدخول إلى المنصة
             </Link>
             <Link href="/register" className={buttonClasses("outlineOnBand", "lg")}>
-              سجّلوا جمعيتكم
-              <ArrowLeft aria-hidden="true" />
+تسجيل جمعية              <ArrowLeft aria-hidden="true" />
             </Link>
           </div>
-          <div className="mt-10">{figures}</div>
+          {figures ? <div className="mt-10">{figures}</div> : null}
         </div>
 
-        <div className="relative mx-auto w-full max-w-[420px]">
-          <ArchOutline strokeWidth={3} inner="transparent" className="absolute -inset-4 h-[calc(100%+2rem)] w-[calc(100%+2rem)] text-band-gold/60" />
-          <div className="arch-mask relative aspect-[4/5] w-full">
-            <Image
-              src="/images/haramain/kaaba-tawaf.jpg"
-              alt="الكعبة المشرفة والطائفون حولها في المسجد الحرام"
-              fill
-              priority
-              sizes="(min-width: 1024px) 420px, 90vw"
-              className="object-cover"
-            />
-          </div>
-        </div>
+        {quotes}
       </div>
     </section>
   );
+}
+
+/** The statements, or the Kaaba photograph in the arch while none is published. */
+export function HeroQuotesPanel({ slides, style, id }: { slides: HeroQuote[]; style: HeroQuoteStyle; id?: string }) {
+  if (slides.length > 0) return <HeroQuotes slides={slides} variant={style} id={id} />;
+  return (
+    <div className="relative mx-auto w-full max-w-[420px]">
+      <ArchOutline strokeWidth={3} inner="transparent" className="absolute -inset-4 h-[calc(100%+2rem)] w-[calc(100%+2rem)] text-band-gold/60" />
+      <div className="arch-mask relative aspect-[4/5] w-full">
+        <Image
+          src="/images/haramain/kaaba-tawaf.jpg"
+          alt="الكعبة المشرفة والطائفون حولها في المسجد الحرام"
+          fill
+          priority
+          sizes="(min-width: 1024px) 420px, 90vw"
+          className="object-cover"
+        />
+      </div>
+    </div>
+  );
+}
+
+export function HeroQuotesSkeleton() {
+  return <span aria-hidden="true" className="mx-auto mt-16 block h-[440px] w-full max-w-[480px] animate-pulse rounded-[20px] bg-white/[0.06]" />;
 }
 
 export function HeroFigures({ home }: { home: PublicHome }) {
@@ -117,92 +132,6 @@ export function HeroFiguresSkeleton() {
         <span key={i} className="block h-16 animate-pulse rounded-sm bg-white/10" />
       ))}
     </div>
-  );
-}
-
-/* ───────── Leadership ───────── */
-
-/** Round portrait in a gold ring with a green arc beneath, as on the strategy's opening pages. */
-function Portrait({ src, alt, size, tone }: { src: string; alt: string; size: number; tone: "band" | "surface" }) {
-  return (
-    <span className="relative inline-block shrink-0" style={{ width: size, height: size }}>
-      <span aria-hidden="true" className={cn("absolute -inset-2 rounded-full border-2", tone === "band" ? "border-band-gold/70" : "border-accent/60")} />
-      <span
-        aria-hidden="true"
-        className={cn(
-          "absolute -inset-3.5 rounded-full border-[6px] border-transparent",
-          tone === "band" ? "border-b-band-gold/40" : "border-b-band",
-        )}
-      />
-      <Image src={src} alt={alt} fill sizes={`${size}px`} className="rounded-full object-cover" />
-    </span>
-  );
-}
-
-export function LeadershipSection() {
-  return (
-    <section aria-labelledby="leadership-title" id="leadership" className="relative scroll-mt-28 overflow-hidden border-b border-line bg-surface">
-      <div className={cn(WRAP, "py-16")}>
-        <div className="flex flex-col items-center text-center">
-          <p className="flex items-center gap-2 text-sm font-medium text-accent-ink">
-            <Diamond />
-            شرف الخدمة
-          </p>
-          <h2 id="leadership-title" className="mt-2 text-[1.75rem] font-bold text-brand-ink md:text-[2rem]">
-            خدمة الحرمين الشريفين مسؤولية وشرف
-          </h2>
-        </div>
-
-        <div className="mt-10 grid gap-5 lg:grid-cols-2">
-          {LEADERSHIP_QUOTES.map((q, i) => {
-            const band = i === 0;
-            return (
-              <figure
-                key={q.name}
-                className={cn(
-                  "relative flex flex-col items-center gap-7 overflow-hidden rounded-2xl border p-8 text-center sm:flex-row sm:items-center sm:text-start",
-                  band ? "band-scope border-band bg-band text-band-ink" : "border-line bg-canvas",
-                )}
-              >
-                {band ? <GeometricPattern size={72} /> : null}
-                <ArchOutline
-                  strokeWidth={5}
-                  className={cn("absolute -bottom-12 end-6 w-32", band ? "text-band-gold/15" : "text-band opacity-[0.06] dark:text-accent")}
-                />
-                <Portrait src={q.image} alt={`${q.honorific} ${q.name}`} size={148} tone={band ? "band" : "surface"} />
-                <div className="relative min-w-0">
-                  <Quote aria-hidden="true" className={cn("mx-auto size-8 -scale-x-100 sm:mx-0", band ? "text-band-gold" : "text-accent")} strokeWidth={1.5} />
-                  <blockquote className={cn("mt-2 text-[1.3125rem] font-bold leading-[1.8]", band ? "text-band-ink" : "text-brand-ink")}>{q.quote}</blockquote>
-                  <figcaption className={cn("mt-5 border-t pt-4", band ? "border-white/15" : "border-line")}>
-                    <span className={cn("block text-xs", band ? "text-band-ink-muted" : "text-ink-subtle")}>{q.honorific}</span>
-                    <span className={cn("block font-bold", band ? "text-band-gold" : "text-accent-ink")}>{q.name}</span>
-                    <span className={cn("block text-sm", band ? "text-band-ink-muted" : "text-ink-subtle")}>{q.title}</span>
-                  </figcaption>
-                </div>
-              </figure>
-            );
-          })}
-        </div>
-
-        {/* Soft gold card with the arch of the two leadership cards above it. */}
-        <figure className="relative mt-5 flex flex-col items-center gap-6 overflow-hidden rounded-2xl border border-accent/35 bg-accent-soft p-7 shadow-1 md:flex-row md:items-start md:gap-8 md:p-8">
-          <ArchOutline strokeWidth={5} className="absolute -bottom-12 end-6 w-32 text-accent opacity-20" />
-          <Portrait src={PRESIDENT_WORD.image} alt={`${PRESIDENT_WORD.honorific} ${PRESIDENT_WORD.name}`} size={112} tone="surface" />
-          <div className="min-w-0 text-center md:text-start">
-            <p className="flex items-center justify-center gap-2 text-sm font-semibold text-accent-ink md:justify-start">
-              <Diamond />
-              كلمة رئيس الشؤون الدينية
-            </p>
-            <blockquote className="mt-3 text-[1.0625rem] font-semibold leading-[2] text-ink">«{PRESIDENT_WORD.quote}»</blockquote>
-            <figcaption className="mt-4">
-              <span className="block text-xs text-ink-subtle">{PRESIDENT_WORD.honorific}</span>
-              <span className="block font-bold text-brand-ink">{PRESIDENT_WORD.name}</span>
-              <span className="block text-sm text-ink-subtle">{PRESIDENT_WORD.title}</span>
-            </figcaption>
-          </div>
-        </figure>
-      </div>
-    </section>
   );
 }
 
@@ -254,11 +183,20 @@ export function ValuesSection({ home }: { home: PublicHome }) {
       <div className={cn(WRAP, "grid gap-10 py-16 lg:grid-cols-[minmax(0,380px)_1fr]")}>
         <div>
           <SectionHead id="values-title" eyebrow="ما نؤمن به" title="القيم" lead="قيم الرئاسة التي تحكم العمل في الحرمين الشريفين، وتلتزم بها المنصة في إجراءاتها وتعاملها مع الجمعيات." />
-          <div className="relative mx-auto mt-8 hidden w-full max-w-[320px] lg:block">
-            <div className="arch-mask relative aspect-[4/5] w-full">
-              <Image src="/images/haramain/haram-arches.jpg" alt="أروقة المسجد الحرام وزخارفه" fill sizes="320px" className="object-cover" />
+          {/* The photograph cut to the outer silhouette of the eight-lobed rosary frame (masba7a), with
+              the frame drawn over it; the dark variant adds white rings for dark surfaces. */}
+          <div className="relative mx-auto mt-8 hidden aspect-[895/880] w-full max-w-[380px] drop-shadow-[0_18px_28px_rgb(7_77_49/0.22)] lg:block">
+            <div className="masba7a-mask absolute inset-0">
+              <Image
+                src="/images/haramain/kaaba-clock-tower.jpg"
+                alt="الكعبة المشرفة والطائفون حولها وبرج الساعة في مكة المكرمة"
+                fill
+                sizes="380px"
+                className="object-cover"
+              />
             </div>
-            <ArchOutline strokeWidth={3} inner="transparent" className="absolute -inset-3 h-[calc(100%+1.5rem)] w-[calc(100%+1.5rem)] text-accent/50" />
+            <Image src="/brand/masba7a.png" alt="" fill sizes="380px" className="pointer-events-none dark:hidden" />
+            <Image src="/brand/masba7aDark.png" alt="" fill sizes="380px" className="pointer-events-none hidden dark:block" />
           </div>
         </div>
         <ol className="grid gap-x-8 sm:grid-cols-2">
@@ -345,10 +283,9 @@ export function InitiativeSection() {
   return (
     <section aria-labelledby="initiative-title" id="initiative" className="scroll-mt-28 border-y border-line bg-surface">
       <div className={cn(WRAP, "py-16")}>
-        <div className="grid items-start gap-10 lg:grid-cols-[1.2fr_1fr]">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr]">
           <div>
             <SectionHead id="initiative-title" eyebrow="عن المنصة" title={INITIATIVE.name} lead={INITIATIVE.intro} />
-            <p className="mt-6 rounded-lg border-s-4 border-accent bg-accent-soft px-5 py-4 font-semibold leading-[1.9] text-ink">{INITIATIVE.summary}</p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {INITIATIVE.tracks.map((t, i) => (
                 <div key={t.title} className="rounded-xl border border-line bg-canvas p-5">
@@ -359,37 +296,15 @@ export function InitiativeSection() {
               ))}
             </div>
           </div>
-          <div>
-            <div className="relative overflow-hidden rounded-2xl">
-              <Image
-                src="/images/haramain/kaaba-clock-tower.jpg"
-                alt="المسجد الحرام والكعبة المشرفة"
-                width={745}
-                height={746}
-                sizes="(min-width: 1024px) 40vw, 100vw"
-                className="aspect-[4/3] w-full object-cover"
-              />
-            </div>
-            <h3 className="mt-6 font-bold text-brand-ink">مهام الرئاسة جهةً مشرفة فنيًا</h3>
-            <ul className="mt-3 grid gap-2.5">
-              {INITIATIVE.mandate.map((m) => (
-                <li key={m} className="flex gap-2.5 text-sm leading-[1.85] text-ink-muted">
-                  <CircleCheck aria-hidden="true" className="mt-1 size-4 shrink-0 text-primary" />
-                  {m}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        <div className="mt-12 grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border-line bg-canvas p-5">
-            <p className="text-sm font-bold text-accent-ink">المستفيدون</p>
-            <p className="mt-1.5 text-sm leading-[1.85] text-ink-muted">{INITIATIVE.beneficiaries}</p>
-          </div>
-          <div className="rounded-xl border border-line bg-canvas p-5">
-            <p className="text-sm font-bold text-accent-ink">الأثر المتوقع</p>
-            <p className="mt-1.5 text-sm leading-[1.85] text-ink-muted">{INITIATIVE.impact}</p>
+          <div className="relative overflow-hidden rounded-2xl">
+            <Image
+              src="/images/haramain/kaaba-clock-tower.jpg"
+              alt="المسجد الحرام والكعبة المشرفة"
+              width={745}
+              height={746}
+              sizes="(min-width: 1024px) 40vw, 100vw"
+              className="aspect-[4/3] w-full object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:h-full"
+            />
           </div>
         </div>
       </div>

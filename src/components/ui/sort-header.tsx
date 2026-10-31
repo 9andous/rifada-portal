@@ -25,7 +25,7 @@ export function SortHeader({
   const nextDir: SortDir = active && dir === "asc" ? "desc" : "asc";
   const Icon = !active ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
   return (
-    <th scope="col" aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : undefined} className={cn("whitespace-nowrap py-3 pe-4 text-start text-[0.8125rem] font-semibold text-ink-muted", className)}>
+    <th scope="col" aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : undefined} className={cn("whitespace-nowrap py-3 pe-4 text-start text-[0.875rem] font-bold text-ink", className)}>
       <Link
         href={listHref(path, params, { sort: column, dir: nextDir, page: undefined })}
         scroll={false}

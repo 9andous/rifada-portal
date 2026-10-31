@@ -17,7 +17,7 @@ export type AssignmentRow = {
   id: string;
   referenceNo: string | null;
   title: string;
-  program: { id: string; number: number; name: string };
+  track: { id: string; number: number; name: string } | null;
   association: string;
   status: { name: string; tone: StatusTone };
   submittedAt: Date | null;
@@ -28,20 +28,20 @@ export type AssignmentRow = {
 export function AssignmentTable({ rows, supervisors, caption, max }: { rows: AssignmentRow[]; supervisors: SupervisorChoice[]; caption: string; max: number }) {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
-  const [dialog, setDialog] = useState<{ requests: DialogRequest[]; programIds: string[]; round: number } | null>(null);
+  const [dialog, setDialog] = useState<{ requests: DialogRequest[]; trackIds: string[]; round: number } | null>(null);
   const chosen = rows.filter((r) => selected.includes(r.id));
   const open = (list: AssignmentRow[]) =>
     setDialog((d) => ({
       requests: list.map((r) => ({ id: r.id, title: r.title, referenceNo: r.referenceNo })),
-      programIds: [...new Set(list.map((r) => r.program.id))],
+      trackIds: [...new Set(list.flatMap((r) => (r.track ? [r.track.id] : [])))],
       round: (d?.round ?? 0) + 1,
     }));
-  // Offer the supervisors of every selected program first; the server skips any mismatch anyway.
+  // Offer the supervisors of every selected track first; the server skips any mismatch anyway.
   const offered = !dialog
     ? supervisors
-    : dialog.programIds.length === 1
-      ? supervisors.filter((s) => s.programIds.includes(dialog.programIds[0]))
-      : [...supervisors].sort((a, b) => Number(dialog.programIds.every((p) => b.programIds.includes(p))) - Number(dialog.programIds.every((p) => a.programIds.includes(p))));
+    : dialog.trackIds.length === 1
+      ? supervisors.filter((s) => s.trackIds.includes(dialog.trackIds[0]))
+      : [...supervisors].sort((a, b) => Number(dialog.trackIds.every((t) => b.trackIds.includes(t))) - Number(dialog.trackIds.every((t) => a.trackIds.includes(t))));
 
   return (
     <>
@@ -72,7 +72,7 @@ export function AssignmentTable({ rows, supervisors, caption, max }: { rows: Ass
             />
           </th>
           <Th>الطلب</Th>
-          <Th>البرنامج</Th>
+          <Th>المسار</Th>
           <Th>الحالة</Th>
           {rows.some((r) => r.supervisor) ? <Th>المشرف الحالي</Th> : null}
           <Th>تاريخ التقديم</Th>
@@ -104,7 +104,7 @@ export function AssignmentTable({ rows, supervisors, caption, max }: { rows: Ass
               </Td>
               <Td className="max-w-[14rem]">
                 <span className="block truncate">
-                  {toArabicDigits(r.program.number)}. {r.program.name}
+                  {r.track ? `${toArabicDigits(r.track.number)}. ${r.track.name}` : "—"}
                 </span>
               </Td>
               <Td>

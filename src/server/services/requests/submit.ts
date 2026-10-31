@@ -1,7 +1,7 @@
 import "server-only";
 import { checkCompleteness, type MissingItem } from "@/lib/completeness";
 import { hijriYear } from "@/lib/format";
-import { formatReference, parseCustomValues } from "@/lib/requests";
+import { formatReference, parseCustomValues, type RequirementSpec } from "@/lib/requests";
 import { addWorkingDays, riyadhDateString } from "@/lib/working-days";
 import type { Actor } from "@/server/authz/scope";
 import { db } from "@/server/db";
@@ -10,10 +10,10 @@ import { audit } from "@/server/services/audit";
 import { notify } from "@/server/services/notifications";
 import { getSetting } from "@/server/settings/read";
 import { assignOnSubmission } from "./assignment";
-import { LIFECYCLE_BLOCKED, liveRequirements, statusMap, transitionAllowed, WorkflowRefusal, type Tx } from "./common";
+import { LIFECYCLE_BLOCKED, statusMap, transitionAllowed, WorkflowRefusal, type Tx } from "./common";
 import { REQUEST_MSG } from "./drafts";
 
-// Submission (brief §7, change 11). One transaction: the completeness check against the
+// Submission (brief §7, change 11; D-123). One transaction: the completeness check against the
 // requirements as they stand now (persisted whether it passes or not, ranBy RULES); on success the
 // reference number, the status history draft (or returned) → submitted → completeness check →
 // under review, the requirements snapshot, submittedAt (first submission), the SLA due date in
@@ -56,12 +56,13 @@ export async function submitRequest(actor: Actor, id: string, now: Date = new Da
         where: { id },
         include: {
           association: { select: { isActive: true } },
-          program: { select: { name: true, isActive: true, archivedAt: true } },
-          initiative: { select: { name: true, isActive: true, archivedAt: true } },
+          track: { select: { name: true, archivedAt: true } },
+          requestType: { select: { name: true, isActive: true, archivedAt: true } },
           attachments: { where: { ownerType: "REQUEST" }, select: { attachmentType: { select: { key: true } }, currentVersion: { select: { mime: true } } } },
         },
       });
-      const requirements = await liveRequirements(tx, request.initiativeId);
+      // Initiative requirements no longer apply: the association chooses no initiative (D-123).
+      const requirements: RequirementSpec[] = [];
       const firstSubmission = request.referenceNo === null;
       const missing = checkCompleteness({
         general: request,
@@ -71,10 +72,8 @@ export async function submitRequest(actor: Actor, id: string, now: Date = new Da
         allowedGroups,
         availability: {
           associationActive: request.association.isActive,
-          programAvailable: request.program.isActive && !request.program.archivedAt,
-          programName: request.program.name,
-          initiativeAvailable: request.initiative.isActive && !request.initiative.archivedAt,
-          initiativeName: request.initiative.name,
+          track: request.track ? { name: request.track.name, available: !request.track.archivedAt } : null,
+          requestType: request.requestType ? { name: request.requestType.name, available: request.requestType.isActive && !request.requestType.archivedAt } : null,
         },
         firstSubmission,
         today: riyadhDateString(now),
