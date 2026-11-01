@@ -4,7 +4,7 @@ import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { ImageField } from "@/components/admin/image-field";
 import { Button } from "@/components/ui/button";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import { cn } from "@/lib/cn";
 import { updateAssociationProfileAction } from "@/server/actions/association-profile";
@@ -37,11 +37,7 @@ export function AssociationProfileForm({
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-      {state.message ? (
-        <Alert tone={state.ok ? "success" : "danger"} className="text-base">
-          {state.message}
-        </Alert>
-      ) : null}
+      {state.message && !state.ok ? <FormError>{state.message}</FormError> : null}
       <input type="hidden" id="profile-name" value={name} readOnly />
       <ImageField
         key={saved}

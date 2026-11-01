@@ -9,7 +9,7 @@ import { Button, buttonClasses } from "@/components/ui/button";
 import { OneTimeSecret } from "@/components/ui/one-time-secret";
 import { SearchSelect } from "@/components/ui/search-select";
 import { useActionForm } from "@/components/ui/use-action-form";
-import { Alert, SectionTitle } from "@/components/ui/surface";
+import { FormError, SectionTitle } from "@/components/ui/surface";
 import { cn } from "@/lib/cn";
 import { toArabicDigits } from "@/lib/format";
 import { ROLE_LABELS, ROLES, type Role } from "@/server/authz/roles";
@@ -91,11 +91,7 @@ export function UserForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col" noValidate>
-      {state.message ? (
-        <Alert tone={state.ok ? "success" : "danger"} className="mb-6">
-          {state.message}
-        </Alert>
-      ) : null}
+      {state.message && !state.ok ? <FormError className="mb-6">{state.message}</FormError> : null}
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
         {/* Profile column: the picture (or initials) and the chosen role at a glance. */}

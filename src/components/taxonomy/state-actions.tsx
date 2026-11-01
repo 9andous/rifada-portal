@@ -3,7 +3,7 @@
 import { Archive, ArchiveRestore, CirclePause, CirclePlay } from "lucide-react";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { formatNumber } from "@/lib/format";
 import type { AdminFormState } from "@/server/actions/admin/state";
 
@@ -46,7 +46,7 @@ export function StateActions({
 
   return (
     <div className="flex flex-col gap-4">
-      {result?.message ? <Alert tone={result.ok ? "success" : "danger"}>{result.message}</Alert> : null}
+      {result?.message && !result.ok ? <FormError>{result.message}</FormError> : null}
       <div className="flex flex-wrap gap-3">
         {!archived ? (
           isActive ? (
@@ -64,7 +64,11 @@ export function StateActions({
                 </>
               }
               confirmLabel={c.pause}
-              onConfirm={async () => setResult(await setActive(id, false))}
+              onConfirm={async () => {
+                const r = await setActive(id, false);
+                setResult(r);
+                return r;
+              }}
             />
           ) : (
             <ConfirmDialog
@@ -77,7 +81,11 @@ export function StateActions({
               title={c.resume}
               description={<>يعود «{name}» متاحًا لتقديم الطلبات الجديدة.</>}
               confirmLabel={c.resume}
-              onConfirm={async () => setResult(await setActive(id, true))}
+              onConfirm={async () => {
+                const r = await setActive(id, true);
+                setResult(r);
+                return r;
+              }}
             />
           )
         ) : null}
@@ -92,7 +100,11 @@ export function StateActions({
             title={c.restore}
             description={<>يعود «{name}» إلى القوائم بحالته السابقة.</>}
             confirmLabel={c.restore}
-            onConfirm={async () => setResult(await setArchived(id, false))}
+            onConfirm={async () => {
+              const r = await setArchived(id, false);
+              setResult(r);
+              return r;
+            }}
           />
         ) : (
           <ConfirmDialog
@@ -110,7 +122,11 @@ export function StateActions({
             }
             confirmLabel={c.archive}
             confirmVariant="danger"
-            onConfirm={async () => setResult(await setArchived(id, true))}
+            onConfirm={async () => {
+              const r = await setArchived(id, true);
+              setResult(r);
+              return r;
+            }}
           />
         )}
       </div>

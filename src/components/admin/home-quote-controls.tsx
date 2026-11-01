@@ -7,7 +7,7 @@ import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/form-bits";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Button } from "@/components/ui/button";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import { cn } from "@/lib/cn";
 import { HOME_QUOTE_LIMITS } from "@/lib/validation/home-quotes";
@@ -108,7 +108,7 @@ export function HomeQuoteRowActions({ q, first, last }: { q: HomeQuoteRow; first
           onConfirm={async () => setResult(await deleteHomeQuoteAction(q.id))}
         />
       </div>
-      {result && !result.ok ? <Alert tone="danger">{result.message}</Alert> : null}
+      {result && !result.ok ? <FormError>{result.message}</FormError> : null}
     </div>
   );
 }
@@ -138,7 +138,7 @@ export function HeroQuoteStyleForm({ current }: { current: HeroQuoteStyle }) {
   const [choice, setChoice] = useState(current);
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4 px-5 pb-5 sm:px-6">
-      {state.message ? <Alert tone={state.ok ? "success" : "danger"}>{state.message}</Alert> : null}
+      {state.message && !state.ok ? <FormError>{state.message}</FormError> : null}
       <fieldset>
         <legend className="sr-only">شكل الكلمات</legend>
         <div className="grid gap-4 sm:grid-cols-2">

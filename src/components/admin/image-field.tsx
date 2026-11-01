@@ -123,7 +123,7 @@ export function ImageField({
       <div className="flex flex-col gap-2">
         <span className="flex items-center gap-2 text-sm font-semibold text-ink">
           {label}
-          <span className="rounded-[6px] bg-surface-sunken px-1.5 py-px text-[0.6875rem] font-medium text-ink-subtle">اختياري</span>
+          <span className="rounded-[6px] bg-surface-sunken px-1.5 py-px text-xs font-medium text-ink-subtle">اختياري</span>
         </span>
         <input
           ref={fileRef}
@@ -194,7 +194,7 @@ export function ImageField({
           <div className="flex shrink-0 items-center gap-1.5">
             <label
               htmlFor={inputId}
-              className="inline-flex h-[34px] cursor-pointer items-center gap-2 rounded-sm border border-line-strong bg-surface px-3 text-[0.8125rem] font-semibold text-ink transition-colors hover:border-primary hover:text-primary"
+              className="inline-flex h-[34px] cursor-pointer items-center gap-2 rounded-sm border border-line-strong bg-surface px-3 text-sm font-semibold text-ink transition-colors hover:border-primary hover:text-primary"
             >
               <ImageUp aria-hidden="true" className="size-4" strokeWidth={1.75} />
               {shown ? "تغيير" : "اختيار ملف"}

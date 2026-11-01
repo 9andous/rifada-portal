@@ -47,11 +47,15 @@ figures, icons, navigation, logos and timeline).
   |---|---|---|
   | `t-page` | Page title (page head), brand green | 2rem / 700 |
   | `t-section` | Section and card titles | 1.0625rem / 700 |
-  | `t-label` | Field labels, column headers, figure labels | 0.8125rem / 600, `ink-subtle` |
+  | `t-label` | Field labels, column headers, figure labels | 0.875rem / 600, `ink-subtle` |
   | `t-body` | Running text | 0.9375rem / 400, line-height 1.85, `ink-muted` |
   | `t-figure` | Key figures and counts | size per context / 700, tabular |
   | `t-table` | Table text | 0.875rem, tabular |
-  | `t-caption` | Notes, timestamps, helper text | 0.75rem, `ink-subtle` |
+  | `t-caption` | Notes, timestamps, helper text | 0.875rem, `ink-subtle` |
+
+  **Reading size (D-125).** The platform is read by older users: the root size is 125% in every
+  area, and no running text is set below 0.875rem (`text-xs` and `text-2xs` are 0.875rem too; only
+  count badges and avatar initials are smaller). Printing uses 100%.
 
 - **Eyebrows and section headings** start with a gold diamond (`<Diamond>` 7px in eyebrows;
   `<SectionTitle>` and card headers 8px, `<HeaderDiamond>`).
@@ -59,7 +63,7 @@ figures, icons, navigation, logos and timeline).
 ## Shape and elevation
 
 - **Radii** (set once in `globals.css`): `rounded-xs` 4, `rounded-sm` 8 (small buttons, icon
-  buttons), `rounded-md` 10 (buttons, inputs), `rounded-lg` 12 (tiles, alerts, menus),
+  buttons), `rounded-md` 10 (buttons, inputs), `rounded-lg` 12 (tiles, menus),
   `rounded-xl` 14 (cards, key figures), `rounded-2xl` 20 (login hero and card, home bands).
   The header avatar is a rounded square (9px); status dots and radios are round. No other values:
   tab bars sit in 14px cards, icon tiles are 10px, link cards are 14px (D-095).
@@ -125,8 +129,21 @@ the chart palette kept its earlier colour-blind-checked values.
   `st-review`, `st-warn`, `st-ok`, `st-bad`, each with a `-soft` background.
 - **Chart palette** (six colours, colour-blind checked): green `chart-1`, gold `chart-2`, teal
   `chart-3`, slate blue `chart-4`, terracotta `chart-5`, sand `chart-6` on `chart-track`.
-- **Notices** (`<Alert>`): soft status tint, hairline border of the status colour, 4px side rule,
-  icon in the status colour, text in ink.
+- **Notices** (`<Alert>`, D-124): no box, tint or icon. A diamond before the title, as in card
+  headers, and the text indented under it in `ink-muted`. Information keeps the gold diamond and an
+  ink title; success, warning and danger colour the diamond and the title (`st-ok`, `st-warn`,
+  `st-bad`). Buttons sit at the end. `ruled` sets a notice standing on the page canvas or in the
+  page head in a plain white card (hairline border, shadow 1, no tint); inside a card it needs none. Notices are kept for what needs
+  attention or gives lasting context: a form's refusal is plain red text (`<FormError>`) by the
+  fields or the button, a short note is a plain `text-sm text-ink-muted` line, and a one-time
+  confirmation (saved, sent, created, deleted) is a pop-up.
+- **Pop-ups** (`toast()`, `<Toaster>`, D-111 and D-124): one card at a time in the centre of the
+  screen over the dimmed page (`--overlay`), 20px radius, a 72px round status badge whose ring
+  draws itself and then the tick (success), the exclamation (danger) or the «i» (information, gold),
+  the title and an optional line (it may hold a `<RefNumber>`), and «حسنًا». It closes with «حسنًا»,
+  the close button, Esc, a click outside or by itself after six seconds; focus goes to «حسنًا» and
+  returns afterwards. Others wait their turn. The motion is off under `prefers-reduced-motion`.
+  `ConfirmDialog` shows the action's own message, and none when the action is refused.
 - **Dark mode** is designed, not inverted: deep green-black base, lighter greener levels, light green
   primary with dark text, softened status colours. The Presidency's full-colour logo sits on a small
   white plate in dark mode, padded by its clear space with a hairline.
@@ -213,8 +230,8 @@ signed-in pages the white header and the green bar **stick to the top together**
   icon-tile card headers; see «Dashboards» below. Every other page follows the rules above.
 - **Breadcrumbs** are derived from the navigation (`<Breadcrumbs>` inside the page head): home of
   the role, the active item, the current page.
-- **Tables**: header row on `surface-muted` between hairlines, 13px semibold labels, middle-aligned
-  cells, row hover; references in green semibold; pagination as 34px bordered squares, current in
+- **Tables**: header row on `surface-muted` between hairlines, semibold labels, a hairline between
+  columns, middle-aligned cells, row hover; references in green semibold; pagination as 34px bordered squares, current in
   deep green. The list toolbar is one compact row (labels kept for screen readers).
 - **Empty states** use the handoff's arch illustration (green outer arch, gold inner arch, icon).
 - **Request information** (initiative, audience, location, duration) is plain label-over-value pairs.
@@ -335,9 +352,9 @@ The association officers are often older and less used to web applications. Thei
 platform's own components at their usual sizes, so it looks like the rest of the platform, with
 these rules on top (`src/components/association/`).
 
-- **Larger by default, once.** The area opens at «كبير» (112.5% of the root size); the «حجم الخط»
-  control in the header (and the phone menu, and the sign-in pages) offers 100%, 112.5% and 125%,
-  kept on the device. Components keep the design system's sizes; do not enlarge them again. Where a
+- **Larger by default, once.** Like every area since D-125, it opens at 125% of the root size; the
+  «حجم الخط» control in the header (and the phone menu, and the sign-in pages) offers 125%, 137.5%
+  and 150%, kept on the device. Components keep the design system's sizes; do not enlarge them again. Where a
   layout depends on how much text fits (the requests table, the request page's facts), switch it
   with a container query in rem, which follows the chosen size, not with a screen breakpoint.
 - **The official status names**, as everywhere (`StatusText`). Beside a status say what it means,
@@ -401,7 +418,7 @@ these rules on top (`src/components/association/`).
 | `PageBand`, `BandFigures` | `src/components/layout/page-band.tsx` |
 | `TopNav`, `MobileNav` | `src/components/layout/top-nav.tsx`, `mobile-nav.tsx` |
 | `AuthSplit` | `src/components/layout/auth-split.tsx` |
-| `Panel`, `PanelHeader`, `HeaderDiamond`, `SectionTitle`, `StatusText`, `Alert`, `Skeleton` | `src/components/ui/surface.tsx` |
+| `Panel`, `PanelHeader`, `HeaderDiamond`, `SectionTitle`, `StatusText`, `Alert`, `FormError`, `Skeleton` | `src/components/ui/surface.tsx` |
 | `Timeline`, `TimelineItem`, `TimelineTitle`, `TimelineText` | `src/components/ui/timeline.tsx` |
 | `FIGURE_TILE`, `FigureChevron` (key-figure tile, also the request list filters) | `src/components/layout/page-band.tsx` |
 | `.card-link`, `.card-hover`, motion, reduced motion, icon stroke | `src/app/globals.css` |

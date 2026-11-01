@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { Field, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/form-bits";
-import { Alert } from "@/components/ui/surface";
+import { Alert, FormError } from "@/components/ui/surface";
 import { requestPasswordResetAction, type FormState } from "@/server/actions/password";
 
 export function ForgotForm() {
@@ -23,7 +23,7 @@ export function ForgotForm() {
 
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
-      {state.message ? <Alert tone="danger">{state.message}</Alert> : null}
+      {state.message ? <FormError>{state.message}</FormError> : null}
       <Field id="username" label="اسم المستخدم" error={state.errors?.username} required>
         <Input id="username" name="username" dir="ltr" autoComplete="username" required autoFocus aria-invalid={Boolean(state.errors?.username)} />
       </Field>

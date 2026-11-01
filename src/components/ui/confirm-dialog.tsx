@@ -8,7 +8,8 @@ import { toast } from "./toaster";
 
 /**
  * Centred confirmation modal (docs/DESIGN.md: confirmation modal). Esc and the close button cancel.
- * `onConfirm` runs a server action; the dialog closes when it resolves.
+ * `onConfirm` runs a server action; the dialog closes when it resolves. When it returns the action's
+ * result, the pop-up shows its message, and none appears for a refusal (the caller shows it, D-124).
  */
 export function ConfirmDialog({
   trigger,
@@ -30,7 +31,7 @@ export function ConfirmDialog({
   description: ReactNode;
   confirmLabel: string;
   confirmVariant?: ButtonProps["variant"];
-  onConfirm: () => Promise<void>;
+  onConfirm: () => Promise<{ ok?: boolean; message?: string } | void>;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -65,9 +66,11 @@ export function ConfirmDialog({
               disabled={pending}
               onClick={() =>
                 start(async () => {
-                  await onConfirm();
+                  const outcome = await onConfirm();
                   setOpen(false);
-                  toast("تم تنفيذ الإجراء", { description: confirmLabel });
+                  if (outcome?.ok === false) return;
+                  if (outcome?.message) toast(outcome.message);
+                  else toast("تم تنفيذ الإجراء", { description: confirmLabel });
                 })
               }
             >

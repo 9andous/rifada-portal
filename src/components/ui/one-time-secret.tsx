@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, KeyRound } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./button";
 import { Alert } from "./surface";
@@ -23,7 +23,7 @@ export function OneTimeSecret({ username, password, title }: { username: string;
   }
 
   return (
-    <Alert tone="warning" icon={<KeyRound strokeWidth={1.75} />} title={title}>
+    <Alert tone="warning" title={title}>
       <p>انسخ كلمة المرور المؤقتة الآن وسلّمها لصاحب الحساب بطريقة آمنة. لن تظهر مرة أخرى، ولا تُحفظ في النظام إلا بصيغة مشفرة.</p>
       <dl className="mt-3 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
         <dt className="t-label">اسم المستخدم</dt>

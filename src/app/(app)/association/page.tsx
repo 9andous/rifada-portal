@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CircleCheck, CircleHelp, Eye, FilePen, FilePlus2, Hourglass, ListChecks, PenLine, Send, Undo2 } from "lucide-react";
+import { CircleCheck, CircleHelp, Eye, FilePlus2, Hourglass, ListChecks, PenLine, Send, Undo2 } from "lucide-react";
 import { AssocRequestsTable } from "@/components/association/parts";
 import { BandDate } from "@/components/dashboard/band-date";
 import { DismissNotice } from "@/components/association/dismiss-notice";
@@ -57,8 +57,8 @@ export default async function AssociationHome() {
               <Alert
                 key={r.id}
                 tone="success"
-                icon={<CircleCheck strokeWidth={1.75} />}
                 title={`قُبل طلبكم «${r.title || "طلب بلا عنوان"}»`}
+                ruled
                 className="text-base"
                 action={
                   <>
@@ -85,8 +85,8 @@ export default async function AssociationHome() {
               <Alert
                 key={r.id}
                 tone="danger"
-                icon={<Undo2 strokeWidth={1.75} />}
                 title={`أعاد المشرف طلبكم «${r.title || "طلب بلا عنوان"}» إليكم للتعديل`}
+                ruled
                 className="text-base"
                 action={
                   <>
@@ -150,8 +150,8 @@ export default async function AssociationHome() {
         {draft ? (
           <Alert
             tone="danger"
-            icon={<FilePen strokeWidth={1.75} />}
             title={home.drafts.length === 1 ? "لديكم طلب لم يُرسل بعد (مسودة)" : `لديكم ${formatNumber(home.drafts.length)} طلبات لم تُرسل بعد (مسودات)`}
+            ruled
             className="text-base"
             action={
               home.drafts.length === 1 ? (

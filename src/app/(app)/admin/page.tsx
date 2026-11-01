@@ -87,7 +87,7 @@ export default async function AdminDashboard() {
                 </span>
                 <div>
                   <p className="text-sm font-bold">لا توجد عمليات مسجلة بعد</p>
-                  <p className="t-caption mt-0.5 text-[0.8125rem]">تُسجَّل هنا عمليات الدخول وتعديل البيانات فور حدوثها.</p>
+                  <p className="t-caption mt-0.5 text-sm">تُسجَّل هنا عمليات الدخول وتعديل البيانات فور حدوثها.</p>
                 </div>
               </div>
             ) : (

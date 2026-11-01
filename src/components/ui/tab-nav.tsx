@@ -7,11 +7,12 @@ export type TabItem = { key: string; label: string; href: string; count?: string
 export function TabNav({ items, active, label, className }: { items: TabItem[]; active: string; label: string; className?: string }) {
   return (
     <nav aria-label={label} className={cn("border-b border-line", className)}>
-      <ul className="flex flex-wrap gap-1 px-4 sm:px-5">
-        {items.map((t) => {
+      <ul className="flex flex-wrap px-4 sm:px-5">
+        {items.map((t, i) => {
           const current = t.key === active;
           return (
-            <li key={t.key}>
+            // A short hairline before every tab but the first separates them (owner's review, D-125).
+            <li key={t.key} className={cn("flex items-center", i > 0 && "before:h-7 before:w-0.5 before:rounded-full before:bg-line-strong before:content-['']")}>
               <Link
                 href={t.href}
                 scroll={false}

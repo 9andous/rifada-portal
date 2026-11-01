@@ -1,13 +1,13 @@
 "use client";
 
-import { ArrowRight, Check, LoaderCircle, MessageSquarePlus, PenLine, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Check, LoaderCircle, MessageSquarePlus, PenLine, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Alert } from "@/components/ui/surface";
+import { Alert, FormError } from "@/components/ui/surface";
 import { toast } from "@/components/ui/toaster";
 import { REVIEW_CRITERIA, type CriterionResult, type ReviewCriterionKey } from "@/config/review-criteria";
 import { cn } from "@/lib/cn";
@@ -84,7 +84,7 @@ export function EvaluationDialog({ requestId, trigger }: { requestId: string; ti
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--overlay)]" />
-        <Dialog.Content className="fixed inset-x-0 top-1/2 z-50 mx-auto flex max-h-[92vh] w-[min(95vw,38rem)] -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-3 focus:outline-none">
+        <Dialog.Content className="fixed inset-x-0 top-1/2 z-50 mx-auto flex max-h-[92vh] w-[min(95vw,38rem)] -translate-y-1/2 flex-col overflow-clip rounded-2xl border border-line bg-surface shadow-3 focus:outline-none">
           <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3.5">
             <Dialog.Title className="t-section">{step === "criteria" ? "معايير القبول والامتثال" : "التوقيع الإلكتروني"}</Dialog.Title>
             <div className="flex items-center gap-3">
@@ -100,9 +100,9 @@ export function EvaluationDialog({ requestId, trigger }: { requestId: string; ti
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
             {message ? (
-              <Alert tone="danger" className="mb-3">
+              <FormError className="mb-3">
                 {message}
-              </Alert>
+              </FormError>
             ) : null}
 
             {step === "criteria" ? (
@@ -150,7 +150,7 @@ export function EvaluationDialog({ requestId, trigger }: { requestId: string; ti
 /** What signing does (D-122), above the password in both signing dialogs. */
 export function SealNotice({ count = 1 }: { count?: number }) {
   return (
-    <Alert tone="info" icon={<ShieldCheck strokeWidth={1.75} />} title="يُختم بختم إلكتروني باسمك">
+    <Alert tone="info" title="يُختم بختم إلكتروني باسمك">
       {count > 1
         ? `يُصدر النظام لكل طلب من الطلبات (${formatNumber(count)}) ختمًا إلكترونيًا برقم فريد، يحفظ اسمك ووقت التوقيع وبصمة محتوى الطلب، ويُطبع على الوثيقة مع رمز تحقق (QR).`
         : "يُصدر النظام ختمًا إلكترونيًا برقم فريد، يحفظ اسمك ووقت التوقيع وبصمة محتوى الطلب، ويُطبع على الوثيقة مع رمز تحقق (QR)."}{" "}
@@ -312,7 +312,7 @@ export function EvaluationEditDialog({ requestId, criteria, note: initialNote }:
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--overlay)]" />
-        <Dialog.Content className="fixed inset-x-0 top-1/2 z-50 mx-auto flex max-h-[92vh] w-[min(95vw,38rem)] -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-3 focus:outline-none">
+        <Dialog.Content className="fixed inset-x-0 top-1/2 z-50 mx-auto flex max-h-[92vh] w-[min(95vw,38rem)] -translate-y-1/2 flex-col overflow-clip rounded-2xl border border-line bg-surface shadow-3 focus:outline-none">
           <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3.5">
             <Dialog.Title className="t-section">تعديل التقييم</Dialog.Title>
             <Dialog.Close className="text-ink-subtle hover:text-ink" aria-label="إغلاق" disabled={pending}>
@@ -322,9 +322,9 @@ export function EvaluationEditDialog({ requestId, criteria, note: initialNote }:
           <Dialog.Description className="sr-only">تعديل معايير القبول والامتثال وملاحظة المراجع الفني قبل القرار.</Dialog.Description>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
             {message ? (
-              <Alert tone="danger" className="mb-3">
+              <FormError className="mb-3">
                 {message}
-              </Alert>
+              </FormError>
             ) : null}
             <CriteriaFields answers={answers} setAnswers={setAnswers} note={note} setNote={setNote} errors={errors} />
           </div>

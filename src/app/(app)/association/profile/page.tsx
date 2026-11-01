@@ -11,7 +11,7 @@ import { ForbiddenPage } from "@/components/states/forbidden-page";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
-import { Alert, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
+import { Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { formatHijri, toArabicDigits } from "@/lib/format";
 import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/authz/permissions";
@@ -81,7 +81,7 @@ export default async function AssociationProfilePage() {
                 <Pair label="سنة التأسيس">{a.registration?.foundedYear ? `${toArabicDigits(a.registration.foundedYear)} هـ` : null}</Pair>
               </dl>
               <div className="px-6 pb-6">
-                <Alert tone="info">لتغيير اسم الجمعية أو رقم الترخيص أو التصنيف أو الموقع، تواصلوا مع الوحدة الإشرافية.</Alert>
+                <p className="text-sm text-ink-muted">لتغيير اسم الجمعية أو رقم الترخيص أو التصنيف أو الموقع، تواصلوا مع الوحدة الإشرافية.</p>
               </div>
             </Panel>
 

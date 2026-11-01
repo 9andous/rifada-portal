@@ -77,7 +77,7 @@ export default async function AdminTemplatePage({ params }: PageProps<"/admin/ta
             </Panel>
             <Panel>
               <PanelHeader title="سجل الإصدارات" description="كل ملف رُفع لهذا النموذج. الإصدارات السابقة لا تُحذف ولا يُنزّلها إلا مدير النظام." />
-              <div className="overflow-x-auto">
+              <div className="relative overflow-x-auto">
                 <table className="t-table w-full min-w-[40rem] border-collapse">
                   <caption className="sr-only">إصدارات الملف</caption>
                   <thead className="bg-surface-muted">

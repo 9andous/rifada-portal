@@ -4,18 +4,16 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CircleCheck,
   LoaderCircle,
   PenLine,
   Save,
   Send,
-  TriangleAlert,
-  Undo2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DiscardDraftButton } from "@/components/requests/request-actions";
 import { Button } from "@/components/ui/button";
+import { RefNumber } from "@/components/ui/ref-number";
 import { hijriCaption } from "@/components/ui/hijri-date-input";
 import { Alert } from "@/components/ui/surface";
 import type { MissingItem } from "@/lib/completeness";
@@ -424,10 +422,17 @@ export function RequestWizard({
     setFailure(null);
     const r = await submitRequestAction(id, {}, new FormData(formRef.current));
     if (r.ok) {
-      toast(returned ? "أُعيد إرسال الطلب" : "أُرسل الطلب بنجاح", {
-        description: "وصل إلى الوحدة الإشرافية.",
+      // The reference number goes in the pop-up; the request page no longer repeats it in a notice (D-124).
+      toast(returned ? "أُعيد إرسال الطلب" : "تم إرسال طلبكم بنجاح", {
+        description: r.referenceNo ? (
+          <>
+            رقم الطلب <RefNumber value={r.referenceNo} className="font-bold text-ink" />. احتفظوا به للرجوع إليه.
+          </>
+        ) : (
+          "وصل إلى الوحدة الإشرافية."
+        ),
       });
-      router.push(`/association/requests/${id}?submitted=1`);
+      router.push(`/association/requests/${id}`);
       return;
     }
     setBusy(null);
@@ -504,7 +509,6 @@ export function RequestWizard({
       {returned ? (
         <Alert
           tone="danger"
-          icon={<Undo2 strokeWidth={1.75} />}
           title="أعاد المشرف هذا الطلب إليكم للتعديل"
           className="text-base"
         >
@@ -526,7 +530,6 @@ export function RequestWizard({
       {failure ? (
         <Alert
           tone="danger"
-          icon={<TriangleAlert strokeWidth={1.75} />}
           title={
             missing.length
               ? "لم يُرسل الطلب بعد. أكملوا ما يلي ثم أعيدوا الإرسال:"
@@ -872,7 +875,6 @@ export function RequestWizard({
               {missing.length ? null : needs.length === 0 ? (
                 <Alert
                   tone="success"
-                  icon={<CircleCheck strokeWidth={1.75} />}
                   title="الطلب مكتمل وجاهز للإرسال"
                   className="text-base"
                 >
@@ -881,7 +883,6 @@ export function RequestWizard({
               ) : (
                 <Alert
                   tone="danger"
-                  icon={<TriangleAlert strokeWidth={1.75} />}
                   title="قبل الإرسال، أكملوا ما يلي:"
                   className="text-base"
                 >

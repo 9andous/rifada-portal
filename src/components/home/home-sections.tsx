@@ -118,7 +118,7 @@ export function HeroFigures({ home }: { home: PublicHome }) {
       {items.map((f, i) => (
         <div key={f.label} className={cn("flex flex-col items-center px-3", i > 0 && "sm:border-s sm:border-white/15")}>
           <dd className="t-figure text-[2rem] text-band-ink">{formatNumber(f.value)}</dd>
-          <dt className="mt-1.5 text-[0.8125rem] text-band-ink-muted">{f.label}</dt>
+          <dt className="mt-1.5 text-sm text-band-ink-muted">{f.label}</dt>
         </div>
       ))}
     </dl>
@@ -258,7 +258,7 @@ export function ObjectivesSection({ home }: { home: PublicHome }) {
                   ) : null}
                 </div>
                 <p className="mt-4 text-[0.9375rem] font-semibold leading-[1.85]">{o.title}</p>
-                {link ? <p className="mt-auto pt-4 text-[0.8125rem] leading-relaxed text-band-ink-muted">{link}</p> : null}
+                {link ? <p className="mt-auto pt-4 text-sm leading-relaxed text-band-ink-muted">{link}</p> : null}
               </li>
             );
           })}

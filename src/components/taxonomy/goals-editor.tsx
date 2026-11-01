@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/states/states";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Field, Textarea } from "@/components/ui/field";
 import { FormDialog } from "@/components/ui/form-dialog";
-import { Alert, StatusText } from "@/components/ui/surface";
+import { FormError, StatusText } from "@/components/ui/surface";
 import { cn } from "@/lib/cn";
 import { toArabicDigits } from "@/lib/format";
 import { createGoalAction, moveGoalAction, setGoalArchivedAction, updateGoalAction } from "@/server/actions/admin/taxonomy";
@@ -47,7 +47,7 @@ export function GoalsEditor({ programId, goals }: { programId: string; goals: Go
           {(errors) => <GoalText errors={errors} />}
         </FormDialog>
       </div>
-      {result?.message ? <Alert tone={result.ok ? "success" : "danger"} className="mx-6">{result.message}</Alert> : null}
+      {result?.message && !result.ok ? <FormError className="mx-6">{result.message}</FormError> : null}
       {goals.length === 0 ? (
         <EmptyState variant="inline" title="لا توجد أهداف لهذا البرنامج" description="أضف أهداف البرنامج كما وردت في وثيقة الإستراتيجية." />
       ) : (
@@ -83,7 +83,11 @@ export function GoalsEditor({ programId, goals }: { programId: string; goals: Go
                   description={g.archived ? "يعود الهدف إلى قائمة أهداف البرنامج." : "يختفي الهدف من الصفحات العامة ويبقى محفوظًا هنا، ويمكن استعادته."}
                   confirmLabel={g.archived ? "استعادة" : "أرشفة"}
                   confirmVariant={g.archived ? "primary" : "danger"}
-                  onConfirm={async () => setResult(await setGoalArchivedAction(g.id, !g.archived))}
+                  onConfirm={async () => {
+                    const r = await setGoalArchivedAction(g.id, !g.archived);
+                    setResult(r);
+                    return r;
+                  }}
                 />
               </div>
             </li>

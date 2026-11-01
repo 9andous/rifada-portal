@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { discardDraftAction } from "@/server/actions/requests";
 import { ReassignDialog, type DialogRequest, type SupervisorChoice } from "./decision-dialog";
 
@@ -29,11 +29,12 @@ export function DiscardDraftButton({ requestId, title }: { requestId: string; ti
         confirmVariant="danger"
         onConfirm={async () => {
           const r = await discardDraftAction(requestId);
-          if (r.ok) router.replace("/association/requests?discarded=1");
+          if (r.ok) router.replace("/association/requests");
           else setError(r.message ?? "تعذّر حذف المسودة.");
+          return r.ok ? { ok: true, message: "حُذفت المسودة وملفاتها" } : r;
         }}
       />
-      {error ? <Alert tone="danger">{error}</Alert> : null}
+      {error ? <FormError>{error}</FormError> : null}
     </div>
   );
 }

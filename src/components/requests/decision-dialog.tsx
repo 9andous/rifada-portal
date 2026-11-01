@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
 import { RefNumber } from "@/components/ui/ref-number";
 import { Select } from "@/components/ui/select";
-import { Alert } from "@/components/ui/surface";
+import { Alert, FormError } from "@/components/ui/surface";
 import { formatNumber, requestsPhrase } from "@/lib/format";
 import { DECISION_LABELS, type Decision } from "@/lib/requests";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
@@ -186,9 +186,9 @@ export function DecisionDialog({
             </div>
           ) : null}
           {result?.message && !result.ok && !result.errors?.reason && !result.errors?.password ? (
-            <Alert tone="danger" className="mt-4">
+            <FormError className="mt-4">
               {result.message}
-            </Alert>
+            </FormError>
           ) : null}
           <div className="mt-6 flex justify-end gap-3">
             <Dialog.Close asChild>
@@ -272,9 +272,9 @@ export function ReassignDialog({
             <Textarea id="reassign-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={REQUEST_LIMITS.reason} />
           </Field>
           {result?.message && !result.ok && !result.errors ? (
-            <Alert tone="danger" className="mt-4">
+            <FormError className="mt-4">
               {result.message}
-            </Alert>
+            </FormError>
           ) : null}
           <div className="mt-6 flex justify-end gap-3">
             <Dialog.Close asChild>

@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/cn";
 import { formatNumber, toArabicDigits } from "@/lib/format";
@@ -80,7 +80,7 @@ export function ScopeEditor({ requestId, programs, programId, initiativeIds }: {
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--overlay)]" />
-        <Dialog.Content className="fixed inset-x-0 top-1/2 z-50 mx-auto flex max-h-[92vh] w-[min(95vw,42rem)] -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-3 focus:outline-none">
+        <Dialog.Content className="fixed inset-x-0 top-1/2 z-50 mx-auto flex max-h-[92vh] w-[min(95vw,42rem)] -translate-y-1/2 flex-col overflow-clip rounded-2xl border border-line bg-surface shadow-3 focus:outline-none">
           <div className="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
             <div>
               <Dialog.Title className="t-section">البرنامج والمبادرات</Dialog.Title>
@@ -94,7 +94,7 @@ export function ScopeEditor({ requestId, programs, programId, initiativeIds }: {
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
-            {message ? <Alert tone="danger">{message}</Alert> : null}
+            {message ? <FormError>{message}</FormError> : null}
             <Field id="scope-program" label="البرنامج" hint="برامج مسار الطلب." error={errors.programId}>
               <Select
                 id="scope-program"
@@ -133,7 +133,9 @@ export function ScopeEditor({ requestId, programs, programId, initiativeIds }: {
                     <li key={i.id}>
                       <label
                         className={cn(
-                          "flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors",
+                          // relative: the hidden checkbox must sit inside its own row, or focusing it scrolls the
+                          // dialog frame and the list slides out of view (owner's report, 2026-10-31).
+                          "relative flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors",
                           "has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-focus",
                           selected ? "border-primary bg-primary-soft/50" : "border-line hover:border-primary",
                         )}

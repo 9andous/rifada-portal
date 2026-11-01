@@ -6,7 +6,7 @@ import { useState, useTransition, type FormEvent } from "react";
 import { ChevronLeft, Fingerprint, LoaderCircle, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
-import { Alert } from "@/components/ui/surface";
+import { Alert, FormError } from "@/components/ui/surface";
 import { authClient } from "@/lib/auth-client";
 import { toArabicDigits } from "@/lib/format";
 
@@ -68,7 +68,7 @@ export function LoginForm() {
   return (
     <div className="flex flex-col gap-4 short:gap-3">
       <form onSubmit={onSubmit} className="flex flex-col gap-3.5" noValidate>
-        {error ? <Alert tone="danger">{error}</Alert> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <Field id="username" label="اسم المستخدم" required>
           <Input id="username" name="username" autoComplete="username" dir="ltr" required autoFocus className="h-11" />
         </Field>
@@ -104,7 +104,7 @@ export function LoginForm() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block font-bold text-brand-ink">الدخول عبر النفاذ الوطني الموحد</span>
-            <span className="block text-[0.8125rem] text-ink-muted">باستخدام رقم الهوية الوطنية وتطبيق نفاذ</span>
+            <span className="block text-sm text-ink-muted">باستخدام رقم الهوية الوطنية وتطبيق نفاذ</span>
           </span>
           <ChevronLeft aria-hidden="true" className="size-5 shrink-0 text-ink-subtle" />
         </button>
@@ -158,7 +158,7 @@ function NafathMockFlow({ onCancel }: { onCancel: () => void }) {
       <Alert tone="warning" title="بيئة محاكاة">
         هذا الدخول محاكاة لخدمة النفاذ الوطني الموحد لأغراض التطوير والعرض، ولا يتصل بالخدمة الفعلية.
       </Alert>
-      {error ? <Alert tone="danger">{error}</Alert> : null}
+      {error ? <FormError>{error}</FormError> : null}
 
       {challenge ? (
         <div className="flex flex-col items-center gap-4 rounded-lg border border-line bg-surface-muted px-6 py-8 text-center">

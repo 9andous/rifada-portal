@@ -3,9 +3,9 @@
 import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
 
-// Text size for readers who need larger type (D-102). The whole interface is sized in rem, so the
-// root font size scales everything: normal 100%, large 112.5%, larger 125% (globals.css). The
-// association area opens at «كبير» until the user picks a size; the choice is kept on the device.
+// Text size for readers who need larger type (D-102, D-125). The whole interface is sized in rem, so
+// the root font size scales everything: normal 125% (every area's default), large 137.5%, larger
+// 150% (globals.css). The choice is kept on the device.
 
 export const TEXT_SIZE_STORAGE_KEY = "rifada-text-size";
 
@@ -24,11 +24,11 @@ function subscribe(onChange: () => void) {
   return () => observer.disconnect();
 }
 
-/** The size in effect: the user's choice, else the area's default. */
+/** The size in effect: the user's choice, else the default. */
 function currentSize(): TextSize {
   const chosen = document.documentElement.dataset.textSize as TextSize | undefined;
   if (chosen && (TEXT_SIZES as readonly string[]).includes(chosen)) return chosen;
-  return document.querySelector("[data-easy]") ? "large" : "normal";
+  return "normal";
 }
 
 /** «حجم الخط»: three buttons with a growing letter; the pressed one is the size in effect. */

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { normalizeVerifyCode } from "@/lib/verify-code";
 
 // The browser's own QR reader (Chrome on Android, Edge); jsQR reads the frames elsewhere (iPhone).
@@ -151,7 +151,7 @@ export function VerifyCodeEntry({ initialCode = "" }: { initialCode?: string }) 
       )}
 
       {error ? (
-        <Alert tone="danger">{error}</Alert>
+        <FormError>{error}</FormError>
       ) : null}
     </div>
   );

@@ -9,9 +9,7 @@ import {
   Gauge,
   Inbox,
   Layers,
-  PenLine,
   Building2,
-  TriangleAlert,
   UserRoundCheck,
   Workflow,
 } from "lucide-react";
@@ -129,8 +127,8 @@ export default async function ManagerDashboard({ searchParams }: PageProps<"/man
       <PageBody className="flex flex-col gap-5">
         {awaiting ? (
           <Alert
+            ruled
             tone="info"
-            icon={<PenLine strokeWidth={1.75} className="!size-[22px]" />}
             title={`${requestsPhrase(awaiting)} بانتظار اعتمادك بعد تقييم المشرف وتوقيعه`}
             action={
               <Link href={`${REQUESTS}?stage=manager`} className={buttonClasses("primary", "sm")}>
@@ -143,7 +141,7 @@ export default async function ManagerDashboard({ searchParams }: PageProps<"/man
         {attention.length ? (
           <Alert
             tone="danger"
-            icon={<TriangleAlert strokeWidth={1.75} className="!size-[22px]" />}
+            ruled
             title={attention.join(" و")}
             action={
               <>
@@ -182,21 +180,23 @@ export default async function ManagerDashboard({ searchParams }: PageProps<"/man
           ]}
         />
 
+        {/* Card order by the owner's review (2026-11-01): programmes and tracks first, then overdue
+            requests and the status distribution. */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr]">
-          <StatusDistributionCard rows={overview.byStatus} href={REQUESTS} />
-          <OverdueCard
-              rows={overdue}
-              total={overview.overdue}
-              slaDays={slaDays}
-              now={now}
-              hrefBase={REQUESTS}
-              assignHref="/manager/assignment"
-              listHref={`${REQUESTS}?overdue=1&sort=slaDueAt&dir=asc`}
-            />
+          <ProgramsCard rows={programs} hrefBase={REQUESTS} />
+          <TracksCard data={tracks} tracksHref="/manager/taxonomy/tracks" />
         </div>
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <TracksCard data={tracks} tracksHref="/manager/taxonomy/tracks" />
-          <ProgramsCard rows={programs} hrefBase={REQUESTS} />
+          <OverdueCard
+            rows={overdue}
+            total={overview.overdue}
+            slaDays={slaDays}
+            now={now}
+            hrefBase={REQUESTS}
+            assignHref="/manager/assignment"
+            listHref={`${REQUESTS}?overdue=1&sort=slaDueAt&dir=asc`}
+          />
+          <StatusDistributionCard rows={overview.byStatus} href={REQUESTS} />
         </div>
         <MonthlyCard months={monthly} range={range} rangeHref={(n) => (n === 6 ? "/manager" : `/manager?months=${n}`)} />
         <WorkloadCard rows={workload} unassigned={overview.unassigned} assignHref="/manager/assignment" requestsHref={REQUESTS} />

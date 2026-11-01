@@ -1271,3 +1271,37 @@ today (the calendar greys out earlier days, a save refuses a newly typed past da
 submission, resubmissions included, checks it; this replaces D-078's first-submission-only rule),
 and the end date may not be before the start. Any value refused on saving or sending opens its step
 and puts the cursor in the field.
+
+**D-124 Notices without the box; pop-ups in the centre (2026-11-01, owner's review).** The owner
+found the notices generic: every message was the same tinted box with a side rule, an icon and a
+bold title. After two rounds of rendered options the owner chose the «brand strip»: no box, tint or
+icon, a diamond before the title as in card headers and the text indented under it, colour on the
+diamond and title for success, warning and danger (information stays gold). On the page canvas
+or in the page head a notice sits in a plain white card, so it does not float (owner's follow-up;
+inside cards and dialogs it needs none). Fewer notices: one-time
+confirmations moved to the pop-up (form saves through `useActionForm`, `ConfirmDialog` actions now
+showing the action's own message and nothing on a refusal, the copied requirements, the discarded
+draft, and «تم إرسال طلبكم بنجاح», which now carries the reference number so the request page no
+longer repeats it); a form's refusal is plain red text (`<FormError>`); short notes (the profile's
+contact note, archived programme or initiative, no target initiatives) are plain text. Notices that
+need attention or give lasting context keep the strip (returned, accepted and draft requests,
+awaiting approval, unassigned or overdue, the seal, the wizard's completeness, taxonomy states,
+one-time passwords, the Nafath simulation, the first-sign-in change, rejection reasons). Pop-ups
+(D-111) moved from the bottom corner to the centre of the screen over the dimmed page, one at a
+time, with an animated status badge (ring, then tick) the owner asked to be larger (72px); they
+close with «حسنًا», Esc, a click outside or after six seconds. Top-centre and a floating card
+without dimming were rejected. Same review: the «برامج هذا المسار» dialog went blank after choosing
+an initiative low in the list, because each row's hidden checkbox was positioned against the dialog
+and focusing it scrolled the frame; rows are now `relative` and the dialog frames clip instead of
+hiding overflow.
+
+**D-125 Larger text for older readers; table columns separated; manager dashboard order
+(2026-11-01, owner's review).** The platform's users include older people, and the owner found the
+text small. After comparing four rendered sizes, they chose a mix of «everything larger» and «small
+text raised»: the root size is 125% in every area (it was 100%, and 112.5% in the association area),
+and no running text is set below 0.875rem (`t-caption`, `t-label`, `text-xs` and `text-2xs`; the
+0.8125rem one-offs became `text-sm`; only count badges and avatar initials stay smaller). The «حجم
+الخط» control keeps three steps, now 125%, 137.5% and 150%; printing stays at 100%. This replaces
+D-102's one-step-larger association area. Data tables draw a hairline between columns so each field
+reads as its own cell. On the unit manager's home, «الطلبات حسب البرنامج» and «التوزيع على المسارات»
+come first, then «طلبات تجاوزت مهلة المراجعة» and «توزيع الطلبات حسب الحالة».

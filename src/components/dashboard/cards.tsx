@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import {
   ArrowLeft,
   ChartColumn,
@@ -62,7 +62,7 @@ export function CardEmpty({ icon, title, children, action }: { icon: ReactNode; 
 
 function CardFooter({ children, href, label }: { children?: ReactNode; href?: string; label?: string }) {
   return (
-    <footer className="flex items-center justify-between gap-3 border-t border-line px-6 py-3 text-[0.8125rem] text-ink-subtle">
+    <footer className="flex items-center justify-between gap-3 border-t border-line px-6 py-3 text-sm text-ink-subtle">
       <span>{children}</span>
       {href && label ? (
         <Link href={href} className={buttonClasses("ghost", "sm")}>
@@ -169,7 +169,7 @@ export function MonthlyCard({ months, range, rangeHref }: { months: MonthBucket[
                 scroll={false}
                 aria-current={n === range ? "true" : undefined}
                 className={cn(
-                  "flex h-[30px] items-center rounded-[7px] px-3 text-[0.8125rem] font-medium",
+                  "flex h-[30px] items-center rounded-[7px] px-3 text-sm font-medium",
                   n === range ? "bg-surface font-semibold text-ink shadow-1" : "text-ink-muted hover:text-ink",
                 )}
               >
@@ -181,25 +181,25 @@ export function MonthlyCard({ months, range, rangeHref }: { months: MonthBucket[
       />
       <div className="flex-1 px-6 pb-5">
         <div
-          className={cn("flex h-56 items-end border-b border-line pt-3", dense ? "gap-1.5" : "gap-4")}
+          className={cn("flex h-56 items-end border-b border-line pt-3", dense ? "gap-1.5" : "gap-2 sm:gap-4")}
           role="img"
           aria-label={months.map((m) => `${m.name}: وارد ${formatNumber(m.count)}، قرار ${formatNumber(m.decided)}`).join("؛ ")}
         >
           {months.map((m) => (
-            <div key={m.key} className="flex h-full flex-1 items-end justify-center gap-1">
+            <div key={m.key} className="flex h-full min-w-0 flex-1 items-end justify-center gap-1">
               {[
                 { v: m.count, fill: "bg-chart-1", text: "text-ink-muted font-semibold" },
                 { v: m.decided, fill: "bg-chart-2", text: "text-ink-subtle" },
               ].map((bar, i) => (
                 <div key={i} className="flex flex-col items-center gap-1">
                   <span className={cn("t-figure text-[0.6875rem]", bar.text)}>{formatNumber(bar.v)}</span>
-                  <span className={cn("block rounded-t-[4px]", bar.fill, dense ? "w-2.5" : "w-[18px]")} style={{ height: bar.v ? `${(bar.v / max) * 170}px` : "3px" }} />
+                  <span className={cn("block rounded-t-[4px]", bar.fill, dense ? "w-2.5" : "w-2.5 sm:w-[18px]")} style={{ height: bar.v ? `${(bar.v / max) * 170}px` : "3px" }} />
                 </div>
               ))}
             </div>
           ))}
         </div>
-        <div className={cn("mt-2 flex", dense ? "gap-1.5" : "gap-4")}>
+        <div className={cn("mt-2 flex", dense ? "gap-1.5" : "gap-2 sm:gap-4")}>
           {months.map((m) => (
             <span key={m.key} className={cn("t-caption flex-1 truncate text-center", dense && "text-[0.625rem]")}>
               {m.name}
@@ -295,7 +295,7 @@ export function TracksCard({ data, tracksHref }: { data: { rows: TrackRow[]; unc
           <h2 id="tracks-title" className="t-section leading-snug text-band-ink">
             التوزيع على المسارات
           </h2>
-          <p className="mt-0.5 text-[0.8125rem] text-band-ink-muted">المجموعة التاسعة · الطلبات المقدَّمة</p>
+          <p className="mt-0.5 text-sm text-band-ink-muted">المجموعة التاسعة · الطلبات المقدَّمة</p>
         </div>
       </header>
       {rows.length === 0 ? (
@@ -635,27 +635,31 @@ export function RequestsTableCard({
 
 /** Tab row inside a card (handoff `.tabs`): icon, label and a count chip; each tab is a link. */
 export function CardTabs({ items, label }: { items: { key: string; label: string; count: number; href: string; active: boolean; icon: ReactNode }[]; label: string }) {
+  // overflow-y-hidden: a horizontally scrolling row must not grow a vertical scrollbar, so the active
+  // bar sits inside the row (bottom-0). A short hairline separates the tabs (owner's review, D-125).
   return (
-    <nav aria-label={label} className="flex gap-1 overflow-x-auto border-b border-line px-5">
-      {items.map((t) => (
-        <Link
-          key={t.key}
-          href={t.href}
-          scroll={false}
-          aria-current={t.active ? "page" : undefined}
-          className={cn(
-            "relative inline-flex h-12 shrink-0 items-center gap-2 px-3.5 text-sm whitespace-nowrap [&_svg]:size-4",
-            t.active
-              ? "font-semibold text-primary after:absolute after:inset-x-2 after:-bottom-px after:h-[3px] after:rounded-t-[3px] after:bg-primary"
-              : "font-medium text-ink-muted hover:text-ink",
-          )}
-        >
-          {t.icon}
-          {t.label}
-          <span className={cn("t-figure rounded-[10px] px-[7px] text-xs leading-[18px] font-semibold", t.active ? "bg-primary text-primary-ink" : "bg-surface-sunken text-ink-muted")}>
-            {formatNumber(t.count)}
-          </span>
-        </Link>
+    <nav aria-label={label} className="flex items-center overflow-x-auto overflow-y-hidden border-b border-line px-5">
+      {items.map((t, i) => (
+        <Fragment key={t.key}>
+          {i > 0 ? <span aria-hidden="true" className="h-7 w-0.5 shrink-0 rounded-full bg-line-strong" /> : null}
+          <Link
+            href={t.href}
+            scroll={false}
+            aria-current={t.active ? "page" : undefined}
+            className={cn(
+              "relative inline-flex h-12 shrink-0 items-center gap-2 px-3.5 text-sm whitespace-nowrap [&_svg]:size-4",
+              t.active
+                ? "font-semibold text-primary after:absolute after:inset-x-2 after:bottom-0 after:h-[3px] after:rounded-t-[3px] after:bg-primary"
+                : "font-medium text-ink-muted hover:text-ink",
+            )}
+          >
+            {t.icon}
+            {t.label}
+            <span className={cn("t-figure rounded-[10px] px-[7px] text-xs leading-[18px] font-semibold", t.active ? "bg-primary text-primary-ink" : "bg-surface-sunken text-ink-muted")}>
+              {formatNumber(t.count)}
+            </span>
+          </Link>
+        </Fragment>
       ))}
     </nav>
   );

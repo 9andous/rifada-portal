@@ -96,7 +96,7 @@ export default async function SupervisorDashboard({ searchParams }: PageProps<"/
       />
       <PageBody className="flex flex-col gap-5">
         {!hasPrograms ? (
-          <Alert tone="warning" icon={<TriangleAlert strokeWidth={1.75} className="!size-[22px]" />} title="لم تُسند إليك برامج بعد">
+          <Alert ruled tone="warning" title="لم تُسند إليك برامج بعد">
             لن تظهر لك أي طلبات حتى يُسند إليك مدير النظام برنامجًا واحدًا على الأقل.
           </Alert>
         ) : null}

@@ -9,10 +9,10 @@ import { getSetting } from "@/server/settings/read";
 export const metadata: Metadata = { title: "تفاصيل الطلب" };
 
 /** The officer's request page (D-102); staff use the shared RequestView. A request they may not read answers 404. */
-export default async function OfficerRequestPage({ params, searchParams }: PageProps<"/association/requests/[id]">) {
+export default async function OfficerRequestPage({ params }: PageProps<"/association/requests/[id]">) {
   const user = await requireUser();
   if (user.role !== "ASSOCIATION_OFFICER") return <ForbiddenPage />;
-  const [{ id }, query] = await Promise.all([params, searchParams]);
+  const { id } = await params;
   const [request, maxMb, allowedGroups, slaDays] = await Promise.all([
     getRequestDetail(user, id),
     getSetting("uploads.maxFileMb"),
@@ -20,5 +20,5 @@ export default async function OfficerRequestPage({ params, searchParams }: PageP
     getSetting("sla.workingDays"),
   ]);
   if (!request) notFound();
-  return <AssociationRequestView request={request} uploads={{ maxMb, allowedGroups: [...allowedGroups] }} slaDays={slaDays} justSubmitted={query.submitted === "1"} />;
+  return <AssociationRequestView request={request} uploads={{ maxMb, allowedGroups: [...allowedGroups] }} slaDays={slaDays} />;
 }

@@ -96,10 +96,11 @@
   --radius-3xl: 24px;
   --radius-4xl: 32px;
 
-  /* Type scale (rem) with line heights suited to Cairo's tall Arabic forms */
-  --text-2xs: 0.75rem;
+  /* Type scale (rem) with line heights suited to Cairo's tall Arabic forms. No running text below
+     0.875rem: the platform's readers include older users (owner's review, D-125). */
+  --text-2xs: 0.875rem;
   --text-2xs--line-height: 1.6;
-  --text-xs: 0.8125rem;
+  --text-xs: 0.875rem;
   --text-xs--line-height: 1.6;
   --text-sm: 0.875rem;
   --text-sm--line-height: 1.7;
@@ -137,20 +138,18 @@
     min-height: 100dvh;
   }
 
-  /* Text size (D-102, components/layout/text-size.tsx). Every size in the interface is in rem, so
-     the root size scales it all. The association area opens one step larger; the user's own choice,
-     stored on the device, wins (the rules below come later with the same specificity). */
-  html:has([data-easy]) {
-    font-size: 112.5%;
-  }
+  /* Text size (D-102, D-125; components/layout/text-size.tsx). Every size in the interface is in
+     rem, so the root size scales it all. Every area opens at 125% for older readers; the user's own
+     choice, stored on the device, can go larger. */
+  html,
   html[data-text-size="normal"] {
-    font-size: 100%;
+    font-size: 125%;
   }
   html[data-text-size="large"] {
-    font-size: 112.5%;
+    font-size: 137.5%;
   }
   html[data-text-size="xlarge"] {
-    font-size: 125%;
+    font-size: 150%;
   }
 
   :focus-visible {
@@ -194,6 +193,11 @@
   @page {
     size: A4 landscape;
     margin: 12mm;
+  }
+  /* Paper keeps the original scale; the larger screen default (D-125) is for reading on screen. */
+  html,
+  html[data-text-size] {
+    font-size: 100%;
   }
   html,
   body {
@@ -289,7 +293,7 @@
     color: var(--ink);
   }
   .t-label {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.5;
     font-weight: 600;
     color: var(--ink-subtle);
@@ -313,9 +317,17 @@
     color: var(--ink);
   }
   .t-caption {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     line-height: 1.55;
     color: var(--ink-subtle);
+  }
+
+  /* Data tables (DataTable): a hairline between columns so each field reads as its own cell
+     (owner's review, 2026-11-01). Cells pad on the start side to clear the line. */
+  [data-table] th + th,
+  [data-table] td + td {
+    border-inline-start: 1px solid var(--line);
+    padding-inline-start: 1rem;
   }
 }
 
@@ -372,5 +384,84 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Pop-up (docs/DESIGN.md: Pop-ups, D-124): the card scales in, its status badge bumps, the ring
+   draws itself, then the tick (or the mark) follows. Off under prefers-reduced-motion. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pop-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes mark-bump {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes mark-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes mark-dot {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+.pop-overlay {
+  animation: pop-fade 0.2s var(--motion-ease) both;
+}
+.pop-in {
+  animation: pop-in 0.2s var(--motion-ease) both;
+}
+.mark-pop {
+  animation: mark-bump 0.45s var(--motion-ease) both;
+}
+.mark-ring {
+  stroke-dasharray: 145;
+  stroke-dashoffset: 145;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  animation: mark-draw 0.5s 0.1s ease-out forwards;
+}
+.mark-stroke {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 32;
+  animation: mark-draw 0.35s 0.55s ease-out forwards;
+}
+.mark-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mark-dot 0.2s 0.85s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop-overlay,
+  .pop-in,
+  .mark-pop,
+  .mark-ring,
+  .mark-stroke,
+  .mark-dot {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }

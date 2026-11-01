@@ -78,7 +78,7 @@ export function SiteFooter() {
 export function FooterBar({ children }: { children?: ReactNode }) {
   return (
     <div className="relative border-t border-white/10">
-      <div className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 py-4 text-center text-[0.8125rem] text-band-ink-muted sm:px-8">
+      <div className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 py-4 text-center text-sm text-band-ink-muted sm:px-8">
         <span>جميع الحقوق محفوظة — {brand.presidencyName}</span>
         {children}
       </div>

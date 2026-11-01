@@ -30,7 +30,7 @@ export function AppShell({ role, easy, children }: { role: Role; easy?: boolean;
   const cta = NAV_CTA[role];
 
   return (
-    // `data-easy`: the simplified interface of the association area (D-102), one text size larger.
+    // `data-easy`: the simplified interface of the association area (D-102).
     <div className="flex min-h-dvh flex-col" data-easy={easy ? "" : undefined}>
       <GovBar />
       {/* The white header and the green navigation bar stay at the top together on scroll. */}

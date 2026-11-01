@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/form-bits";
-import { Alert } from "@/components/ui/surface";
+import { Alert, FormError } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import { toArabicDigits } from "@/lib/format";
 import type { AdminFormState } from "@/server/actions/admin/state";
@@ -26,7 +26,7 @@ export function ProgramForm({ action, defaults, mode }: { action: Action; defaul
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-      {state.message ? <Alert tone={state.ok ? "success" : "danger"}>{state.message}</Alert> : null}
+      {state.message && !state.ok ? <FormError>{state.message}</FormError> : null}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-[8rem_1fr]">
         <Field id="number" label="الرقم" error={e.number} required>
           <Input id="number" name="number" inputMode="numeric" dir="ltr" defaultValue={defaults.number} aria-invalid={Boolean(e.number)} />
@@ -78,7 +78,7 @@ export function InitiativeForm({
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-      {state.message ? <Alert tone={state.ok ? "success" : "danger"}>{state.message}</Alert> : null}
+      {state.message && !state.ok ? <FormError>{state.message}</FormError> : null}
       {slipNote ? (
         <Alert tone="warning" title="صياغة بانتظار مراجعتكم">
           {slipNote} عدّل الاسم أدناه إن رأيتم ذلك؛ يُحفظ النص الأصلي في ملاحظة المصدر.
@@ -120,7 +120,7 @@ export function ObjectiveLinksForm({
   const { state, onSubmit, pending } = useActionForm<AdminFormState>(action, {});
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
-      {state.message ? <Alert tone={state.ok ? "success" : "danger"}>{state.message}</Alert> : null}
+      {state.message && !state.ok ? <FormError>{state.message}</FormError> : null}
       <fieldset>
         <legend className="t-body text-sm">اختر الأهداف الإستراتيجية التي تخدمها هذه المبادرة.</legend>
         <div className="mt-4 flex flex-col gap-2">

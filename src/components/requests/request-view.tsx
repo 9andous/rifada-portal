@@ -194,7 +194,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, scopePro
       <PageBody className={acts ? "pb-28 lg:pb-10" : undefined}>
         <MarkRequestSeen requestId={r.id} />
         <div className="flex flex-col gap-4">
-          {caps.returnedNotice ? <Alert tone="warning" title="قيد التعديل لدى الجمعية — قد يتغير محتوى الطلب قبل إعادة التقديم" /> : null}
+          {caps.returnedNotice ? <Alert ruled tone="warning" title="قيد التعديل لدى الجمعية — قد يتغير محتوى الطلب قبل إعادة التقديم" /> : null}
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_23rem]">

@@ -38,7 +38,7 @@ function subscribeRoot(onChange: () => void) {
   return () => observer.disconnect();
 }
 
-const SEG_TEXT = "flex h-9 items-center justify-center rounded-sm px-3 text-[0.8125rem] font-semibold transition-colors";
+const SEG_TEXT = "flex h-9 items-center justify-center rounded-sm px-3 text-sm font-semibold transition-colors";
 
 const SEG = "flex items-center rounded-md border border-line bg-surface-muted p-0.5";
 const SEG_BUTTON = "flex h-9 min-w-9 items-center justify-center rounded-sm px-2 transition-colors [&_svg]:size-4";

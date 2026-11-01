@@ -94,7 +94,7 @@ export function KpiRow({ items, wrap }: { items: Kpi[]; wrap?: boolean }) {
               <dd
                 className={cn(
                   "relative flex min-w-0 items-center gap-1.5",
-                  wrap ? "text-sm font-semibold" : "text-[0.8125rem] font-semibold",
+                  wrap ? "text-sm font-semibold" : "text-sm font-semibold",
                   k.featured ? "text-band-ink-muted" : "text-ink-muted",
                 )}
               >

@@ -7,7 +7,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/form-bits";
 import { Select } from "@/components/ui/select";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import { toArabicDigits } from "@/lib/format";
 import { TEMPLATE_KIND_LABEL, TEMPLATE_KINDS, type TemplateKindKey } from "@/lib/validation/templates";
@@ -48,7 +48,7 @@ export function TemplateForm({
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-      {state.message ? <Alert tone={state.ok ? "success" : "danger"}>{state.message}</Alert> : null}
+      {state.message && !state.ok ? <FormError>{state.message}</FormError> : null}
       <Field id="tpl-kind" label="النوع" hint="الدليل للاطلاع، والنموذج يُعبأ ويُرفق بالطلب." error={e.kind} required>
         <Select id="tpl-kind" name="kind" defaultValue={defaults.kind} options={TEMPLATE_KINDS.map((k) => ({ value: k, label: TEMPLATE_KIND_LABEL[k] }))} />
       </Field>
@@ -107,7 +107,7 @@ export function ReplaceFileForm({ templateId, accept, maxMb }: { templateId: str
   }
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-      {state.message ? <Alert tone={state.ok ? "success" : "danger"}>{state.message}</Alert> : null}
+      {state.message && !state.ok ? <FormError>{state.message}</FormError> : null}
       <FileUploader key={round} accept={accept} maxMb={maxMb} error={state.errors?.file} label="الملف الجديد" />
       <div>
         <SubmitButton pending={pending} pendingLabel="جارٍ الاستبدال…">
@@ -123,7 +123,7 @@ export function TemplateStateActions({ id, title, published, archived }: { id: s
   const [result, setResult] = useState<AdminFormState | null>(null);
   return (
     <div className="flex flex-col gap-3">
-      {result?.message ? <Alert tone={result.ok ? "success" : "danger"}>{result.message}</Alert> : null}
+      {result?.message && !result.ok ? <FormError>{result.message}</FormError> : null}
       <div className="flex flex-wrap gap-3">
         {archived ? null : published ? (
           <ConfirmDialog
@@ -136,7 +136,11 @@ export function TemplateStateActions({ id, title, published, archived }: { id: s
             title="إلغاء نشر النموذج"
             description={<>يختفي «{title}» من قوائم الجمعيات والفريق، ولا يُنزَّل إلا لمدير النظام.</>}
             confirmLabel="إلغاء النشر"
-            onConfirm={async () => setResult(await setTemplatePublishedAction(id, false))}
+            onConfirm={async () => {
+              const r = await setTemplatePublishedAction(id, false);
+              setResult(r);
+              return r;
+            }}
           />
         ) : (
           <ConfirmDialog
@@ -150,7 +154,11 @@ export function TemplateStateActions({ id, title, published, archived }: { id: s
             title="نشر النموذج"
             description={<>يظهر «{title}» لكل من يسجل الدخول: مسؤولو الجمعيات والمشرفون ومدير الوحدة، ويستطيعون تنزيله.</>}
             confirmLabel="نشر"
-            onConfirm={async () => setResult(await setTemplatePublishedAction(id, true))}
+            onConfirm={async () => {
+              const r = await setTemplatePublishedAction(id, true);
+              setResult(r);
+              return r;
+            }}
           />
         )}
         <ConfirmDialog
@@ -171,7 +179,11 @@ export function TemplateStateActions({ id, title, published, archived }: { id: s
           description={archived ? <>يعود «{title}» غير منشور، ثم تنشره متى شئت.</> : <>يُلغى نشر «{title}» ويُنقل إلى المؤرشفات. لا يُحذف ملفه ولا سجل إصداراته.</>}
           confirmLabel={archived ? "استعادة" : "أرشفة"}
           confirmVariant={archived ? "primary" : "danger"}
-          onConfirm={async () => setResult(await setTemplateArchivedAction(id, !archived))}
+          onConfirm={async () => {
+            const r = await setTemplateArchivedAction(id, !archived);
+            setResult(r);
+            return r;
+          }}
         />
       </div>
     </div>

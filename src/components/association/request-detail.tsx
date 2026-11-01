@@ -9,7 +9,7 @@ import { StatusTimeline } from "@/components/requests/timeline";
 import { MarkRequestSeen } from "@/components/requests/mark-request-seen";
 import { buttonClasses } from "@/components/ui/button";
 import { RefNumber } from "@/components/ui/ref-number";
-import { Alert, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
+import { Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { statusHelp } from "@/lib/association-status";
 import { cn } from "@/lib/cn";
 import { formatGregorian, formatHijri, formatNumber, toArabicDigits } from "@/lib/format";
@@ -87,14 +87,12 @@ export function AssociationRequestView({
   request: r,
   uploads,
   slaDays,
-  justSubmitted,
   now = new Date(),
 }: {
   request: RequestDetail;
   uploads: { maxMb: number; allowedGroups: string[] };
   /** The review period in working days (settings), counted again from each submission. */
   slaDays: number;
-  justSubmitted?: boolean;
   now?: Date;
 }) {
   const help = statusHelp(r.status.key);
@@ -178,12 +176,6 @@ export function AssociationRequestView({
           <h1 className="text-2xl font-bold">{r.title || "طلب بلا عنوان"}</h1>
           <p>{[r.track?.name, r.requestType?.name].filter(Boolean).join(" · ")}</p>
         </div>
-
-        {justSubmitted && r.referenceNo ? (
-          <Alert tone="success" title="تم إرسال طلبكم بنجاح" icon={<CircleCheck strokeWidth={1.75} />} className="mb-5 text-base">
-            رقم الطلب <RefNumber value={r.referenceNo} className="font-bold" />. احتفظوا به للرجوع إليه؛ وتجدون حالة الطلب وملاحظات المشرف في هذه الصفحة.
-          </Alert>
-        ) : null}
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
           <div className="flex min-w-0 flex-col gap-5">

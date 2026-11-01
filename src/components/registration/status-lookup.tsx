@@ -8,7 +8,7 @@ import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
 import { Field, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/form-bits";
-import { Alert, StatusText } from "@/components/ui/surface";
+import { Alert, FormError, StatusText } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import { lookupRegistrationAction, type LookupState } from "@/server/actions/registration";
 
@@ -47,9 +47,9 @@ export function RegistrationStatusLookup() {
             <h2 className="text-lg font-bold text-brand-ink">بيانات الطلب</h2>
           </div>
           {state.message ? (
-            <Alert tone="danger" className="mb-5">
+            <FormError className="mb-5">
               {state.message}
-            </Alert>
+            </FormError>
           ) : null}
           <div className="flex flex-col gap-5">
             <Field id="l-ref" label="رقم الطلب" hint="مثل JM-7K2M9QXA" error={e.referenceNo} required>

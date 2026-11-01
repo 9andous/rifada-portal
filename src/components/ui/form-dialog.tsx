@@ -6,7 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { AdminFormState } from "@/server/actions/admin/state";
 import { Button, type ButtonProps } from "./button";
 import { SubmitButton } from "./form-bits";
-import { Alert } from "./surface";
+import { FormError } from "./surface";
 import { useActionForm } from "./use-action-form";
 
 /**
@@ -100,7 +100,7 @@ function DialogForm({
 
   return (
     <form onSubmit={onSubmit} noValidate className="mt-5 flex flex-col gap-5">
-      {state.message && !state.ok ? <Alert tone="danger">{state.message}</Alert> : null}
+      {state.message && !state.ok ? <FormError>{state.message}</FormError> : null}
       {children(state.errors ?? {})}
       <div className="flex justify-end gap-3">
         <Dialog.Close asChild>

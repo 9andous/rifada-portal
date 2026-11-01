@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CircleCheck, TriangleAlert } from "lucide-react";
+import { CircleCheck } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { EmptyState, ForbiddenState } from "@/components/states/states";
@@ -133,7 +133,7 @@ export default async function TaxonomyReviewPage() {
                   </span>
                   <div>
                     <p className="text-sm font-bold">لا توجد خلايا غير مؤكدة</p>
-                    <p className="t-caption mt-0.5 text-[0.8125rem]">
+                    <p className="t-caption mt-0.5 text-sm">
                       اتفقت القراءتان في جميع الخلايا البالغة {formatNumber(review.cellsRead)} خلية، ولم تُخمَّن أي علامة.
                     </p>
                   </div>
@@ -184,7 +184,7 @@ export default async function TaxonomyReviewPage() {
         </Panel>
 
         {changed.length > 0 ? (
-          <Alert tone="warning" icon={<TriangleAlert strokeWidth={1.75} />} title="بيانات تختلف عن الاستخراج" className="mt-6">
+          <Alert tone="warning" title="بيانات تختلف عن الاستخراج" className="mt-6">
             {formatNumber(changed.length)} مبادرة يختلف اسمها أو روابطها في قاعدة البيانات عما استُخرج من المصدر، وهي معلَّمة في الجداول.
           </Alert>
         ) : null}

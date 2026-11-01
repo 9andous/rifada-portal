@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
 import { SearchSelect } from "@/components/ui/search-select";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import { cn } from "@/lib/cn";
 import { citiesOf } from "@/lib/saudi-cities";
@@ -240,17 +240,17 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
 
             <div className="px-6 py-7 sm:px-8">
               {stepErrorCount(errors, step) > 0 || errors.form ? (
-                <Alert tone="danger" className="mb-6">
+                <FormError className="mb-6">
                   {errors.form ??
                     (stepErrorCount(errors, step) === 1
                       ? "يوجد حقل يحتاج إلى تصحيح في هذه الخطوة. صحّحوه ثم اضغطوا «التالي»."
                       : `توجد ${formatNumber(stepErrorCount(errors, step))} حقول تحتاج إلى تصحيح في هذه الخطوة. صحّحوها ثم اضغطوا «التالي».`)}
-                </Alert>
+                </FormError>
               ) : null}
               {state.message && !state.ok ? (
-                <Alert tone="danger" className="mb-6">
+                <FormError className="mb-6">
                   {state.message}
-                </Alert>
+                </FormError>
               ) : null}
 
               {/* Step 0: welcome */}

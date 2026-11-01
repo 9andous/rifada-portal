@@ -7,7 +7,7 @@ import { useRef, useState, useTransition } from "react";
 import { uploadRequestFile } from "@/components/requests/upload-file";
 import { Button } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { cn } from "@/lib/cn";
 import { formatFileSize, formatNumber } from "@/lib/format";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
@@ -145,9 +145,9 @@ export function AssociationMessages({
             </ul>
           ) : null}
           {message ? (
-            <Alert tone="danger" className="mt-3 text-base">
+            <FormError className="mt-3 text-base">
               {message}
-            </Alert>
+            </FormError>
           ) : null}
           {sent ? (
             <p role="status" className="mt-3 flex items-center gap-2 text-base font-semibold text-st-ok">

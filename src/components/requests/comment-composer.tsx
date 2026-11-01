@@ -6,7 +6,7 @@ import { toast } from "@/components/ui/toaster";
 import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { formatFileSize, formatNumber } from "@/lib/format";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
 import { addCommentAction } from "@/server/actions/requests";
@@ -113,9 +113,9 @@ export function CommentComposer({
         </ul>
       ) : null}
       {message ? (
-        <Alert tone="danger" className="mt-2">
+        <FormError className="mt-2">
           {message}
-        </Alert>
+        </FormError>
       ) : null}
       <div className="mt-2 flex flex-wrap items-center gap-3">
         {canWriteInternal ? (

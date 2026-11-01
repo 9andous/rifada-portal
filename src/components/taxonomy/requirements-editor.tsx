@@ -7,7 +7,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Select } from "@/components/ui/select";
-import { Alert, SectionTitle, StatusText } from "@/components/ui/surface";
+import { SectionTitle, StatusText } from "@/components/ui/surface";
 import { arabicList, toArabicDigits } from "@/lib/format";
 import { FIELD_TYPE_LABELS, FIELD_TYPES, type FieldTypeValue } from "@/lib/validation/taxonomy";
 import { UPLOAD_GROUP_LABELS, type UploadGroup } from "@/lib/validation/settings";
@@ -156,7 +156,7 @@ export function RequirementsEditor({
 
   return (
     <div className="flex flex-col gap-8">
-      {readOnly && readOnlyReason === "archived" ? <Alert tone="warning">المبادرة مؤرشفة؛ تُعرض متطلباتها للاطلاع فقط. استعدها لتعديلها.</Alert> : null}
+      {readOnly && readOnlyReason === "archived" ? <p className="text-sm text-ink-muted">المبادرة مؤرشفة؛ تُعرض متطلباتها للاطلاع فقط. استعدها لتعديلها.</p> : null}
 
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3">

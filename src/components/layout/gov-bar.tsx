@@ -71,7 +71,7 @@ function VerifyItem({ icon, title, children }: { icon: React.ReactNode; title: R
       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary [&_svg]:size-[18px]">{icon}</span>
       <div>
         <p className="text-sm font-bold text-ink">{title}</p>
-        <p className="mt-0.5 text-[0.8125rem] text-ink-muted">{children}</p>
+        <p className="mt-0.5 text-sm text-ink-muted">{children}</p>
       </div>
     </div>
   );

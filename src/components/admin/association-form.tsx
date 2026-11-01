@@ -6,7 +6,7 @@ import { Button, buttonClasses } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/form-bits";
 import { OneTimeSecret } from "@/components/ui/one-time-secret";
-import { Alert, SectionTitle } from "@/components/ui/surface";
+import { FormError, SectionTitle } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import type { AdminFormState } from "@/server/actions/admin/state";
 import { ImageField } from "./image-field";
@@ -55,9 +55,7 @@ export function AssociationForm({
         {state.credentials ? (
           <OneTimeSecret title="سُجّلت الجمعية وأُنشئ حساب مسؤولها" username={state.credentials.username} password={state.credentials.password} />
         ) : (
-          <Alert tone="success" title="سُجّلت الجمعية">
-            لم يُنشأ حساب مسؤول لها بعد؛ يمكنك إنشاؤه لاحقًا من صفحة المستخدمين.
-          </Alert>
+          <p className="text-sm text-ink-muted">لم يُنشأ حساب مسؤول لها بعد؛ يمكنك إنشاؤه لاحقًا من صفحة المستخدمين.</p>
         )}
         <div className="flex flex-wrap gap-3">
           {state.createdId ? (
@@ -94,7 +92,7 @@ export function AssociationForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-8" noValidate>
-      {state.message ? <Alert tone={state.ok ? "success" : "danger"}>{state.message}</Alert> : null}
+      {state.message && !state.ok ? <FormError>{state.message}</FormError> : null}
 
       <section className="flex flex-col gap-5">
         <SectionTitle as="h3" className="text-[0.9375rem]">

@@ -9,7 +9,7 @@ import { ListSkeleton } from "@/components/states/list-skeleton";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
 import { EmptyState } from "@/components/states/states";
 import { buttonClasses } from "@/components/ui/button";
-import { Alert, Panel, PanelHeader } from "@/components/ui/surface";
+import { Panel, PanelHeader } from "@/components/ui/surface";
 import { cn } from "@/lib/cn";
 import { formatNumber } from "@/lib/format";
 import { firstParam, type SearchParams } from "@/lib/list-params";
@@ -105,7 +105,6 @@ async function MyRequests({ user, searchParams }: { user: CurrentUser; searchPar
 
   return (
     <div className="flex flex-col gap-5">
-      {firstParam(params, "discarded") === "1" ? <Alert tone="success">حُذفت المسودة وملفاتها.</Alert> : null}
       <Panel>
         <PanelHeader
           icon={<ListChecks strokeWidth={1.75} />}

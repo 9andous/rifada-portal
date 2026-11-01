@@ -3,7 +3,7 @@
 import { Ban, CircleCheck } from "lucide-react";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { setAssociationActiveAction } from "@/server/actions/admin/associations";
 import type { AdminFormState } from "@/server/actions/admin/state";
 
@@ -24,7 +24,7 @@ export function AssociationStatusActions({
 
   return (
     <div className="flex flex-col gap-4">
-      {result?.message ? <Alert tone={result.ok ? "success" : "danger"}>{result.message}</Alert> : null}
+      {result?.message && !result.ok ? <FormError>{result.message}</FormError> : null}
       {isActive ? (
         <ConfirmDialog
           trigger={
@@ -42,7 +42,11 @@ export function AssociationStatusActions({
           }
           confirmLabel="تعطيل الجمعية"
           confirmVariant="danger"
-          onConfirm={async () => setResult(await setAssociationActiveAction(associationId, false))}
+          onConfirm={async () => {
+            const r = await setAssociationActiveAction(associationId, false);
+            setResult(r);
+            return r;
+          }}
         />
       ) : (
         <ConfirmDialog
@@ -55,7 +59,11 @@ export function AssociationStatusActions({
           title="تفعيل الجمعية"
           description={<>ستُفعَّل «{name}».{hasOfficer ? " يبقى حساب مسؤولها معطلًا حتى تفعّله من صفحة المستخدم." : ""}</>}
           confirmLabel="تفعيل الجمعية"
-          onConfirm={async () => setResult(await setAssociationActiveAction(associationId, true))}
+          onConfirm={async () => {
+            const r = await setAssociationActiveAction(associationId, true);
+            setResult(r);
+            return r;
+          }}
         />
       )}
     </div>
