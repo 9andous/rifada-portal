@@ -60,10 +60,6 @@ const registrationFields = z.object({
   contactPhone: requiredPhone,
   contactEmail: requiredEmail,
   website: optionalUrl,
-  programNumbers: z
-    .array(z.coerce.number().int().min(1).max(99))
-    .min(1, "اختاروا برنامجًا واحدًا على الأقل من برامج الرئاسة.")
-    .transform((v) => [...new Set(v)].sort((a, b) => a - b)),
   officerName: fullNameSchema,
   officerNationalId: z
     .string()
@@ -102,15 +98,14 @@ export const REGISTRATION_FIELD_STEP: Record<string, number> = {
   contactPhone: 1,
   contactEmail: 1,
   website: 1,
-  programNumbers: 2,
-  officerName: 3,
-  officerNationalId: 3,
-  officerPhone: 3,
-  officerEmail: 3,
-  username: 3,
-  password: 3,
-  confirmPassword: 3,
-  pledge: 4,
+  officerName: 2,
+  officerNationalId: 2,
+  officerPhone: 2,
+  officerEmail: 2,
+  username: 2,
+  password: 2,
+  confirmPassword: 2,
+  pledge: 3,
 };
 
 type RegistrationField = keyof typeof registrationFields.shape;

@@ -144,3 +144,13 @@ Plain wording, plural of respect, one idea per sentence. Defined once in
 | Messages | الرسائل مع الوحدة الإشرافية / اكتبوا رسالتكم إلى الوحدة الإشرافية / من الوحدة الإشرافية — … / منكم — … | |
 | Files | اختيار ملف لإرفاقه / تم الإرفاق / لم يُرفق بعد / استبدال بنسخة أحدث | «استبدال بنسخة أحدث» adds a new version; earlier versions stay with the unit. |
 | Help page | Seven questions with numbered steps («كيف أقدّم طلبًا جديدًا؟» …). | Please check every step against the screens. |
+
+## Owner's review of 2026-11-02 (D-126, D-127)
+
+The track wording of D-126 (registration step, «مسارات الجمعية», the no-tracks refusals) was removed by D-127.
+
+| Where | Current text | Note |
+|---|---|---|
+| Supervisor home, banner | طلب جديد / طلبان جديدان / ٣ طلبات جديدة / ١١ طلبًا جديدًا + بانتظار مراجعتك; button «مراجعتها الآن» | Number agreement for «جديد». |
+| Supervisor home, tabs | الطلبات الأخيرة (الأحدث تقديمًا أولًا) / ذات أولوية (المعادة للتعديل والمتأخرة، الأقرب مهلة أولًا) | |
+| Supervisor home, empty tab | لا توجد طلبات ذات أولوية / لا توجد في قائمتك طلبات معادة للتعديل أو متأخرة عن المهلة. | |

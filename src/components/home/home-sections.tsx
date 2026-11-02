@@ -283,9 +283,11 @@ export function InitiativeSection() {
   return (
     <section aria-labelledby="initiative-title" id="initiative" className="scroll-mt-28 border-y border-line bg-surface">
       <div className={cn(WRAP, "py-16")}>
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr]">
+        <SectionHead id="initiative-title" eyebrow="عن المنصة" title={INITIATIVE.name} />
+        {/* The heading spans the row; the photo starts at the paragraph and ends with the cards (owner's request). */}
+        <div className="mt-3 grid gap-10 lg:grid-cols-[1.2fr_1fr]">
           <div>
-            <SectionHead id="initiative-title" eyebrow="عن المنصة" title={INITIATIVE.name} lead={INITIATIVE.intro} />
+            <p className="max-w-3xl text-[0.9375rem] leading-[1.9] text-ink-muted">{INITIATIVE.intro}</p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {INITIATIVE.tracks.map((t, i) => (
                 <div key={t.title} className="rounded-xl border border-line bg-canvas p-5">

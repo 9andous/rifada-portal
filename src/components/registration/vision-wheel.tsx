@@ -10,15 +10,29 @@ export type WheelSlide = { image: string; alt: string; label: string; text: stri
 // photo round to face the form while its quote fades in over the slice. Sector k sits at
 // k × sweep degrees clockwise from the facing direction, so turning the wheel by −step × sweep
 // brings sector `step` to face it. `--wheel` (set by the page) is the visible width of the slice.
+// The sector in view opens to ACTIVE_SWEEP degrees so its quote has room; the others share the rest
+// and shift by a few degrees each, so the turn still reads as one movement.
 const DIAMETER = 760;
+const ACTIVE_SWEEP = 110;
+
+const rad = (deg: number) => (deg * Math.PI) / 180;
 
 /** Rotating wheel of step photos and quotes, at the end edge of the registration page (xl+). */
 export function VisionWheel({ slides, active }: { slides: WheelSlide[]; active: number }) {
-  const sweep = 360 / slides.length;
-  // Half-chord of a sector at its rim, as a share of the diameter: the photo box's height.
-  const box = Math.sin(((sweep / 2) * Math.PI) / 180);
-  const tan = Math.tan(((sweep / 2) * Math.PI) / 180);
+  const n = slides.length;
+  const sweep = 360 / n;
+  const restSweep = n > 1 ? (360 - ACTIVE_SWEEP) / (n - 1) : 360;
   const slide = slides[active];
+
+  // Sector k sits `d` places clockwise from the one in view. Its centre, measured from the facing
+  // direction, is ACTIVE_SWEEP/2 + (d − ½) × restSweep; `shift` is its offset from the equal layout.
+  const sector = (k: number) => {
+    const d = (((k - active) % n) + n) % n;
+    const own = d === 0 ? ACTIVE_SWEEP : restSweep;
+    const shift = d === 0 ? 0 : ACTIVE_SWEEP / 2 + (d - 0.5) * restSweep - d * sweep;
+    // Half-chord of the sector at its rim, as a share of the diameter: the photo box's height.
+    return { half: own / 2, shift, box: Math.sin(rad(own / 2)), tan: Math.tan(rad(own / 2)) };
+  };
 
   return (
     <div className="pointer-events-none absolute inset-y-0 end-0 hidden w-[calc(var(--wheel)+3rem)] overflow-clip xl:block">
@@ -36,28 +50,34 @@ export function VisionWheel({ slides, active }: { slides: WheelSlide[]; active: 
           }}
         >
           <div className="absolute inset-0 overflow-hidden rounded-full">
-            {slides.map((s, k) => (
+            {slides.map((s, k) => {
+              const { half, shift, box, tan } = sector(k);
+              return (
               <div
                 key={s.image}
                 aria-hidden="true"
-                className="absolute inset-0"
+                className="absolute inset-0 transition-[transform,clip-path] duration-[1100ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
                 style={{
-                  transform: `rotate(${k * sweep}deg)`,
+                  transform: `rotate(${k * sweep + shift}deg)`,
                   clipPath: `polygon(50% 50%, 150% ${50 - 100 * tan}%, 150% ${50 + 100 * tan}%)`,
                 }}
               >
-                <div className="absolute" style={{ left: "50%", width: "50%", top: `${50 - 50 * box}%`, height: `${100 * box}%` }}>
+                <div
+                  className="absolute transition-[top,height] duration-[1100ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
+                  style={{ left: "50%", width: "50%", top: `${50 - 50 * box}%`, height: `${100 * box}%` }}
+                >
                   <Image src={s.image} alt="" fill sizes="320px" className="object-cover" />
                 </div>
                 <span aria-hidden="true" className={cn("absolute inset-0 transition-colors duration-700", k === active ? "bg-band/70" : "bg-band/90")} />
                 {/* Gold spoke on the sector's leading edge. */}
                 <span
                   aria-hidden="true"
-                  className="absolute top-1/2 h-1 w-1/2 bg-band-gold"
-                  style={{ left: "50%", marginTop: -2, transformOrigin: "0 50%", transform: `rotate(${sweep / 2}deg)` }}
+                  className="absolute top-1/2 h-1 w-1/2 bg-band-gold transition-transform duration-[1100ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
+                  style={{ left: "50%", marginTop: -2, transformOrigin: "0 50%", transform: `rotate(${half}deg)` }}
                 />
               </div>
-            ))}
+              );
+            })}
             {/* Hub: a patterned disc with a gold ring, so the photos read as a band around it. */}
             <div className="band-scope absolute inset-[40%] overflow-hidden rounded-full border-4 border-band-gold bg-band">
               <GeometricPattern size={40} />

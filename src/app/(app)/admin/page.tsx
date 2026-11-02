@@ -3,6 +3,7 @@ import Link from "next/link";
 import { History } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { BandDate } from "@/components/dashboard/band-date";
+import { ProgramsCard, TracksCard } from "@/components/dashboard/cards";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { buttonClasses } from "@/components/ui/button";
@@ -13,13 +14,14 @@ import { formatNumber, greeting } from "@/lib/format";
 import { requireUser } from "@/server/auth/session";
 import { ROLE_LABELS, ROLES } from "@/server/authz/roles";
 import { db } from "@/server/db";
+import { getByProgram, getByTrack } from "@/server/services/dashboard";
 
 export const metadata: Metadata = { title: "إدارة النظام" };
 
 export default async function AdminDashboard() {
   const user = await requireUser();
   const now = new Date();
-  const [usersByRole, associations, programs, initiatives, objectives, recentAudit] = await Promise.all([
+  const [usersByRole, associations, programs, initiatives, objectives, recentAudit, byProgram, byTrack] = await Promise.all([
     db.user.groupBy({ by: ["role"], where: { isActive: true }, _count: { _all: true } }),
     db.association.count({ where: { isActive: true } }),
     db.program.count({ where: { archivedAt: null } }),
@@ -30,6 +32,8 @@ export default async function AdminDashboard() {
       take: 8,
       select: { id: true, action: true, createdAt: true, actor: { select: { name: true } } },
     }),
+    getByProgram(user),
+    getByTrack(user),
   ]);
   const roleCount = (role: string) => usersByRole.find((r) => r.role === role)?._count._all ?? 0;
   const totalUsers = usersByRole.reduce((sum, r) => sum + r._count._all, 0);
@@ -54,6 +58,11 @@ export default async function AdminDashboard() {
         }
       />
       <PageBody className="flex flex-col gap-5">
+        {/* The requests per programme and per track, as on the unit manager's home (owner's request). */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr]">
+          <ProgramsCard rows={byProgram} hrefBase="/admin/requests" />
+          <TracksCard data={byTrack} tracksHref="/admin/taxonomy/tracks" />
+        </div>
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.4fr]">
           <Panel>
             <PanelHeader title="المستخدمون حسب الدور" description="الحسابات النشطة" />

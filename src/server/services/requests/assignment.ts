@@ -79,7 +79,7 @@ export async function assignOnSubmission(
   const toUserId = chosen?.id ?? null;
   const changed = toUserId !== request.assignedSupervisorId;
   if (changed) {
-    await tx.request.update({ where: { id: request.id }, data: { assignedSupervisorId: toUserId } });
+    await tx.request.update({ where: { id: request.id }, data: { assignedSupervisorId: toUserId, reviewerOpenedAt: null } });
     await tx.assignmentHistory.create({
       data: { requestId: request.id, fromUserId: request.assignedSupervisorId, toUserId, actorId: null, reason: null },
     });
@@ -144,7 +144,7 @@ export async function reassignRequests(actor: Actor, ids: readonly string[], toU
       await lockTrack(tx, request.trackId);
       const moved = await tx.request.updateMany({
         where: { id, statusId: request.statusId, assignedSupervisorId: request.assignedSupervisorId },
-        data: { assignedSupervisorId: toUserId },
+        data: { assignedSupervisorId: toUserId, reviewerOpenedAt: null },
       });
       if (moved.count !== 1) return skip("تغيّر الطلب أثناء التنفيذ؛ أعد المحاولة.");
       await tx.assignmentHistory.create({
@@ -170,50 +170,6 @@ export async function reassignRequests(actor: Actor, ids: readonly string[], toU
     else if ("skip" in result && result.skip) outcome.skipped.push(result.skip);
   }
   return { ok: true, outcome };
-}
-
-/** Data for the unit manager's «الإسناد» screen. */
-export async function assignmentOverview(actor: Actor) {
-  assertCan(actor, "requests.assign");
-  const openIds = await statusIds(OPEN_STATUS_KEYS);
-  const [unassigned, inactiveAssigned, tracks] = await Promise.all([
-    db.request.findMany({
-      where: { referenceNo: { not: null }, statusId: { in: openIds }, assignedSupervisorId: null },
-      orderBy: [{ submittedAt: "asc" }, { id: "asc" }],
-      take: 200,
-      select: {
-        id: true,
-        referenceNo: true,
-        title: true,
-        submittedAt: true,
-        slaDueAt: true,
-        trackId: true,
-        track: { select: { number: true, name: true } },
-        association: { select: { name: true } },
-        status: { select: { key: true, name: true, colorToken: true } },
-      },
-    }),
-    db.request.findMany({
-      where: { referenceNo: { not: null }, statusId: { in: openIds }, assignedSupervisor: { isActive: false } },
-      orderBy: [{ submittedAt: "asc" }, { id: "asc" }],
-      take: 200,
-      select: {
-        id: true,
-        referenceNo: true,
-        title: true,
-        submittedAt: true,
-        slaDueAt: true,
-        trackId: true,
-        track: { select: { number: true, name: true } },
-        association: { select: { name: true } },
-        status: { select: { key: true, name: true, colorToken: true } },
-        assignedSupervisor: { select: { name: true } },
-      },
-    }),
-    db.track.findMany({ where: { archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true } }),
-  ]);
-  const loads = await Promise.all(tracks.map(async (t) => ({ track: t, supervisors: await rankedSupervisors(db, t.id) })));
-  return { unassigned, inactiveAssigned, loads };
 }
 
 /** Active supervisors with their tracks, for the reassignment pickers. */

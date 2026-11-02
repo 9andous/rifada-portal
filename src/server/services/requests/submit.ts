@@ -119,6 +119,8 @@ export async function submitRequest(actor: Actor, id: string, now: Date = new Da
           slaDueAt,
           decidedAt: null,
           requirementsSnapshot: requirements,
+          // New to the supervisor again, so their dashboard flags it (D-127).
+          reviewerOpenedAt: null,
         },
       });
       const supervisorId = await assignOnSubmission(tx, { ...request, referenceNo }, actor.id);

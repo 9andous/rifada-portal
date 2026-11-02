@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { BadgeCheck, Building2, KeyRound, Layers, PenLine, UserRound } from "lucide-react";
+import { BadgeCheck, Building2, KeyRound, PenLine, UserRound } from "lucide-react";
 import { AssociationProfileForm } from "@/components/association/profile-form";
-import { ProgramIcon } from "@/components/brand/program-icon";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -92,23 +91,6 @@ export default async function AssociationProfilePage() {
               </div>
             </Panel>
 
-            <Panel>
-              <PanelHeader icon={<Layers strokeWidth={1.75} />} title="مجالات العمل" description="برامج الرئاسة التي اختارتها الجمعية عند التسجيل." />
-              {a.programs.length ? (
-                <ul className="grid gap-3 px-6 pb-6 sm:grid-cols-2">
-                  {a.programs.map((p) => (
-                    <li key={p.number} className="flex items-center gap-3 rounded-lg border border-line bg-surface-muted p-3">
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary [&_svg]:size-5">
-                        <ProgramIcon number={p.number} />
-                      </span>
-                      <span className="text-[0.9375rem] font-bold text-ink">{p.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="px-6 pb-6 text-base text-ink-muted">لم تُحدَّد مجالات عمل للجمعية؛ يمكنكم التقديم في أي من برامج الرئاسة.</p>
-              )}
-            </Panel>
           </div>
 
           <div className="flex flex-col gap-5 lg:sticky lg:top-[168px]">

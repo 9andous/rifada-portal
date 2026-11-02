@@ -182,9 +182,9 @@ model Track {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  programs    TrackProgram[]
-  supervisors SupervisorTrack[]
-  requests    Request[]
+  programs     TrackProgram[]
+  supervisors  SupervisorTrack[]
+  requests     Request[]
 
   @@map("tracks")
 }
@@ -434,6 +434,8 @@ model Request {
   // The initiative's requirements as they stood at the last successful submission (D-077).
   requirementsSnapshot  Json?
   assignedSupervisorId  String?
+  // When the assigned supervisor first opened the request; null means it is new to them (D-127).
+  reviewerOpenedAt      DateTime?
   // Who acts next while the request is under review (D-116): the supervisor, then the unit manager.
   reviewStage           ReviewStage @default(SUPERVISOR)
   createdById           String
@@ -892,7 +894,8 @@ model AssociationRegistration {
   contactPhone      String
   contactEmail      String?
   website           String?
-  programNumbers    Int[]
+  /// Legacy: programmes chosen in applications made before registration stopped asking (D-127).
+  programNumbers    Int[]              @default([])
   officerName       String
   officerUsername   String
   officerEmail      String?

@@ -1,21 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  CircleCheck,
-  Clock,
-  Eye,
-  FileStack,
-  FileText,
-  Gauge,
-  Inbox,
-  Layers,
-  Building2,
-  UserRoundCheck,
-  Workflow,
-} from "lucide-react";
+import { CircleCheck, Clock, Eye, FileText, Gauge, Inbox, UserRoundCheck } from "lucide-react";
 import { BandDate } from "@/components/dashboard/band-date";
-import { MonthlyCard, OverdueCard, ProgramsCard, StatusDistributionCard, TracksCard, WorkloadCard } from "@/components/dashboard/cards";
-import { KpiRow, QuickActions } from "@/components/dashboard/kpis";
+import { MonthlyCard, ProgramsCard, StatusDistributionCard, TracksCard, WorkloadCard } from "@/components/dashboard/cards";
+import { KpiRow } from "@/components/dashboard/kpis";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { buttonClasses } from "@/components/ui/button";
@@ -24,7 +12,7 @@ import { Alert } from "@/components/ui/surface";
 import { daysPhrase, formatNumber, greeting, requestsPhrase } from "@/lib/format";
 import { requireUser } from "@/server/auth/session";
 import { db } from "@/server/db";
-import { getByProgram, getByTrack, getMonthly, getOverdue, getOverview, getWorkload, MONTH_RANGES } from "@/server/services/dashboard";
+import { getByProgram, getByTrack, getMonthly, getOverview, getWorkload, MONTH_RANGES } from "@/server/services/dashboard";
 import { getSetting } from "@/server/settings/read";
 
 export const metadata: Metadata = { title: "نظرة عامة على الإشراف" };
@@ -36,16 +24,13 @@ export default async function ManagerDashboard({ searchParams }: PageProps<"/man
   const now = new Date();
   const asked = Number((await searchParams).months);
   const range = (MONTH_RANGES as readonly number[]).includes(asked) ? asked : 6;
-  const [overview, monthly, programs, tracks, workload, overdue, slaDays, associations, initiatives, awaiting] = await Promise.all([
+  const [overview, monthly, programs, tracks, workload, slaDays, awaiting] = await Promise.all([
     getOverview(user, now),
     getMonthly(user, range, now),
     getByProgram(user),
     getByTrack(user),
     getWorkload(now),
-    getOverdue(user, 6, now),
     getSetting("sla.workingDays"),
-    db.association.count({ where: { isActive: true } }),
-    db.initiative.count({ where: { archivedAt: null } }),
     // Evaluated and signed by the supervisor, waiting for the final approval (D-116).
     db.request.count({ where: { status: { key: "UNDER_REVIEW" }, reviewStage: "MANAGER" } }),
   ]);
@@ -118,7 +103,6 @@ export default async function ManagerDashboard({ searchParams }: PageProps<"/man
                 alert: overview.unassigned > 0,
                 value: formatNumber(overview.unassigned),
                 caption: "بانتظار مشرف",
-                href: "/manager/assignment",
               },
             ]}
           />
@@ -151,55 +135,22 @@ export default async function ManagerDashboard({ searchParams }: PageProps<"/man
                     عرض المتأخرة
                   </Link>
                 ) : null}
-                {overview.unassigned ? (
-                  <Link href="/manager/assignment" className={buttonClasses("dark", "sm")}>
-                    <UserRoundCheck aria-hidden="true" />
-                    إسناد الآن
-                  </Link>
-                ) : null}
               </>
             }
           >
-            أسنِد الطلبات المعلّقة وتابع المشرفين لتفادي تجاوز مهلة المراجعة.
+            تابع المشرفين لتفادي تجاوز مهلة المراجعة.
           </Alert>
         ) : null}
 
-        <QuickActions
-          items={[
-            {
-              label: "إسناد الطلبات",
-              icon: UserRoundCheck,
-              href: "/manager/assignment",
-              hint: overview.unassigned ? `${requestsPhrase(overview.unassigned)} بانتظار الإسناد` : "لا طلبات بانتظار الإسناد",
-            },
-            { label: "جميع الطلبات", icon: Inbox, href: REQUESTS, hint: `${formatNumber(overview.open)} مفتوحة من ${formatNumber(overview.total)}` },
-            { label: "الجمعيات", icon: Building2, href: "/manager/associations", hint: `${formatNumber(associations)} جمعية نشطة` },
-            { label: "البرامج والمبادرات", icon: Layers, href: "/manager/taxonomy", hint: `${formatNumber(programs.length)} برامج و${formatNumber(initiatives)} مبادرة` },
-            { label: "دورة حياة الطلب", icon: Workflow, href: "/manager/taxonomy/lifecycle", hint: `المهلة ${daysPhrase(slaDays)} عمل`, gold: true },
-            { label: "الأدلة والنماذج", icon: FileStack, href: "/manager/taxonomy/templates", hint: "المتاحة للجمعيات", gold: true },
-          ]}
-        />
-
-        {/* Card order by the owner's review (2026-11-01): programmes and tracks first, then overdue
-            requests and the status distribution. */}
+        {/* Card order by the owner's review (2026-11-01): programmes and tracks first, then the status
+            distribution. The overdue card, quick links and assignment screen were removed on 2026-11-02. */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr]">
           <ProgramsCard rows={programs} hrefBase={REQUESTS} />
           <TracksCard data={tracks} tracksHref="/manager/taxonomy/tracks" />
         </div>
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <OverdueCard
-            rows={overdue}
-            total={overview.overdue}
-            slaDays={slaDays}
-            now={now}
-            hrefBase={REQUESTS}
-            assignHref="/manager/assignment"
-            listHref={`${REQUESTS}?overdue=1&sort=slaDueAt&dir=asc`}
-          />
-          <StatusDistributionCard rows={overview.byStatus} href={REQUESTS} />
-        </div>
+        <StatusDistributionCard rows={overview.byStatus} href={REQUESTS} />
         <MonthlyCard months={monthly} range={range} rangeHref={(n) => (n === 6 ? "/manager" : `/manager?months=${n}`)} />
-        <WorkloadCard rows={workload} unassigned={overview.unassigned} assignHref="/manager/assignment" requestsHref={REQUESTS} />
+        <WorkloadCard rows={workload} unassigned={overview.unassigned} requestsHref={REQUESTS} />
       </PageBody>
     </>
   );

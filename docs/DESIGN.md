@@ -23,8 +23,8 @@ figures, icons, navigation, logos and timeline).
   navigation, 20 (`size-5`) in tiles and page states; 14 (`size-3.5`) only beside 12–13px captions
   (breadcrumbs, gov banner, footer link, sort arrows). Navigation items carry an icon.
 - **One icon per concept** (`src/components/layout/nav-icon.tsx` and the pages): requests Inbox,
-  templates and documents FileStack, users UsersRound, adding a user UserRoundPlus, assignment
-  UserRoundCheck, registration applications ClipboardList, reports ChartColumn, objectives Target,
+  templates and documents FileStack, users UsersRound, adding a user UserRoundPlus, tracks
+  Waypoints, registration applications ClipboardList, reports ChartColumn, objectives Target,
   initiatives Lightbulb. Icons are kept where they help find or understand something (navigation,
   actions, status, programmes); card headers and key figures carry none.
 - Right-to-left with logical properties only (`ms-/me-/ps-/pe-`, `start/end`, `border-s/e`).
@@ -187,7 +187,7 @@ signed-in pages the white header and the green bar **stick to the top together**
 
 - **Items per role** (short lists; items whose screens arrive in later phases are shown as
   unavailable, not clickable, and become links when their phase ships):
-  - Unit manager: الرئيسية، الطلبات، الإسناد، الجمعيات، البرامج والمبادرات، التقارير
+  - Unit manager: الرئيسية، الطلبات، الجمعيات، البرامج والمبادرات، التقارير (no gold button; «الإسناد» removed, D-126)
   - Super admin: الرئيسية، المستخدمون، الجمعيات، البرامج والمبادرات، الإعدادات، سجل التدقيق
   - Supervisor: الرئيسية، قائمة أعمالي، الطلبات، الجمعيات، النماذج، التقارير
   - Association officer: الرئيسية، طلباتي، النماذج (published templates)، ملف الجمعية، المساعدة (D-102)

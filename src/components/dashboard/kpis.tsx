@@ -117,35 +117,3 @@ export function KpiRow({ items, wrap }: { items: Kpi[]; wrap?: boolean }) {
     </dl>
   );
 }
-
-export type QuickAction = { label: string; hint: ReactNode; href: string; icon: LucideIcon; gold?: boolean };
-
-/** Shortcut tiles under the key figures (handoff `.qa`): icon tile, title and a one-line hint. */
-export function QuickActions({ items, label = "اختصارات" }: { items: QuickAction[]; label?: string }) {
-  const cols = items.length >= 6 ? "sm:grid-cols-3 xl:grid-cols-6" : items.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-4";
-  return (
-    <nav aria-label={label}>
-      <ul className={cn("grid grid-cols-1 gap-3", cols)}>
-        {items.map((a) => {
-          const Icon = a.icon;
-          return (
-            <li key={a.label}>
-              <Link href={a.href} className="card-link flex h-full items-center gap-3 rounded-lg border border-line bg-surface p-3.5 shadow-1">
-                <span
-                  aria-hidden="true"
-                  className={cn("flex size-[42px] shrink-0 items-center justify-center rounded-md [&_svg]:size-5", a.gold ? "bg-accent-soft text-accent-ink" : "bg-primary-soft text-primary")}
-                >
-                  <Icon strokeWidth={1.75} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-[0.9375rem] font-bold leading-snug text-ink">{a.label}</span>
-                  <span className="block truncate text-xs text-ink-subtle">{a.hint}</span>
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
-}

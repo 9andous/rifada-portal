@@ -9,7 +9,7 @@ const errorsOf = (step: number, raw: Record<string, unknown>) => {
 
 describe("registration steps", () => {
   it("gives every field to exactly one step", () => {
-    const all = [1, 2, 3, 4].flatMap(registrationStepFields);
+    const all = [1, 2, 3].flatMap(registrationStepFields);
     expect(all.sort()).toEqual(Object.keys(REGISTRATION_FIELD_STEP).sort());
   });
 
@@ -50,12 +50,7 @@ describe("registration steps", () => {
     expect(errorsOf(1, step1)).toEqual({});
   });
 
-  it("requires a programme on step 2", () => {
-    expect(errorsOf(2, { programNumbers: [] }).programNumbers).toBeDefined();
-    expect(errorsOf(2, { programNumbers: ["1"] })).toEqual({});
-  });
-
-  it("reports mismatched passwords on step 3", () => {
+  it("reports mismatched passwords on step 2", () => {
     const step3 = {
       officerName: "فهد بن سعد",
       officerNationalId: "",
@@ -65,7 +60,7 @@ describe("registration steps", () => {
       password: "Jamiya-2026-pass",
       confirmPassword: "Jamiya-2026-other",
     };
-    expect(errorsOf(3, step3)).toEqual({ confirmPassword: "كلمتا المرور غير متطابقتين." });
-    expect(errorsOf(3, { ...step3, confirmPassword: step3.password })).toEqual({});
+    expect(errorsOf(2, step3)).toEqual({ confirmPassword: "كلمتا المرور غير متطابقتين." });
+    expect(errorsOf(2, { ...step3, confirmPassword: step3.password })).toEqual({});
   });
 });

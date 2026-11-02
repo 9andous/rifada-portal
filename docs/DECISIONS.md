@@ -1305,3 +1305,41 @@ and no running text is set below 0.875rem (`t-caption`, `t-label`, `text-xs` and
 D-102's one-step-larger association area. Data tables draw a hairline between columns so each field
 reads as its own cell. On the unit manager's home, «الطلبات حسب البرنامج» and «التوزيع على المسارات»
 come first, then «طلبات تجاوزت مهلة المراجعة» and «توزيع الطلبات حسب الحالة».
+
+**D-126 Owner's review of 2026-11-02: assignment screen removed, tracks at registration, Hijri-only
+table dates, Nafath hidden.** (1) The unit manager's «الإسناد» screen, its navigation item, the gold
+«إسناد الطلبات» button and every dashboard link to it are removed. Automatic assignment on submission
+(D-082) and «إعادة إسناد» on a request and in bulk on the lists stay. (2) The dashboards lose
+«طلبات تجاوزت مهلة المراجعة» (manager and supervisor) and the manager's shortcut tiles; the key
+figure «متأخرة عن المهلة» stays. The super admin's home gains «الطلبات حسب البرنامج» and «التوزيع على
+المسارات» under the key figures. (3) Registration step 3 lists the tracks instead of the programmes
+(`AssociationRegistration.trackNumbers`; `programNumbers` is kept unwritten, its rows were backfilled
+to tracks through `TrackProgram`). Approval copies the tracks to the new `AssociationTrack` join, and
+the super admin edits them on the association's page («مسارات الجمعية», audited as
+`association.tracks_updated`). An association files new requests only in its tracks; with none recorded
+it cannot file one («لم تُحدَّد مسارات جمعيتكم بعد»), which applies to associations created by the
+admin until their tracks are set. Drafts keep a track chosen before. (4) Dates in table cells are Hijri
+with the time, without the Gregorian date (`<DateDisplay variant="hijri">`); dates outside tables are
+unchanged. (5) Sign-in through Nafath is hidden (`NAFATH_ENABLED` in the login form, the mock flow kept),
+and «نسيت كلمة المرور؟» sits centred under «تسجيل الدخول». (6) The registration wheel opens the slice
+in view to 110° (the others share the rest) so its quote fits; the home page's photo beside «عن المنصة»
+starts at the paragraph and ends with the track cards.
+
+**D-127 Owner's review of 2026-11-02, second round: registration in four steps, track limit dropped,
+completeness check and drafts hidden, supervisor queue tabs, «new request» banner.** (1) Registration
+no longer has «مجالات العمل»: four steps (welcome, association, officer and account, values and
+pledge). The owner chose to drop D-126's track limit rather than have someone set tracks, so
+associations file requests in any active track again; `AssociationTrack`,
+`AssociationRegistration.trackNumbers`, the admin's «مسارات الجمعية» panel and the no-tracks block are
+removed (migration `20261102180000_drop_association_tracks`). (2) From xl the registration step list
+sits against the start edge and the form takes the width up to the wheel; the value cards use two
+columns until 2xl. (3) «فحص الاكتمال» runs within the submission (D-123) and no request waits in it, so
+staff no longer see it: the request history leaves out the draft and the completeness check, the
+request stepper has three steps (four for staff), and status filters, counts and the status chart omit
+it (totals still count any such request). The officer's own list keeps «مسودة». (4) The supervisor's
+«طلبات قائمتي» has two tabs: «الطلبات الأخيرة» (newest submission first) and «ذات أولوية» (returned or
+past the review deadline, nearest deadline first; list param `priority=1`). (5) `Request.reviewerOpenedAt`
+records the assigned supervisor's first opening of a request; it is cleared on assignment, reassignment
+and resubmission. The supervisor's home shows «… جديد بانتظار مراجعتك» with «مراجعتها الآن» while any
+are unopened (list param `unopened=1`). It is view state, not audited; existing requests were marked
+opened by the migration.

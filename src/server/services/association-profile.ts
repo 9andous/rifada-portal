@@ -18,18 +18,11 @@ export async function getOwnAssociationProfile(actor: Actor) {
     where: { id: actor.associationId },
     include: {
       officer: { select: { name: true, username: true, email: true, phone: true, lastLoginAt: true, createdAt: true } },
-      registration: { select: { referenceNo: true, programNumbers: true, foundedYear: true, website: true, createdAt: true, reviewedAt: true } },
+      registration: { select: { referenceNo: true, foundedYear: true, website: true, createdAt: true, reviewedAt: true } },
     },
   });
   if (!association) return null;
-  const programs = association.registration?.programNumbers.length
-    ? await db.program.findMany({
-        where: { number: { in: association.registration.programNumbers } },
-        orderBy: { number: "asc" },
-        select: { number: true, name: true },
-      })
-    : [];
-  return { ...association, logo: imageUrl("association", association.id, association.logoKey), programs };
+  return { ...association, logo: imageUrl("association", association.id, association.logoKey) };
 }
 
 export type OwnAssociationProfile = NonNullable<Awaited<ReturnType<typeof getOwnAssociationProfile>>>;

@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { decideRequests } from "@/server/services/requests/decisions";
 import { getRequestDetail, listRequests, parseRequestListParams } from "@/server/services/requests/read";
 import { approveRequests, changeRequestScope, editEvaluation, evaluateRequest } from "@/server/services/requests/review";
+import { reassignRequests } from "@/server/services/requests/assignment";
 import { submitRequest } from "@/server/services/requests/submit";
 import { saveDraft } from "@/server/services/requests/drafts";
 import { db, resetDatabase } from "../support/db";
@@ -193,5 +194,52 @@ describe("the association sees none of it", () => {
     expect(await db.notification.count({ where: { userId: w.users.officer.id, type: { in: ["request.evaluated", "request.scope_changed", "request.manager_decided"] } } })).toBe(0);
     const staffView = await getRequestDetail(w.actors.manager, id);
     expect(staffView?.review).toMatchObject({ stage: "MANAGER", evaluations: [expect.objectContaining({ reviewer: expect.any(String) })], scopeChanges: [expect.any(Object)] });
+  });
+});
+
+describe("the supervisor's «new request» banner and «ذات أولوية» tab (D-127)", () => {
+  const unopened = (actor: RequestWorld["actors"]["supervisor"]) =>
+    listRequests(actor, parseRequestListParams({ unopened: "1" }, "queue"), "queue").then((p) => p.items.map((r) => r.id));
+
+  it("lists a submitted request until its own supervisor opens it, and again after reassignment", async () => {
+    const { id } = await submittedRequest(w);
+    const assigned = (await db.request.findUniqueOrThrow({ where: { id } })).assignedSupervisorId;
+    const [mine, other] = assigned === w.users.supervisor2.id ? [w.actors.supervisor2, w.actors.supervisor] : [w.actors.supervisor, w.actors.supervisor2];
+    expect(await unopened(mine)).toEqual([id]);
+    expect(await unopened(other)).toEqual([]);
+
+    // The unit manager or the super admin opening it does not clear it.
+    await getRequestDetail(w.actors.manager, id);
+    await getRequestDetail(w.actors.admin, id);
+    expect(await unopened(mine)).toEqual([id]);
+
+    await getRequestDetail(mine, id);
+    expect(await unopened(mine)).toEqual([]);
+
+    expect(await reassignRequests(w.actors.manager, [id], other.id, "إعادة توزيع")).toMatchObject({ ok: true });
+    expect(await unopened(other)).toEqual([id]);
+  });
+
+  it("puts returned and overdue requests under «ذات أولوية»", async () => {
+    const { id: returned } = await submittedRequest(w);
+    const { id: overdue } = await submittedRequest(w);
+    const { id: onTime } = await submittedRequest(w);
+    const holder = async (id: string) => {
+      const sup = (await db.request.findUniqueOrThrow({ where: { id } })).assignedSupervisorId;
+      return sup === w.users.supervisor2.id ? w.actors.supervisor2 : w.actors.supervisor;
+    };
+    expect(await decideRequests(await holder(returned), [returned], "return", "أرفقوا الخطة المحدثة")).toMatchObject({ ok: true });
+    await db.request.update({ where: { id: overdue }, data: { slaDueAt: new Date(Date.now() - 24 * 60 * 60 * 1000) } });
+    const priority = async (actor: RequestWorld["actors"]["supervisor"]) =>
+      (await listRequests(actor, parseRequestListParams({ priority: "1" }, "queue"), "queue")).items.map((r) => r.id);
+    const ids = [...(await priority(w.actors.supervisor)), ...(await priority(w.actors.supervisor2))];
+    expect(ids.sort()).toEqual([returned, overdue].sort());
+    expect(ids).not.toContain(onTime);
+  });
+
+  it("leaves the draft and the completeness check out of the request history", async () => {
+    const { id } = await submittedRequest(w);
+    const detail = await getRequestDetail(w.actors.manager, id);
+    expect(detail?.timeline.map((t) => t.to.key)).toEqual(["SUBMITTED", "UNDER_REVIEW"]);
   });
 });

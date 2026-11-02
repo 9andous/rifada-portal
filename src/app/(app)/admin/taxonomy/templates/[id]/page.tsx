@@ -115,7 +115,7 @@ export default async function AdminTemplatePage({ params }: PageProps<"/admin/ta
                         <td className="py-3 pe-4 align-top text-sm">
                           {f.uploadedBy.name}
                           <span className="t-caption mt-0.5 block">
-                            <DateDisplay date={f.createdAt} withTime />
+                            <DateDisplay date={f.createdAt} variant="hijri" />
                           </span>
                         </td>
                         <td className="py-1.5 pe-6 align-top">

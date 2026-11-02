@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "@/server/authz/scope";
-import { getByProgram, getMonthly, getOverdue, getOverview, getWorkload } from "@/server/services/dashboard";
+import { getByProgram, getMonthly, getOverview, getWorkload } from "@/server/services/dashboard";
 import { listRequests, parseRequestListParams } from "@/server/services/requests/read";
 import { db, resetDatabase } from "../support/db";
 
@@ -103,7 +103,6 @@ describe("dashboard figures", () => {
     expect(await getMonthly(manager, 12, NOW)).toHaveLength(12);
     expect(await getByProgram(manager)).toEqual([]);
     expect(await getWorkload(NOW)).toEqual([]);
-    expect(await getOverdue(manager, 6, NOW)).toEqual([]);
   });
 
   it("match the database for the unit manager, leaving drafts out", async () => {
@@ -128,8 +127,6 @@ describe("dashboard figures", () => {
       [2, 1, 1],
     ]);
     expect(await getWorkload(NOW)).toEqual([expect.objectContaining({ id: f.supervisorId, open: 1, overdue: 1, tracks: ["المسار الأول"] })]);
-    const overdue = await getOverdue(f.manager, 6, NOW);
-    expect(overdue.map((r) => [r.title, r.association])).toEqual([["overdue", "جمعية أ"]]);
   });
 
   it("stay inside a supervisor's tracks", async () => {
@@ -158,6 +155,5 @@ describe("dashboard figures", () => {
     expect(await getOverview(f.officer1, NOW)).toMatchObject({ total: 2, drafts: 1, overdue: 1 });
     const o2 = await getOverview(f.officer2, NOW);
     expect(o2).toMatchObject({ total: 2, drafts: 0, overdue: 0, unassigned: 1 });
-    expect(await getOverdue(f.officer2, 6, NOW)).toEqual([]);
   });
 });

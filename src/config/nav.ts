@@ -14,7 +14,6 @@ export type NavIcon =
   | "settings"
   | "audit"
   | "inbox"
-  | "assign"
   | "chart"
   | "queue"
   | "templates"
@@ -38,7 +37,6 @@ export const NAV: Record<Role, NavItem[]> = {
   UNIT_MANAGER: [
     { label: "الرئيسية", href: "/manager", icon: "home" },
     { label: "الطلبات", href: "/manager/requests", icon: "inbox" },
-    { label: "الإسناد", href: "/manager/assignment", icon: "assign" },
     { label: "الجمعيات", href: "/manager/associations", icon: "building" },
     { label: "البرامج والمبادرات", href: "/manager/taxonomy", icon: "layers" },
     { label: "التقارير", icon: "chart" },
@@ -75,7 +73,6 @@ export const VERIFY_HREF: Partial<Record<Role, string>> = {
 /** The gold call-to-action at the end of the navigation bar, per role. */
 export const NAV_CTA: Partial<Record<Role, NavItem>> = {
   SUPER_ADMIN: { label: "إضافة مستخدم", href: "/admin/users/new", icon: "addUser" },
-  UNIT_MANAGER: { label: "إسناد الطلبات", href: "/manager/assignment", icon: "assign" },
   SUPERVISOR: { label: "قائمة أعمالي", href: "/supervisor/queue", icon: "queue" },
   ASSOCIATION_OFFICER: { label: "تقديم طلب جديد", href: "/association/requests/new", icon: "newRequest" },
 };

@@ -46,7 +46,6 @@ function registrationSnapshot(r: {
   classification: string;
   region: string;
   city: string;
-  programNumbers: number[];
   officerName: string;
   officerUsername: string;
 }) {
@@ -58,7 +57,6 @@ function registrationSnapshot(r: {
     classification: r.classification,
     region: r.region,
     city: r.city,
-    programNumbers: r.programNumbers,
     officerName: r.officerName,
     officerUsername: r.officerUsername,
   };
@@ -113,8 +111,6 @@ export async function submitRegistration(input: RegistrationInput, now: Date = n
   const passwordHash = await hashPassword(input.password);
   const result = await db.$transaction(async (tx): Promise<Result<{ referenceNo: string; id: string }>> => {
     await lockAdminWrites(tx);
-    const programs = await tx.program.findMany({ where: { number: { in: input.programNumbers }, archivedAt: null, isActive: true }, select: { number: true } });
-    if (programs.length !== input.programNumbers.length) return fieldRefusal("programNumbers", "اختاروا من برامج الرئاسة المتاحة.");
     const free = await checkFree(tx, { licenseNumber: input.licenseNumber, username: input.username, email: input.officerEmail, nationalId: input.officerNationalId });
     if (!free.ok) return free;
 
@@ -133,7 +129,6 @@ export async function submitRegistration(input: RegistrationInput, now: Date = n
         contactPhone: input.contactPhone,
         contactEmail: input.contactEmail,
         website: input.website,
-        programNumbers: input.programNumbers,
         officerName: input.officerName,
         officerUsername: input.username,
         officerEmail: input.officerEmail,
@@ -225,9 +220,7 @@ export async function getRegistration(actor: Actor, id: string) {
     omit: { passwordHash: true },
     include: { reviewedBy: { select: { name: true } } },
   });
-  if (!r) return null;
-  const programs = await db.program.findMany({ where: { number: { in: r.programNumbers } }, orderBy: { number: "asc" }, select: { number: true, name: true } });
-  return { ...r, programs };
+  return r;
 }
 
 export type RegistrationDetail = NonNullable<Awaited<ReturnType<typeof getRegistration>>>;
@@ -260,7 +253,16 @@ export async function approveRegistration(actor: Actor, id: string, note: string
         logoKey: r.logoKey,
       },
     });
-    await audit({ actorId: actor.id, action: "association.created", entityType: "Association", entityId: association.id, after: associationSnapshot(association) }, tx);
+    await audit(
+      {
+        actorId: actor.id,
+        action: "association.created",
+        entityType: "Association",
+        entityId: association.id,
+        after: associationSnapshot(association),
+      },
+      tx,
+    );
 
     const user = await createUserWithPasswordHash(tx, {
       username: r.officerUsername,

@@ -42,7 +42,6 @@ function rawApplication(overrides: Record<string, unknown> = {}) {
     contactPhone: "٠٥٥٠١٢٣٤٥٦",
     contactEmail: `info${seq}@example.org`,
     website: "",
-    programNumbers: ["1", "3"],
     officerName: "فهد بن سعد",
     officerNationalId: "",
     officerPhone: "0551234567",
@@ -75,15 +74,14 @@ beforeEach(async () => {
 });
 
 describe("registrations: validation", () => {
-  it("normalises digits and requires the pledge, a programme and matching passwords", () => {
+  it("normalises digits and requires the pledge and matching passwords", () => {
     const input = application();
     expect(input.contactPhone).toBe("0550123456");
     expect(input.foundedYear).toBe(1435);
-    expect(input.programNumbers).toEqual([1, 3]);
     expect(registrationSchema.safeParse({ ...input, foundedYear: "", pledge: "" }).success).toBe(false);
-    const raw = { ...input, foundedYear: "", contactPhone: "0551111111", officerPhone: "0551111111", programNumbers: [], pledge: "on" };
-    expect(registrationSchema.safeParse(raw).success).toBe(false);
-    expect(registrationSchema.safeParse({ ...raw, programNumbers: ["2"], confirmPassword: "other-pass-1" }).success).toBe(false);
+    const raw = { ...input, foundedYear: "", contactPhone: "0551111111", officerPhone: "0551111111", pledge: "on" };
+    expect(registrationSchema.safeParse(raw).success).toBe(true);
+    expect(registrationSchema.safeParse({ ...raw, confirmPassword: "other-pass-1" }).success).toBe(false);
   });
 });
 
@@ -117,11 +115,6 @@ describe("registrations: submission", () => {
     expect(!existingUser.ok && existingUser.errors?.username).toBeTruthy();
   });
 
-  it("refuses programmes that are not available", async () => {
-    await db.program.update({ where: { number: 3 }, data: { isActive: false } });
-    const result = await submitRegistration(application());
-    expect(!result.ok && result.errors?.programNumbers).toBeTruthy();
-  });
 });
 
 describe("registrations: permissions", () => {
@@ -145,7 +138,6 @@ describe("registrations: permissions", () => {
     const { row } = await submitted();
     const detail = await getRegistration(admin, row.id);
     expect(detail).not.toHaveProperty("passwordHash");
-    expect(detail?.programs.map((p) => p.number)).toEqual([1, 3]);
   });
 });
 

@@ -113,7 +113,7 @@ async function RegistrationsList({ user, counts, searchParams }: { user: Current
                   </Td>
                   <Td>{r.officerName}</Td>
                   <Td>
-                    <DateDisplay date={r.createdAt} />
+                    <DateDisplay date={r.createdAt} variant="hijri" />
                   </Td>
                   <Td>
                     <StatusText tone={REGISTRATION_STATUS[r.status].tone}>{REGISTRATION_STATUS[r.status].label}</StatusText>

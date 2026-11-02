@@ -153,7 +153,7 @@ describe("request pages behind the proxy", () => {
     const areas = {
       officer: ["/association/requests", "/association/requests/new"],
       supervisor: ["/supervisor/queue", "/supervisor/requests"],
-      manager: ["/manager/requests", "/manager/assignment"],
+      manager: ["/manager/requests"],
       admin: ["/admin/requests"],
     } as const;
     for (const [who, paths] of Object.entries(areas) as [keyof typeof areas, readonly string[]][]) {

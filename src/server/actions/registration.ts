@@ -30,7 +30,7 @@ async function clientKey(): Promise<string> {
 
 /** Public: submits an association's application. Limited to five submissions per hour per client. */
 export async function submitRegistrationAction(_: RegistrationFormState, formData: FormData): Promise<RegistrationFormState> {
-  const raw = formObject(formData, ["programNumbers"]);
+  const raw = formObject(formData);
   // Honeypot: the field is hidden from people; a filled value means an automated submission.
   if (typeof raw.website_confirm === "string" && raw.website_confirm !== "") return { ok: false, message: "تعذّر إرسال الطلب." };
   if (!rateLimit(`registration:${await clientKey()}`, 5, 60 * 60 * 1000)) return { ok: false, message: TOO_MANY };
@@ -50,9 +50,9 @@ export async function submitRegistrationAction(_: RegistrationFormState, formDat
  * Limited per client, since it answers whether a license or username is registered.
  */
 export async function checkRegistrationStepAction(step: number, formData: FormData): Promise<StepCheck> {
-  if (!Number.isInteger(step) || step < 1 || step > 3) return { ok: true };
+  if (!Number.isInteger(step) || step < 1 || step > 2) return { ok: true };
   if (!rateLimit(`registration-step:${await clientKey()}`, 60, 15 * 60 * 1000)) return { ok: false, errors: { form: TOO_MANY } };
-  const parsed = registrationStepSchema(step).safeParse(formObject(formData, ["programNumbers"]));
+  const parsed = registrationStepSchema(step).safeParse(formObject(formData));
   if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
   const v = parsed.data as { licenseNumber?: string; username?: string; officerEmail?: string | null; officerNationalId?: string | null };
   const free = await checkRegistrationAvailability({ licenseNumber: v.licenseNumber, username: v.username, email: v.officerEmail, nationalId: v.officerNationalId });

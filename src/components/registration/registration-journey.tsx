@@ -6,7 +6,6 @@ import {
   BadgeCheck,
   Building2,
   Check,
-  ClipboardList,
   FileBadge,
   HeartHandshake,
   LoaderCircle,
@@ -22,7 +21,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArchOutline, Diamond } from "@/components/brand/arch";
 import { GeometricPattern } from "@/components/brand/geometric-pattern";
-import { ProgramIcon } from "@/components/brand/program-icon";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -39,22 +37,19 @@ import { checkRegistrationStepAction, submitRegistrationAction, type Registratio
 import { RegistrationSuccess } from "./registration-success";
 import { VisionWheel } from "./vision-wheel";
 
-type Program = { number: number; name: string; initiativeCount: number };
 type Value = { number: number; title: string; description: string };
 type Objective = { number: number; title: string };
 
 const STEPS: { title: string; hint: string; icon: LucideIcon; image: string; alt: string }[] = [
   { title: "مرحبًا بكم", hint: "رحلة الانضمام", icon: Sparkles, image: "/images/haramain/kaaba-tawaf-dark.jpg", alt: "الكعبة المشرفة" },
   { title: "بيانات الجمعية", hint: "الترخيص والموقع والتواصل", icon: Building2, image: "/images/haramain/masjid-al-haram.jpg", alt: "المسجد الحرام" },
-  { title: "مجالات العمل", hint: "برامج الرئاسة", icon: ClipboardList, image: "/images/haramain/masjid-an-nabawi.jpg", alt: "المسجد النبوي الشريف" },
   { title: "المسؤول والحساب", hint: "مسؤول الجمعية في المنصة", icon: UserRound, image: "/images/haramain/haram-arches.jpg", alt: "أروقة المسجد الحرام" },
   { title: "القيم والتعهد", hint: "المراجعة والإرسال", icon: HeartHandshake, image: "/images/haramain/kaaba-clock-tower.jpg", alt: "المسجد الحرام والكعبة المشرفة" },
 ];
 
-export function RegistrationJourney({ vision, programs, values, objectives }: { vision: string | null; programs: Program[]; values: Value[]; objectives: Objective[] }) {
+export function RegistrationJourney({ vision, values, objectives }: { vision: string | null; values: Value[]; objectives: Objective[] }) {
   const { state, onSubmit, pending } = useActionForm<RegistrationFormState>(submitRegistrationAction, {});
   const [step, setStep] = useState(0);
-  const [chosen, setChosen] = useState<number[]>([]);
   const [region, setRegion] = useState("");
   const [summary, setSummary] = useState<Record<string, string>>({});
   const formRef = useRef<HTMLFormElement>(null);
@@ -70,7 +65,6 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
   const asides: { label: string; text: string | undefined }[] = [
     { label: "رؤية الرئاسة", text: vision ?? undefined },
     { label: `الهدف الاستراتيجي ${toArabicDigits(5)}`, text: objective(5)?.title },
-    { label: `الهدف الاستراتيجي ${toArabicDigits(1)}`, text: objective(1)?.title },
     { label: `قيمة ${value(7)?.title ?? "التعاون"}`, text: value(7)?.description },
     { label: `قيمة ${value(1)?.title ?? "تعظيم الحرمين"}`, text: value(1)?.description },
   ];
@@ -111,9 +105,9 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
   async function next() {
     const form = formRef.current;
     if (!form) return;
-    // Steps 1 to 3 are checked against the submission's own rules (and for a license or username
+    // Steps 1 and 2 are checked against the submission's own rules (and for a license or username
     // already in use) before the next step opens, so nothing is left to fix at the end.
-    if (step >= 1 && step <= 3) {
+    if (step >= 1 && step <= 2) {
       setChecking(true);
       const result = await checkRegistrationStepAction(step, new FormData(form)).catch(() => ({ ok: false, errors: { form: "تعذّر التحقق من البيانات. حاولوا مرة أخرى." } }));
       setChecking(false);
@@ -124,7 +118,7 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
       }
     }
     setErrors({});
-    if (step === 3) {
+    if (step === 2) {
       const data = new FormData(form);
       setSummary(Object.fromEntries([...data.entries()].map(([k, v]) => [k, String(v)])));
     }
@@ -153,9 +147,9 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
             تسجيل جمعية في منصة رفادة
           </h1>
           <p className="mt-2 max-w-2xl text-band-ink-muted">
-            خطوات قليلة تفصلكم عن تقديم برامج جمعيتكم ومشروعاتها ضمن برامج الرئاسة، بإشراف فني واضح وإجراءات موثّقة.
+            خطوات قليلة تفصلكم عن تقديم برامج جمعيتكم ومشروعاتها ضمن مسارات الرئاسة، بإشراف فني واضح وإجراءات موثّقة.
           </p>
-          <ol aria-label="مراحل التسجيل" className="mt-8 grid grid-cols-5 gap-2">
+          <ol aria-label="مراحل التسجيل" className="mt-8 grid grid-cols-4 gap-2">
             {STEPS.map((s, i) => (
               <li key={s.title} aria-current={i === step ? "step" : undefined} className="min-w-0">
                 <span className={cn("block h-1.5 rounded-full transition-colors", i < step ? "bg-band-gold" : i === step ? "bg-band-gold/70" : "bg-white/15")} />
@@ -168,11 +162,11 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
         </div>
       </section>
 
-      {/* From xl the form and its step list move to the start side, and the vision wheel turns at
+      {/* From xl the step list sits against the start edge with the form beside it, and the vision wheel turns at
           the end edge of the screen; below xl a compact card carries the same photo and quote. */}
       <div className="wheel-scope relative">
         <VisionWheel slides={STEPS.map((s, i) => ({ ...s, label: asides[i].label, text: asides[i].text }))} active={step} />
-        <div className="relative mx-auto grid w-full max-w-[1360px] items-start gap-6 px-4 py-10 sm:px-8 lg:grid-cols-[17rem_minmax(0,1fr)] xl:w-auto xl:ms-[max(0px,calc((100%-1360px)/2))] xl:me-[calc(var(--wheel)+3rem)]">
+        <div className="relative mx-auto grid w-full max-w-[1360px] items-start gap-6 px-4 py-10 sm:px-8 lg:grid-cols-[15rem_minmax(0,1fr)] xl:w-auto xl:max-w-none xl:ms-0 xl:me-[calc(var(--wheel)+3rem)]">
           <aside className="lg:sticky lg:top-[100px]">
             <div className="band-scope relative overflow-hidden rounded-2xl bg-band text-band-ink shadow-2 xl:hidden">
               <div key={current.image} className="fade-up relative h-40">
@@ -258,12 +252,12 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                 <p className="text-lg font-bold leading-relaxed text-ink">أهلًا بجمعيتكم في منصة الإشراف الفني على الجمعيات العاملة في خدمة قاصدي الحرمين الشريفين.</p>
                 <p className="mt-2 leading-[1.9] text-ink-muted">
                   تنضم جمعيتكم بهذا التسجيل إلى منظومة تعمل في إطار استراتيجية رئاسة الشؤون الدينية بالمسجد الحرام والمسجد النبوي، لتقدّم برامجها
-                  ومشروعاتها ضمن برامج الرئاسة، وتتابع مراجعتها حتى القرار.
+                  ومشروعاتها ضمن مسارات الرئاسة، وتتابع مراجعتها حتى القرار.
                 </p>
                 <ul className="mt-6 grid gap-3 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
                   {[
-                    { icon: Send, title: "تقديم إلكتروني", text: "برامجكم ومشروعاتكم ضمن برامج الرئاسة ومبادراتها." },
-                    { icon: ShieldCheck, title: "إشراف فني واضح", text: "معايير قبول معلنة ومشرف مختص لكل برنامج." },
+                    { icon: Send, title: "تقديم إلكتروني", text: "برامجكم ومشروعاتكم ضمن مسارات الرئاسة وبرامجها." },
+                    { icon: ShieldCheck, title: "إشراف فني واضح", text: "معايير قبول معلنة ومشرف مختص لكل مسار." },
                     { icon: BadgeCheck, title: "أثر موثّق", text: "إسهام مباشر في إثراء تجربة القاصدين." },
                   ].map(({ icon: Icon, title, text }) => (
                     <li key={title} className="flex flex-col items-center rounded-xl border border-line bg-surface-muted p-4 text-center">
@@ -281,7 +275,7 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                     جهّزوا قبل البدء
                   </p>
                   <ul className="mt-3 grid gap-2 text-sm text-ink-muted sm:grid-cols-2">
-                    {["رقم ترخيص الجمعية من المركز الوطني لتنمية القطاع غير الربحي", "بيانات التواصل الرسمية للجمعية", "بيانات مسؤول الجمعية الذي يدير حسابها", "برامج الرئاسة التي تعمل جمعيتكم في مجالها"].map((t) => (
+                    {["رقم ترخيص الجمعية من المركز الوطني لتنمية القطاع غير الربحي", "بيانات التواصل الرسمية للجمعية", "بيانات مسؤول الجمعية الذي يدير حسابها"].map((t) => (
                       <li key={t} className="flex gap-2">
                         <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={1.75} />
                         {t}
@@ -341,56 +335,8 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                 </Field>
               </section>
 
-              {/* Step 2: programmes */}
+              {/* Step 2: officer and account */}
               <section data-step="2" hidden={step !== 2} className="fade-up">
-                <p className="leading-[1.9] text-ink-muted">
-                  اختاروا برامج الرئاسة التي تعمل جمعيتكم في مجالها. تُقدَّم الطلبات لاحقًا ضمن مبادرات هذه البرامج، ويراجعها مشرف البرنامج المختص.
-                </p>
-                <fieldset className="mt-5">
-                  <legend className="sr-only">برامج الرئاسة</legend>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {programs.map((p) => {
-                      const on = chosen.includes(p.number);
-                      return (
-                        <label
-                          key={p.number}
-                          className={cn(
-                            "relative flex cursor-pointer items-start gap-3 rounded-lg border bg-surface p-3.5 transition-[border-color,background-color,box-shadow,translate]",
-                            "has-[:focus-visible]:outline-3 has-[:focus-visible]:-outline-offset-3 has-[:focus-visible]:outline-focus",
-                            on ? "border-primary bg-primary-soft/50 shadow-[inset_0_0_0_1px_var(--primary)]" : "card-link border-line",
-                          )}
-                        >
-                          <input
-                            type="checkbox"
-                            name="programNumbers"
-                            value={p.number}
-                            checked={on}
-                            onChange={() => setChosen((c) => (on ? c.filter((n) => n !== p.number) : [...c, p.number]))}
-                            className="sr-only"
-                          />
-                          <span aria-hidden="true" className={cn("flex size-11 shrink-0 items-center justify-center rounded-md [&_svg]:size-5", on ? "bg-primary text-primary-ink" : "bg-primary-soft text-primary")}>
-                            <ProgramIcon number={p.number} />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-xs font-medium text-accent-ink">البرنامج {toArabicDigits(p.number)}</span>
-                            <span className="mt-0.5 block text-sm font-bold leading-snug text-ink">{p.name}</span>
-                            <span className="mt-1 block text-xs text-ink-subtle">{formatNumber(p.initiativeCount)} مبادرة</span>
-                          </span>
-                          <span aria-hidden="true" className={cn("absolute end-3 top-3 flex size-5 items-center justify-center rounded-[5px] border-2", on ? "border-primary bg-primary text-primary-ink" : "border-line-strong")}>
-                            {on ? <Check aria-hidden="true" className="size-3.5" strokeWidth={1.75} /> : null}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-                <p tabIndex={-1} data-error={e.programNumbers ? "true" : undefined} className={cn("mt-4 text-sm outline-none", e.programNumbers ? "font-semibold text-danger" : "text-ink-subtle")} role={e.programNumbers ? "alert" : undefined}>
-                  {e.programNumbers ?? (chosen.length ? `اخترتم ${formatNumber(chosen.length)} من ${formatNumber(programs.length)} برامج.` : "اختاروا برنامجًا واحدًا على الأقل.")}
-                </p>
-              </section>
-
-              {/* Step 3: officer and account */}
-              <section data-step="3" hidden={step !== 3} className="fade-up">
                 <p className="mb-5 leading-[1.9] text-ink-muted">مسؤول الجمعية هو من يقدّم الطلبات ويتابعها ويتواصل مع الوحدة الإشرافية باسم الجمعية.</p>
                 <div className="grid gap-5 md:grid-cols-2">
                   <Field id="r-officer" label="الاسم الكامل للمسؤول" error={e.officerName} required>
@@ -425,10 +371,10 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                 </div>
               </section>
 
-              {/* Step 4: values, pledge and review */}
-              <section data-step="4" hidden={step !== 4} className="fade-up">
+              {/* Step 3: values, pledge and review */}
+              <section data-step="3" hidden={step !== 3} className="fade-up">
                 <p className="leading-[1.9] text-ink-muted">تعمل الجمعيات في المنصة وفق قيم الرئاسة في خدمة الحرمين الشريفين وقاصديهما.</p>
-                <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <ul className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
                   {values.map((v) => (
                     <li key={v.number} className="flex gap-3 rounded-lg border border-line bg-surface-muted p-3.5">
                       <span aria-hidden="true" className="relative flex size-9 shrink-0 items-center justify-center">
@@ -443,7 +389,7 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
                   ))}
                 </ul>
 
-                <Summary data={summary} programs={programs.filter((p) => chosen.includes(p.number))} />
+                <Summary data={summary} />
 
                 <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border-2 border-accent/40 bg-accent-soft/60 p-5">
                   <input type="checkbox" name="pledge" required className="mt-1 size-5 shrink-0 accent-[var(--primary)]" aria-invalid={Boolean(e.pledge)} />
@@ -501,7 +447,7 @@ export function RegistrationJourney({ vision, programs, values, objectives }: { 
   );
 }
 
-function Summary({ data, programs }: { data: Record<string, string>; programs: Program[] }) {
+function Summary({ data }: { data: Record<string, string> }) {
   const rows: [string, string | undefined][] = [
     ["الجمعية", data.name],
     ["رقم الترخيص", data.licenseNumber],
@@ -522,16 +468,6 @@ function Summary({ data, programs }: { data: Record<string, string>; programs: P
             <dd className="mt-0.5 text-sm font-semibold text-ink" dir={k === "اسم المستخدم" ? "ltr" : undefined}>{v ? (k === "اسم المستخدم" ? v : toArabicDigits(v)) : "—"}</dd>
           </div>
         ))}
-        <div className="sm:col-span-2">
-          <dt className="text-xs text-ink-subtle">البرامج</dt>
-          <dd className="mt-1 flex flex-wrap gap-1.5">
-            {programs.map((p) => (
-              <span key={p.number} className="rounded-[6px] bg-primary-soft px-2.5 py-0.5 text-xs font-semibold text-primary">
-                {p.name}
-              </span>
-            ))}
-          </dd>
-        </div>
       </dl>
     </div>
   );
@@ -541,3 +477,4 @@ function Summary({ data, programs }: { data: Record<string, string>; programs: P
 function stepErrorCount(errors: FieldErrors, step: number): number {
   return Object.keys(errors).filter((k) => REGISTRATION_FIELD_STEP[k] === step).length;
 }
+

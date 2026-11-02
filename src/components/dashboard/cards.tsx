@@ -3,15 +3,11 @@ import { Fragment, type ReactNode } from "react";
 import {
   ArrowLeft,
   ChartColumn,
-  CircleCheck,
-  Clock,
   Eye,
   LayoutGrid,
   Layers,
   ListChecks,
   PenLine,
-  UserRound,
-  UserRoundCheck,
   UsersRound,
   Waypoints,
 } from "lucide-react";
@@ -24,7 +20,7 @@ import { Panel, PanelHeader, StatusText, type StatusTone } from "@/components/ui
 import { daysPhrase, formatNumber, requestsPhrase, toArabicDigits } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { workingDaysBetween } from "@/lib/working-days";
-import { MONTH_RANGES, SLA_KEYS, type MonthBucket, type OverdueRow, type ProgramRow, type StatusRow, type TrackRow, type WorkloadRow } from "@/server/services/dashboard";
+import { MONTH_RANGES, SLA_KEYS, type MonthBucket, type ProgramRow, type StatusRow, type TrackRow, type WorkloadRow } from "@/server/services/dashboard";
 import type { RequestRow } from "@/server/services/requests/read";
 
 // Dashboard cards (docs/DESIGN.md: Dashboards), drawn after the design handoff: icon-tile headers,
@@ -341,7 +337,7 @@ export function TracksCard({ data, tracksHref }: { data: { rows: TrackRow[]; unc
 const TH = "relative py-[11px] px-3.5 text-start text-[0.875rem] font-bold whitespace-nowrap text-ink first:ps-6 last:pe-6";
 const TD = "px-3.5 py-3 align-middle first:ps-6 last:pe-6";
 
-export function WorkloadCard({ rows, unassigned, assignHref, requestsHref }: { rows: WorkloadRow[]; unassigned: number; assignHref?: string; requestsHref?: string }) {
+export function WorkloadCard({ rows, unassigned, requestsHref }: { rows: WorkloadRow[]; unassigned: number; requestsHref?: string }) {
   const totalOpen = rows.reduce((n, r) => n + r.open, 0);
   return (
     <Panel className="min-w-0">
@@ -349,14 +345,6 @@ export function WorkloadCard({ rows, unassigned, assignHref, requestsHref }: { r
         icon={<UsersRound strokeWidth={1.75} />}
         title="عبء العمل على المشرفين"
         description={`طلبات مفتوحة غير مسندة: ${formatNumber(unassigned)}`}
-        actions={
-          assignHref ? (
-            <Link href={assignHref} className={buttonClasses("primary", "sm")}>
-              <UserRoundCheck aria-hidden="true" />
-              إسناد الطلبات
-            </Link>
-          ) : null
-        }
       />
       {rows.length === 0 ? (
         <CardEmpty icon={<UsersRound strokeWidth={1.75} />} title="لا يوجد مشرفون نشطون بعد">
@@ -421,84 +409,6 @@ export function WorkloadCard({ rows, unassigned, assignHref, requestsHref }: { r
         </div>
       )}
       {rows.length ? <CardFooter>الحِمل: نصيب المشرف من الطلبات المفتوحة المسندة.</CardFooter> : null}
-    </Panel>
-  );
-}
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-export function OverdueCard({
-  rows,
-  total,
-  slaDays,
-  now,
-  hrefBase,
-  assignHref,
-  listHref,
-}: {
-  rows: OverdueRow[];
-  total: number;
-  slaDays: number;
-  now: Date;
-  hrefBase?: string;
-  /** Unassigned rows get an assign button (unit manager). */
-  assignHref?: string;
-  listHref?: string;
-}) {
-  return (
-    <Panel className="flex min-w-0 flex-col">
-      <PanelHeader
-        icon={<Clock strokeWidth={1.75} />}
-        title="طلبات تجاوزت مهلة المراجعة"
-        description={`المهلة ${daysPhrase(slaDays)} عمل من تاريخ التقديم`}
-        actions={total > rows.length ? <span className="t-caption">يُعرض {formatNumber(rows.length)} من {formatNumber(total)}</span> : null}
-      />
-      {rows.length === 0 ? (
-        <CardEmpty icon={<CircleCheck strokeWidth={1.75} />} title="لا توجد طلبات متأخرة">
-          جميع الطلبات المفتوحة ضمن مهلة المراجعة.
-        </CardEmpty>
-      ) : (
-        <ul className="-mt-5 flex-1">
-          {rows.map((r) => {
-            const late = Math.max(1, workingDaysBetween(r.slaDueAt, now) || Math.floor((now.getTime() - r.slaDueAt.getTime()) / DAY_MS));
-            return (
-              <li key={r.id} className="flex items-center gap-3 border-b border-line/70 px-6 py-3 last:border-0">
-                <span className="flex size-[52px] shrink-0 flex-col items-center justify-center rounded-md bg-st-bad-soft leading-none text-st-bad">
-                  <span className="t-figure text-xl font-bold">{formatNumber(late)}</span>
-                  <span className="mt-1 text-[0.625rem]">يوم تأخير</span>
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[0.9375rem] font-bold">{r.association}</p>
-                  <p className="t-caption mt-0.5 flex min-w-0 items-center gap-x-1.5">
-                    {r.referenceNo ? <RefNumber value={r.referenceNo} /> : null}
-                    <span aria-hidden="true">·</span>
-                    <span className="truncate">{r.title}</span>
-                  </p>
-                </div>
-                {r.supervisor ? (
-                  <span className="hidden items-center gap-1 rounded-[6px] bg-surface-sunken px-2 py-0.5 text-xs text-ink-muted sm:inline-flex">
-                    <UserRound aria-hidden="true" className="size-3" strokeWidth={1.75} />
-                    {r.supervisor}
-                  </span>
-                ) : (
-                  <StatusText tone="warn">غير مسند</StatusText>
-                )}
-                {hrefBase ? (
-                  <IconLink href={`${hrefBase}/${r.id}`} label="فتح الطلب">
-                    <Eye strokeWidth={1.75} />
-                  </IconLink>
-                ) : null}
-                {!r.supervisor && assignHref ? (
-                  <IconLink href={assignHref} label="إسناد">
-                    <UserRoundCheck strokeWidth={1.75} />
-                  </IconLink>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {listHref && total > 0 ? <CardFooter href={listHref} label="جميع المتأخرة">الأقدم تأخرًا أولًا</CardFooter> : null}
     </Panel>
   );
 }
@@ -593,7 +503,7 @@ export function RequestsTableCard({
                       {columns.includes("title") ? <td className={cn(TD, "max-w-72 font-semibold")}><span className="line-clamp-2">{r.title || "طلب بلا عنوان"}</span></td> : null}
                       {columns.includes("program") ? <td className={cn(TD, "text-sm text-ink-muted")}>{r.track?.name ?? "—"}</td> : null}
                       {columns.includes("submitted") ? (
-                        <td className={cn(TD, "text-sm text-ink-muted")}>{r.submittedAt ? <DateDisplay date={r.submittedAt} /> : "—"}</td>
+                        <td className={cn(TD, "text-sm text-ink-muted")}>{r.submittedAt ? <DateDisplay date={r.submittedAt} variant="hijri" /> : "—"}</td>
                       ) : null}
                       {columns.includes("status") ? (
                         <td className={TD}>

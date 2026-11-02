@@ -187,10 +187,10 @@ async function UsersList({
                     {u.isActive && u.mustChangePassword ? <span className="t-caption mt-0.5 block">بانتظار تغيير كلمة المرور</span> : null}
                   </Td>
                   <Td>
-                    {u.lastLoginAt ? <DateDisplay date={u.lastLoginAt} withTime /> : <span className="text-ink-subtle">لم يسجل الدخول</span>}
+                    {u.lastLoginAt ? <DateDisplay date={u.lastLoginAt} variant="hijri" /> : <span className="text-ink-subtle">لم يسجل الدخول</span>}
                   </Td>
                   <Td>
-                    <DateDisplay date={u.createdAt} />
+                    <DateDisplay date={u.createdAt} variant="hijri" />
                   </Td>
                 </Tr>
               ))}

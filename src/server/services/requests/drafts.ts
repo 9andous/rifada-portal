@@ -37,11 +37,12 @@ const availableRequestTypeWhere = { archivedAt: null, isActive: true };
 /** The tracks and request types offered for a request (D-123). */
 export async function newRequestOptions(actor: Actor) {
   assertCan(actor, "requests.create");
-  const [tracks, requestTypes] = await Promise.all([
+  const [tracks, requestTypes, associationActive] = await Promise.all([
     db.track.findMany({ where: availableTrackWhere, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true, description: true } }),
     db.requestType.findMany({ where: availableRequestTypeWhere, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, description: true } }),
+    activeAssociation(actor),
   ]);
-  return { tracks, requestTypes, associationActive: await activeAssociation(actor) };
+  return { tracks, requestTypes, associationActive };
 }
 
 /** Checks a track and request type choice; null when both are available. */

@@ -68,7 +68,7 @@ async function StatusFilters({ user, searchParams }: { user: CurrentUser; search
   const q = firstParam(params, "q");
   const total = counts.reduce((n, s) => n + s.count, 0);
   // «مقدَّم» and «فحص الاكتمال» last only for the instant of submission; shown only when not empty.
-  const shown = counts.filter((s) => s.count > 0 || !["SUBMITTED", "COMPLETENESS_CHECK"].includes(s.key) || s.key === active);
+  const shown = counts.filter((s) => s.count > 0 || s.key !== "SUBMITTED" || s.key === active);
   const tiles = [{ key: undefined as string | undefined, name: "جميع الطلبات", count: total }, ...shown.map((s) => ({ key: s.key as string | undefined, name: s.name, count: s.count }))];
   return (
     <nav aria-label="عرض الطلبات حسب الحالة">

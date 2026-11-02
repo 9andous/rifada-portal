@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { ForbiddenError, type Actor } from "@/server/authz/scope";
 import { getOverview, getWorkload } from "@/server/services/dashboard";
-import { assignmentOverview } from "@/server/services/requests/assignment";
 import { attachOwnFile, canUploadTo, removeDraftAttachment, requestFile } from "@/server/services/requests/attachments";
 import { addComment } from "@/server/services/requests/comments";
 import { saveDraft } from "@/server/services/requests/drafts";
@@ -56,7 +55,6 @@ describe("draft privacy (change 19)", () => {
       const search = await listRequests(actor, params("scope", { q: "مسودة سرية" }), "scope");
       expect(search.total, role).toBe(0);
     }
-    expect((await assignmentOverview(w.actors.manager)).unassigned).toHaveLength(0);
     expect((await getWorkload()).every((row) => row.open === 0)).toBe(true);
     // Its own association sees it.
     expect((await getRequestDetail(w.actors.officer, draft))?.title).toBe("مسودة سرية للجمعية");

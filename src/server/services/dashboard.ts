@@ -1,5 +1,4 @@
 import "server-only";
-import type { Prisma } from "@/generated/prisma/client";
 import { lastHijriMonths, hijriMonth } from "@/lib/format";
 import { ForbiddenError, scopeRequests, type Actor } from "@/server/authz/scope";
 import { db } from "@/server/db";
@@ -58,9 +57,11 @@ export async function getOverview(actor: Actor, now: Date = new Date()): Promise
     return status ? countOf(status.id) : 0;
   };
 
-  const byStatus = statuses
+  const counted = statuses
     .filter((s) => s.key !== "DRAFT")
     .map((s) => ({ key: s.key, name: s.name, colorToken: s.colorToken, count: countOf(s.id) }));
+  // The completeness check passes within the submission, so the chart leaves it out (D-127).
+  const byStatus = counted.filter((s) => s.key !== "COMPLETENESS_CHECK");
 
   const [slaIds, openIds] = await Promise.all([statusIds(SLA_KEYS), statusIds(OPEN_KEYS)]);
   const [overdue, unassigned, decided] = await Promise.all([
@@ -79,7 +80,7 @@ export async function getOverview(actor: Actor, now: Date = new Date()): Promise
     : null;
 
   return {
-    total: byStatus.reduce((n, s) => n + s.count, 0),
+    total: counted.reduce((n, s) => n + s.count, 0),
     open: OPEN_KEYS.reduce((n, k) => n + byKey(k), 0),
     underReview: byKey("SUBMITTED") + byKey("COMPLETENESS_CHECK") + byKey("UNDER_REVIEW"),
     returned: byKey("RETURNED"),
@@ -197,41 +198,5 @@ export async function getWorkload(now: Date = new Date()): Promise<WorkloadRow[]
     tracks: s.supervisedTracks.map((st) => st.track.name),
     open: count(open, s.id),
     overdue: count(overdue, s.id),
-  }));
-}
-
-export type OverdueRow = {
-  id: string;
-  referenceNo: string | null;
-  title: string;
-  association: string;
-  supervisor: string | null;
-  slaDueAt: Date;
-};
-
-/** The most overdue requests in the actor's scope. */
-export async function getOverdue(actor: Actor, take = 6, now: Date = new Date()): Promise<OverdueRow[]> {
-  const slaIds = await statusIds(SLA_KEYS);
-  const where: Prisma.RequestWhereInput = { AND: [scopeRequests(actor), { statusId: { in: slaIds }, slaDueAt: { lt: now } }] };
-  const rows = await db.request.findMany({
-    where,
-    orderBy: { slaDueAt: "asc" },
-    take,
-    select: {
-      id: true,
-      referenceNo: true,
-      title: true,
-      slaDueAt: true,
-      association: { select: { name: true } },
-      assignedSupervisor: { select: { name: true } },
-    },
-  });
-  return rows.map((r) => ({
-    id: r.id,
-    referenceNo: r.referenceNo,
-    title: r.title,
-    association: r.association.name,
-    supervisor: r.assignedSupervisor?.name ?? null,
-    slaDueAt: r.slaDueAt!,
   }));
 }

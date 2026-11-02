@@ -10,6 +10,9 @@ import { Alert, FormError } from "@/components/ui/surface";
 import { authClient } from "@/lib/auth-client";
 import { toArabicDigits } from "@/lib/format";
 
+// Nafath sign-in is hidden for now (owner's request); the flow below is kept for when it returns.
+const NAFATH_ENABLED = false;
+
 type AuthError = { status?: number; code?: string } | null | undefined;
 
 function messageFor(error: AuthError): string {
@@ -72,21 +75,26 @@ export function LoginForm() {
         <Field id="username" label="اسم المستخدم" required>
           <Input id="username" name="username" autoComplete="username" dir="ltr" required autoFocus className="h-11" />
         </Field>
-        {/* «نسيت كلمة المرور؟» sits on the label's line, not a line of its own. */}
-        <div className="relative">
-          <Field id="password" label="كلمة المرور" required>
-            <Input id="password" name="password" type="password" autoComplete="current-password" dir="ltr" required className="h-11" />
-          </Field>
-          <Link href="/forgot-password" className="absolute end-0 top-0 text-sm text-primary underline-offset-4 hover:underline">
-            نسيت كلمة المرور؟
-          </Link>
-        </div>
+        <Field id="password" label="كلمة المرور" required>
+          <Input id="password" name="password" type="password" autoComplete="current-password" dir="ltr" required className="h-11" />
+        </Field>
         <Button type="submit" variant="gold" size="lg" disabled={pending} className="mt-1">
           {pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <LogIn aria-hidden="true" />}
           {pending ? "جارٍ التحقق…" : "تسجيل الدخول"}
         </Button>
+        <Link href="/forgot-password" className="self-center text-sm text-primary underline-offset-4 hover:underline">
+          نسيت كلمة المرور؟
+        </Link>
       </form>
 
+      {NAFATH_ENABLED ? <NafathEntry onOpen={() => setMode("nafath")} /> : null}
+    </div>
+  );
+}
+
+function NafathEntry({ onOpen }: { onOpen: () => void }) {
+  return (
+    <>
       <div className="-my-1 flex items-center gap-3 text-xs text-ink-subtle" aria-hidden="true">
         <span className="h-px flex-1 bg-line" />
         أو
@@ -96,7 +104,7 @@ export function LoginForm() {
       <div className="flex flex-col gap-1.5">
         <button
           type="button"
-          onClick={() => setMode("nafath")}
+          onClick={onOpen}
           className="flex w-full items-center gap-3.5 rounded-lg border-[1.5px] border-primary bg-primary-soft/60 px-4 py-2.5 text-start transition-colors hover:bg-primary-soft short:py-2"
         >
           <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-ink">
@@ -111,7 +119,7 @@ export function LoginForm() {
         {/* On short screens the note is left to the Nafath step, which opens with the same warning. */}
         <p className="t-caption text-center short:hidden">الدخول عبر النفاذ الوطني في هذه البيئة محاكاة لأغراض التطوير.</p>
       </div>
-    </div>
+    </>
   );
 }
 

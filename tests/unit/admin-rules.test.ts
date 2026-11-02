@@ -210,7 +210,7 @@ describe("navigation (Phase 2a)", () => {
 
   it("activates the Phase 2 and Phase 3 screens for the right roles only", () => {
     expect(links("SUPER_ADMIN")).toEqual(["/admin", "/admin/users", "/admin/associations", "/admin/registrations", "/admin/taxonomy", "/admin/settings", "/admin/audit"]);
-    expect(links("UNIT_MANAGER")).toEqual(["/manager", "/manager/requests", "/manager/assignment", "/manager/associations", "/manager/taxonomy"]);
+    expect(links("UNIT_MANAGER")).toEqual(["/manager", "/manager/requests", "/manager/associations", "/manager/taxonomy"]);
     expect(links("SUPERVISOR")).toEqual(["/supervisor", "/supervisor/queue", "/supervisor/requests", "/supervisor/templates"]);
     // D-102: «طلب جديد» is the gold call-to-action only; «المساعدة» lives in the user menu (D-106).
     expect(links("ASSOCIATION_OFFICER")).toEqual(["/association", "/association/requests", "/association/documents", "/association/profile"]);

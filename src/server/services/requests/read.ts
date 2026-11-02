@@ -36,6 +36,7 @@ const statusView = (s: { key: string; name: string; colorToken: string }): Statu
 
 /** Open statuses the unit is responsible for; only these can be overdue against the review deadline. */
 const SLA_STATUS_KEYS = ["SUBMITTED", "COMPLETENESS_CHECK", "UNDER_REVIEW"] as const;
+const HIDDEN_HISTORY_KEYS = ["DRAFT", "COMPLETENESS_CHECK"] as const;
 
 export const REQUEST_SORTS = ["submittedAt", "updatedAt", "slaDueAt", "title", "referenceNo"] as const;
 export type RequestSort = (typeof REQUEST_SORTS)[number];
@@ -58,6 +59,10 @@ export function parseRequestListParams(params: SearchParams, view: RequestListVi
     association: association && /^[a-z0-9]{8,40}$/.test(association) ? association : undefined,
     /** Only requests past their review deadline in a status the unit is responsible for. */
     overdue: firstParam(params, "overdue") === "1",
+    /** «ذات أولوية» (D-127): returned to the association, or past the review deadline. */
+    priority: firstParam(params, "priority") === "1",
+    /** Assigned to the viewer and not yet opened by them (D-127). */
+    unopened: firstParam(params, "unopened") === "1",
     /** Under review and waiting for the unit manager after the supervisor's evaluation (D-116). */
     stage: enumParam(params, "stage", ["manager", "supervisor"] as const),
   };
@@ -129,7 +134,10 @@ export async function listRequests(actor: Actor, params: RequestListParams, view
   if (params.supervisor === "none") and.push({ assignedSupervisorId: null });
   else if (params.supervisor) and.push({ assignedSupervisorId: params.supervisor });
   if (params.q) and.push({ OR: [...containsAny(params.q, ["title", "referenceNo"] as const), { association: { name: { contains: params.q, mode: "insensitive" } } }] });
-  if (params.overdue) and.push({ status: { key: { in: [...SLA_STATUS_KEYS] } }, slaDueAt: { lt: now } });
+  const overdueWhere: Prisma.RequestWhereInput = { status: { key: { in: [...SLA_STATUS_KEYS] } }, slaDueAt: { lt: now } };
+  if (params.overdue) and.push(overdueWhere);
+  if (params.priority) and.push({ OR: [{ status: { key: "RETURNED" } }, overdueWhere] });
+  if (params.unopened) and.push({ assignedSupervisorId: actor.id, reviewerOpenedAt: null });
   if (params.stage && actor.role !== "ASSOCIATION_OFFICER") and.push({ status: { key: "UNDER_REVIEW" }, reviewStage: params.stage === "manager" ? "MANAGER" : "SUPERVISOR" });
   const where: Prisma.RequestWhereInput = { AND: and };
 
@@ -174,7 +182,7 @@ export async function requestStatusCounts(actor: Actor, view: RequestListView): 
   ]);
   const showDrafts = view === "mine";
   return statuses
-    .filter((s) => showDrafts || s.key !== "DRAFT")
+    .filter((s) => (showDrafts || s.key !== "DRAFT") && s.key !== "COMPLETENESS_CHECK")
     .filter((s) => view !== "queue" || (OPEN_STATUS_KEYS as readonly string[]).includes(s.key))
     .map((s) => ({ ...statusView(s), count: grouped.find((g) => g.statusId === s.id)?._count._all ?? 0 }));
 }
@@ -389,7 +397,8 @@ export async function getRequestDetail(actor: Actor, id: string) {
     }),
   ]);
 
-  const timeline: TimelineEntry[] = history.map((h) => ({
+  // The draft and the completeness check (which passes within the submission) are not shown (D-127).
+  const timeline: TimelineEntry[] = history.filter((h) => !(HIDDEN_HISTORY_KEYS as readonly string[]).includes(h.toStatus.key)).map((h) => ({
     id: h.id,
     from: h.fromStatus ? statusView(h.fromStatus) : null,
     to: statusView(h.toStatus),
@@ -490,6 +499,10 @@ export async function getRequestDetail(actor: Actor, id: string) {
   const auditTrail = capabilities.showAuditTrail && request.submittedAt ? await requestAuditTrail(id, request.submittedAt) : null;
   const certificate = statusKey === "APPROVED" ? await requestCertificate(id) : null;
 
+  // The assigned supervisor's first look clears the request from their «new» banner (D-127).
+  if (actor.role === "SUPERVISOR" && request.assignedSupervisorId === actor.id && !request.reviewerOpenedAt) {
+    await db.request.update({ where: { id }, data: { reviewerOpenedAt: new Date() } });
+  }
   if (actor.role === "SUPER_ADMIN") {
     await audit({ actorId: actor.id, action: "request.viewed_by_admin", entityType: "Request", entityId: id, after: { referenceNo: request.referenceNo, title: request.title } });
   }

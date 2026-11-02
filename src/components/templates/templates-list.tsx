@@ -127,7 +127,7 @@ export async function TemplatesList({ actor, searchParams, path, view }: { actor
                     </Td>
                   ) : null}
                   <Td>
-                    <DateDisplay date={t.updatedAt} />
+                    <DateDisplay date={t.updatedAt} variant="hijri" />
                   </Td>
                   <Td>
                     {/* A plain link: the route handler sends the file as an attachment. */}

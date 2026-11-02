@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Building2, HeartHandshake } from "lucide-react";
 import type { ReactNode } from "react";
-import { ProgramIcon } from "@/components/brand/program-icon";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { RegistrationDecision } from "@/components/registration/registration-decision";
@@ -101,23 +100,6 @@ export default async function RegistrationPage({ params }: PageProps<"/admin/reg
                   ) : null}
                 </Info>
               </dl>
-            </Panel>
-
-            <Panel>
-              <PanelHeader title="مجالات العمل" description="برامج الرئاسة التي اختارتها الجمعية" />
-              <ul className="grid gap-3 px-6 pb-6 sm:grid-cols-2">
-                {r.programs.map((p) => (
-                  <li key={p.number} className="flex items-center gap-3 rounded-lg border border-line bg-surface-muted p-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary [&_svg]:size-5">
-                      <ProgramIcon number={p.number} />
-                    </span>
-                    <span>
-                      <span className="block text-xs text-accent-ink">البرنامج {toArabicDigits(p.number)}</span>
-                      <span className="block text-sm font-bold">{p.name}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
             </Panel>
 
             <Panel>

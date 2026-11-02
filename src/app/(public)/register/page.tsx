@@ -29,7 +29,6 @@ async function Journey() {
   return (
     <RegistrationJourney
       vision={home.vision}
-      programs={home.programs}
       values={home.values}
       objectives={home.objectives}
     />

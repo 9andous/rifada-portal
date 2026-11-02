@@ -26,6 +26,8 @@ Never start a phase that has not been approved.
 | Review workflow change, phase 2 — Several initiatives per request, the association's own files | **Done**: accepted by the owner on 2026-10-29 | D-115. |
 | Review workflow change, phase 3 — Supervisor evaluation, signature, unit manager approval | **Built** on 2026-10-29; signatures revised on 2026-10-30 (electronic seals and QR verification instead of drawn signatures), awaiting the owner's review | D-116, D-117, D-120, D-122. |
 | Review workflow change, phase 4 — «المسارات» above the programmes | **Built** on 2026-10-30, awaiting the owner's review | D-119. |
+| Owner's review of 2026-11-02 — home, login, dashboards, tracks at registration, «الإسناد» removed | **Built** on 2026-11-02, awaiting the owner's review | D-126. |
+| Owner's review of 2026-11-02, second round — four-step registration, statuses hidden, supervisor tabs and banner | **Built** on 2026-11-02, awaiting the owner's review | D-127 (drops D-126's track limit). |
 | Phase 6 — Reports, print and PDF | Not started | |
 | Phase 7 — Demo mode, hardening, docs | Not started | |
 

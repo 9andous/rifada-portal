@@ -81,11 +81,11 @@ export function RequestsTable({
             {showSupervisor ? (
               <Td>{r.supervisor ? <PersonName name={r.supervisor.name} muted={!r.supervisor.isActive} /> : <span className="whitespace-nowrap text-ink-subtle">لم يُسند بعد</span>}</Td>
             ) : null}
-            <Td className="min-w-[9.5rem]">{r.submittedAt ? <DateDisplay date={r.submittedAt} /> : <span className="text-ink-subtle">—</span>}</Td>
+            <Td className="min-w-[9.5rem]">{r.submittedAt ? <DateDisplay date={r.submittedAt} variant="hijri" /> : <span className="text-ink-subtle">—</span>}</Td>
             <Td className="min-w-[9.5rem]">
               {r.slaDueAt && SLA_KEYS.includes(r.status.key) ? (
                 <span className="inline-flex flex-col items-start gap-1">
-                  <DateDisplay date={r.slaDueAt} className={r.overdue ? "text-st-bad" : undefined} />
+                  <DateDisplay date={r.slaDueAt} variant="hijri" className={r.overdue ? "text-st-bad" : undefined} />
                   {r.overdue ? <StatusText tone="bad">متأخر</StatusText> : null}
                 </span>
               ) : (
