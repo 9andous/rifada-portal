@@ -33,7 +33,6 @@ Scopes: **all** = every record; **own tracks** = records in tracks assigned to t
 | `requests.create` | إنشاء طلب جديد وحفظه كمسودة | — | — | — | own association |
 | `requests.editDraft` | تعديل المسودة أو الطلب المعاد للتعديل وتقديمه | — | — | — | own association |
 | `requests.review` | إعادة الطلب للتعديل أو اعتماده أو رفضه | — | all | own tracks | — |
-| `requests.auditTrail` | عرض سجل الاطلاع والتدقيق في صفحة الطلب | all | all | — | — |
 | `requests.assign` | إسناد الطلب إلى مشرف أو إعادة إسناده | — | all | — | — |
 | `comments.write` | إضافة تعليق على الطلب | — | all | own tracks | own association |
 | `comments.readInternal` | قراءة الملاحظات الداخلية للفريق الإشرافي | all | all | own tracks | — |

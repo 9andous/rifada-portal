@@ -18,7 +18,6 @@ import { scopeComments, scopeRequests, type Actor } from "@/server/authz/scope";
 import { db } from "@/server/db";
 import { PAGE_SIZE, assertCan, containsAny } from "@/server/services/admin/common";
 import { audit } from "@/server/services/audit";
-import { rankedSupervisors } from "./assignment";
 import { statusMap } from "./common";
 import { isDecider } from "./decisions";
 import { canChangeScope } from "./review";
@@ -131,7 +130,8 @@ export async function listRequests(actor: Actor, params: RequestListParams, view
   if (params.track) and.push({ trackId: params.track });
   if (params.program) and.push({ programId: params.program });
   if (params.association) and.push({ associationId: params.association });
-  if (params.supervisor === "none") and.push({ assignedSupervisorId: null });
+  // «غير مسند» counts open requests only, as the dashboards do (D-128).
+  if (params.supervisor === "none") and.push({ assignedSupervisorId: null, status: { key: { in: [...OPEN_STATUS_KEYS] } } });
   else if (params.supervisor) and.push({ assignedSupervisorId: params.supervisor });
   if (params.q) and.push({ OR: [...containsAny(params.q, ["title", "referenceNo"] as const), { association: { name: { contains: params.q, mode: "insensitive" } } }] });
   const overdueWhere: Prisma.RequestWhereInput = { status: { key: { in: [...SLA_STATUS_KEYS] } }, slaDueAt: { lt: now } };
@@ -271,7 +271,6 @@ export type RequestCapabilities = {
   canComment: boolean;
   canWriteInternal: boolean;
   canUploadToComment: boolean;
-  showAuditTrail: boolean;
   /** Staff viewing a returned request: the association may still be changing it (D-078). */
   returnedNotice: boolean;
 };
@@ -434,7 +433,6 @@ export async function getRequestDetail(actor: Actor, id: string) {
     canComment: submitted && can(actor.role, "comments.write"),
     canWriteInternal: submitted && can(actor.role, "comments.writeInternal"),
     canUploadToComment: submitted && can(actor.role, "comments.write") && can(actor.role, "attachments.upload"),
-    showAuditTrail: can(actor.role, "requests.auditTrail"),
     returnedNotice: !isOfficer && statusKey === "RETURNED",
   };
 
@@ -482,21 +480,11 @@ export async function getRequestDetail(actor: Actor, id: string) {
     };
   }
 
-  let assignment = null;
-  if (!isOfficer) {
-    const rows = await db.assignmentHistory.findMany({
-      where: { requestId: id },
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      select: { id: true, reason: true, createdAt: true, fromUser: { select: { name: true } }, toUser: { select: { name: true } }, actor: { select: { name: true } } },
-    });
-    assignment = {
-      supervisor: request.assignedSupervisor ? { id: request.assignedSupervisor.id, name: request.assignedSupervisor.name, isActive: request.assignedSupervisor.isActive } : null,
-      history: rows.map((r) => ({ id: r.id, from: r.fromUser?.name ?? null, to: r.toUser?.name ?? null, actor: r.actor?.name ?? null, reason: r.reason, createdAt: r.createdAt })),
-      candidates: capabilities.canReassign ? (await rankedSupervisors(db, request.trackId)).filter((s) => s.id !== request.assignedSupervisorId) : [],
-    };
-  }
+  // Staff see who holds the request; reassigning is done from the requests list (D-128).
+  const assignment = isOfficer
+    ? null
+    : { supervisor: request.assignedSupervisor ? { id: request.assignedSupervisor.id, name: request.assignedSupervisor.name, isActive: request.assignedSupervisor.isActive } : null };
 
-  const auditTrail = capabilities.showAuditTrail && request.submittedAt ? await requestAuditTrail(id, request.submittedAt) : null;
   const certificate = statusKey === "APPROVED" ? await requestCertificate(id) : null;
 
   // The assigned supervisor's first look clears the request from their «new» banner (D-127).
@@ -546,23 +534,8 @@ export async function getRequestDetail(actor: Actor, id: string) {
     assignment,
     review,
     certificate,
-    auditTrail,
     capabilities,
   };
 }
 
 export type RequestDetail = NonNullable<Awaited<ReturnType<typeof getRequestDetail>>>;
-
-/**
- * Audit entries of one request from its first submission on, newest first (super admin and unit
- * manager, D-072). Entries from the draft period stay out, like the draft itself (change 19).
- */
-async function requestAuditTrail(id: string, since: Date) {
-  const rows = await db.auditLog.findMany({
-    where: { entityType: "Request", entityId: id, createdAt: { gte: since } },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    take: 200,
-    select: { id: true, action: true, createdAt: true, actor: { select: { name: true, role: true } } },
-  });
-  return rows.map((r) => ({ id: r.id, action: r.action, createdAt: r.createdAt, actor: r.actor ? { name: r.actor.name, role: ROLE_LABELS[r.actor.role as Role] ?? "" } : null }));
-}

@@ -11,7 +11,7 @@ export const GENERAL_FIELDS = ["title", "description", "goals", "expectedBenefic
 export type GeneralField = (typeof GENERAL_FIELDS)[number] | "targetAudience" | "location";
 
 /** Text fields required at submission, besides the track, the request type, the budget and the period. */
-export const REQUIRED_GENERAL_FIELDS = ["title", "description", "goals", "expectedBeneficiaries"] as const;
+export const REQUIRED_GENERAL_FIELDS = ["title", "description", "goals", "expectedBeneficiaries", "kpis"] as const;
 
 export const GENERAL_FIELD_LABELS: Record<GeneralField, string> = {
   title: "اسم المشروع أو البرنامج",

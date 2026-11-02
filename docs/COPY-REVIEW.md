@@ -154,3 +154,6 @@ The track wording of D-126 (registration step, «مسارات الجمعية», 
 | Supervisor home, banner | طلب جديد / طلبان جديدان / ٣ طلبات جديدة / ١١ طلبًا جديدًا + بانتظار مراجعتك; button «مراجعتها الآن» | Number agreement for «جديد». |
 | Supervisor home, tabs | الطلبات الأخيرة (الأحدث تقديمًا أولًا) / ذات أولوية (المعادة للتعديل والمتأخرة، الأقرب مهلة أولًا) | |
 | Supervisor home, empty tab | لا توجد طلبات ذات أولوية / لا توجد في قائمتك طلبات معادة للتعديل أو متأخرة عن المهلة. | |
+| Manager home, notice (D-128) | «عرض غير المسندة»; «أسند الطلبات إلى مشرف لتبدأ مراجعتها.» | Staff singular imperative. |
+| Completeness (D-128) | «مؤشرات القياس مطلوبة.»، «الفئات المستهدفة مطلوبة.» | Feminine for plural labels. |
+| Staff request page (D-128) | المشرف: «… (حساب معطل)» | |

@@ -20,6 +20,7 @@ const base = (over: Partial<CompletenessInput> = {}): CompletenessInput => ({
     description: "وصف",
     goals: "الأهداف",
     expectedBeneficiaries: "العاملون في قطاع الحج",
+    kpis: "نسبة الحضور",
     estimatedBudget: 1000,
     startDate: new Date("2099-01-10T00:00:00Z"),
     endDate: new Date("2099-02-10T00:00:00Z"),
@@ -41,12 +42,18 @@ describe("completeness check (pure)", () => {
 
   it("is deterministic and keeps form order", () => {
     const input = base({
-      general: { title: "", description: null, goals: " ", expectedBeneficiaries: null, estimatedBudget: null, startDate: null, endDate: null },
+      general: { title: "", description: null, goals: " ", expectedBeneficiaries: null, kpis: null, estimatedBudget: null, startDate: null, endDate: null },
       requirements: [req({ key: "b", sortOrder: 2 }), req({ key: "a", sortOrder: 1 }), req({ key: "f", kind: "ATTACHMENT", fieldType: null, attachmentType: { key: "f", name: "ملف", groups: ["pdf"] } })],
     });
     const first = checkCompleteness(input);
     expect(checkCompleteness(input)).toEqual(first);
-    expect(first.map((m) => m.field)).toEqual(["title", "description", "goals", "expectedBeneficiaries", "startDate", "endDate", "estimatedBudget", "custom.a", "custom.b", "attachment.f"]);
+    expect(first.map((m) => m.field)).toEqual(["title", "description", "goals", "expectedBeneficiaries", "kpis", "startDate", "endDate", "estimatedBudget", "custom.a", "custom.b", "attachment.f"]);
+  });
+
+  it("requires the measurement indicators (D-128)", () => {
+    const missing = checkCompleteness(base({ general: { ...base().general, kpis: "  " } }));
+    expect(missing.map((m) => m.field)).toEqual(["kpis"]);
+    expect(missing[0].message).toBe("مؤشرات القياس مطلوبة.");
   });
 
   it("requires the track and the request type, and refuses archived or paused ones (D-123)", () => {

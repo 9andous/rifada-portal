@@ -546,7 +546,8 @@ export function RequestsTableCard({
 /** Tab row inside a card (handoff `.tabs`): icon, label and a count chip; each tab is a link. */
 export function CardTabs({ items, label }: { items: { key: string; label: string; count: number; href: string; active: boolean; icon: ReactNode }[]; label: string }) {
   // overflow-y-hidden: a horizontally scrolling row must not grow a vertical scrollbar, so the active
-  // bar sits inside the row (bottom-0). A short hairline separates the tabs (owner's review, D-125).
+  // bar sits inside the row (bottom-0). A short hairline separates the tabs (owner's review, D-125);
+  // the tabs share the card's whole width (D-128).
   return (
     <nav aria-label={label} className="flex items-center overflow-x-auto overflow-y-hidden border-b border-line px-5">
       {items.map((t, i) => (
@@ -557,7 +558,7 @@ export function CardTabs({ items, label }: { items: { key: string; label: string
             scroll={false}
             aria-current={t.active ? "page" : undefined}
             className={cn(
-              "relative inline-flex h-12 shrink-0 items-center gap-2 px-3.5 text-sm whitespace-nowrap [&_svg]:size-4",
+              "relative inline-flex h-12 min-w-max flex-1 items-center justify-center gap-2 px-3.5 text-sm whitespace-nowrap [&_svg]:size-4",
               t.active
                 ? "font-semibold text-primary after:absolute after:inset-x-2 after:bottom-0 after:h-[3px] after:rounded-t-[3px] after:bg-primary"
                 : "font-medium text-ink-muted hover:text-ink",

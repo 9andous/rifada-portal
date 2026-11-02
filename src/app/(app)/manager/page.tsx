@@ -18,6 +18,7 @@ import { getSetting } from "@/server/settings/read";
 export const metadata: Metadata = { title: "نظرة عامة على الإشراف" };
 
 const REQUESTS = "/manager/requests";
+const UNASSIGNED = `${REQUESTS}?supervisor=none`;
 
 export default async function ManagerDashboard({ searchParams }: PageProps<"/manager">) {
   const user = await requireUser();
@@ -103,6 +104,7 @@ export default async function ManagerDashboard({ searchParams }: PageProps<"/man
                 alert: overview.unassigned > 0,
                 value: formatNumber(overview.unassigned),
                 caption: "بانتظار مشرف",
+                href: UNASSIGNED,
               },
             ]}
           />
@@ -135,10 +137,18 @@ export default async function ManagerDashboard({ searchParams }: PageProps<"/man
                     عرض المتأخرة
                   </Link>
                 ) : null}
+                {overview.unassigned ? (
+                  <Link href={UNASSIGNED} className={buttonClasses("outline", "sm")}>
+                    <UserRoundCheck aria-hidden="true" />
+                    عرض غير المسندة
+                  </Link>
+                ) : null}
               </>
             }
           >
-            تابع المشرفين لتفادي تجاوز مهلة المراجعة.
+            {[overview.overdue ? "تابع المشرفين لتفادي تجاوز مهلة المراجعة." : null, overview.unassigned ? "أسند الطلبات إلى مشرف لتبدأ مراجعتها." : null]
+              .filter(Boolean)
+              .join(" ")}
           </Alert>
         ) : null}
 

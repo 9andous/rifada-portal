@@ -4,12 +4,10 @@ import { buttonClasses } from "@/components/ui/button";
 import type { ReactNode } from "react";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
-import { PersonName } from "@/components/ui/avatar";
 import { DateDisplay } from "@/components/ui/date-display";
 import { RefNumber } from "@/components/ui/ref-number";
 import { Alert, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { DataTable, THead, Td, Th, Tr } from "@/components/ui/table";
-import { auditActionLabel } from "@/lib/audit-labels";
 import { acceptedGroups } from "@/lib/completeness";
 import { cn } from "@/lib/cn";
 import { arabicList, formatGregorian, formatHijri, formatNumber, toArabicDigits } from "@/lib/format";
@@ -21,7 +19,6 @@ import { Conversation } from "./conversation";
 import { DecisionPanel } from "./decision-panel";
 import { FileItem } from "./file-list";
 import { MarkRequestSeen } from "./mark-request-seen";
-import { ReassignButton } from "./request-actions";
 import { RequestStepper } from "./request-stepper";
 import { EvaluationEditDialog } from "./evaluation-dialog";
 import { EvaluationCard, RequestLog, ScopeCards } from "./review-cards";
@@ -122,7 +119,8 @@ export function RequestView({ request: r, listHref, listLabel, uploads, scopePro
     ["تاريخ التقديم", r.submittedAt ? formatHijri(r.submittedAt) : "لم يُقدَّم بعد", <CalendarDays key="i" strokeWidth={1.75} />],
     ["مهلة المراجعة", slaText(r, now), <Clock key="i" strokeWidth={1.75} />],
   ];
-  if (isStaff) facts.push(["المشرف", r.assignment?.supervisor?.name ?? "لم يُسند بعد", <UserRound key="i" strokeWidth={1.75} />]);
+  const supervisor = r.assignment?.supervisor;
+  if (isStaff) facts.push(["المشرف", supervisor ? `${supervisor.name}${supervisor.isActive ? "" : " (حساب معطل)"}` : "لم يُسند بعد", <UserRound key="i" strokeWidth={1.75} />]);
   facts.push(["فحص الاكتمال", r.completeness ? (r.completeness.passed ? "مكتمل" : "غير مكتمل") : "لم يُجرَ بعد", <ClipboardCheck key="i" strokeWidth={1.75} />]);
 
   return (
@@ -385,65 +383,11 @@ export function RequestView({ request: r, listHref, listLabel, uploads, scopePro
               />
             ) : null}
 
-            {r.assignment ? (
-              <SideCard
-                title="الإسناد"
-                actions={
-                  caps.canReassign ? (
-                    <ReassignButton
-                      request={dialogRequest}
-                      supervisors={r.assignment.candidates.map((c) => ({ id: c.id, name: c.name, trackIds: r.track ? [r.track.id] : [], open: c.open }))}
-                    />
-                  ) : null
-                }
-              >
-                <div className="text-sm">
-                  {r.assignment.supervisor ? (
-                    <PersonName name={r.assignment.supervisor.name} />
-                  ) : (
-                    <span className="text-ink-subtle">لم يُسند بعد</span>
-                  )}
-                  {r.assignment.supervisor && !r.assignment.supervisor.isActive ? <p className="mt-1 text-xs text-st-warn">حساب المشرف معطل؛ أعد إسناد الطلب.</p> : null}
-                </div>
-                {r.assignment.history.length ? (
-                  <ol className="mt-4 flex flex-col gap-3">
-                    {[...r.assignment.history].reverse().map((h) => (
-                      <li key={h.id} className="text-sm">
-                        <p className="text-ink">
-                          {h.to ? `إلى ${h.to}` : "دون مشرف"}
-                          {h.from ? <span className="t-caption"> (من {h.from})</span> : null}
-                        </p>
-                        <p className="t-caption">{h.actor ? `بواسطة ${h.actor}` : "إسناد تلقائي"}</p>
-                        {h.reason ? <p className="t-caption whitespace-pre-line">السبب: {h.reason}</p> : null}
-                        <DateDisplay date={h.createdAt} withTime className="t-caption" />
-                      </li>
-                    ))}
-                  </ol>
-                ) : null}
-              </SideCard>
-            ) : null}
-
+            {/* «الإسناد» and the audit trail were removed on the owner's review (D-128): the supervisor
+                is in the facts strip and reassigning is done from the requests list. */}
             <SideCard title={r.review ? "سجل الطلب" : "مسار الطلب"}>
               {r.review ? <RequestLog timeline={r.timeline} review={r.review} /> : <StatusTimeline entries={r.timeline} />}
             </SideCard>
-
-            {r.auditTrail ? (
-              <SideCard title="سجل الاطلاع والتدقيق" note="لمدير النظام ومدير الوحدة فقط">
-                {r.auditTrail.length === 0 ? (
-                  <p className="t-body text-sm">لا توجد قيود بعد.</p>
-                ) : (
-                  <ol className="flex max-h-96 flex-col gap-3 overflow-y-auto">
-                    {r.auditTrail.map((e) => (
-                      <li key={e.id} className="text-sm">
-                        <p className="text-ink">{auditActionLabel(e.action)}</p>
-                        <p className="t-caption">{e.actor ? `${e.actor.name} · ${e.actor.role}` : "النظام"}</p>
-                        <DateDisplay date={e.createdAt} withTime className="t-caption" />
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </SideCard>
-            ) : null}
           </aside>
         </div>
       </PageBody>

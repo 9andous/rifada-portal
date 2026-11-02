@@ -249,16 +249,14 @@ describe("super admin", () => {
   it("reads submitted requests read-only, and every view and download is audited", async () => {
     const { id } = await submittedRequest(w);
     const detail = await getRequestDetail(w.actors.admin, id);
-    expect(detail?.capabilities).toMatchObject({ canDecide: false, canComment: false, canReassign: false, canEdit: false, showAuditTrail: true });
+    expect(detail?.capabilities).toMatchObject({ canDecide: false, canComment: false, canReassign: false, canEdit: false });
     const versionId = (await db.attachmentVersion.findFirstOrThrow({ where: { attachment: { requestId: id } } })).id;
     (await requestFile(w.actors.admin, id, versionId))?.stream.destroy();
     expect(await db.auditLog.count({ where: { entityId: id, action: "request.viewed_by_admin", actorId: w.users.admin.id } })).toBe(1);
     expect(await db.auditLog.count({ where: { entityId: id, action: "request.file_downloaded_by_admin", actorId: w.users.admin.id } })).toBe(1);
-    // The trail shows these entries to the manager and the admin, never to supervisors or officers.
-    const manager = await getRequestDetail(w.actors.manager, id);
-    expect(manager?.auditTrail?.map((e) => e.action)).toEqual(expect.arrayContaining(["request.viewed_by_admin", "request.file_downloaded_by_admin"]));
-    expect((await getRequestDetail(w.actors.supervisor, id))?.auditTrail).toBeNull();
-    expect((await getRequestDetail(w.actors.officer, id))?.auditTrail).toBeNull();
+    // The request page no longer carries an audit trail (D-128); the entries stay in /admin/audit.
+    expect(await getRequestDetail(w.actors.manager, id)).not.toHaveProperty("auditTrail");
+    await getRequestDetail(w.actors.supervisor, id);
     // Other roles' views are not audited as admin views.
     expect(await db.auditLog.count({ where: { entityId: id, action: "request.viewed_by_admin" } })).toBe(1);
   });

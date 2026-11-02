@@ -1,4 +1,4 @@
-import { Check, Hourglass, PenLine, ShieldCheck, X } from "lucide-react";
+import { Check, Hourglass, ShieldCheck, X } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { DateDisplay } from "@/components/ui/date-display";
@@ -182,7 +182,7 @@ const scopeLine = (s: ScopeSnapshotView) => (s.program ? `${s.program.name} ← 
 
 type LogItem = { id: string; at: Date; node: ReactNode };
 
-/** «سجل الطلب» for the staff: status moves, the supervisor's evaluations and programme changes, newest first. */
+/** «سجل الطلب» for the staff: status moves, changes to the evaluation and programme changes, newest first. */
 export function RequestLog({ timeline, review }: { timeline: TimelineEntry[]; review: ReviewView }) {
   const items: LogItem[] = [
     ...timeline.map((t) => ({
@@ -196,22 +196,7 @@ export function RequestLog({ timeline, review }: { timeline: TimelineEntry[]; re
         </>
       ),
     })),
-    ...review.evaluations.map((e) => ({
-      id: `e-${e.id}`,
-      at: e.createdAt,
-      node: (
-        <>
-          <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
-            <PenLine aria-hidden="true" strokeWidth={1.75} className="size-4 text-primary" />
-            قيّم الطلب ووقّعه إلكترونيًا وأرسله إلى مدير الوحدة
-          </p>
-          <p className="mt-1 text-sm text-ink">{e.reviewer}</p>
-          <TimelineText>
-            مستوفى {formatNumber(e.criteria.filter((c) => c.met).length)} من {formatNumber(e.criteria.length)} معايير
-          </TimelineText>
-        </>
-      ),
-    })),
+    // The signed evaluation itself is shown in «تقييم المشرف», not repeated here (D-128).
     ...review.evaluations
       .filter((e) => e.edited)
       .map((e) => ({

@@ -1343,3 +1343,17 @@ records the assigned supervisor's first opening of a request; it is cleared on a
 and resubmission. The supervisor's home shows «… جديد بانتظار مراجعتك» with «مراجعتها الآن» while any
 are unopened (list param `unopened=1`). It is view state, not audited; existing requests were marked
 opened by the migration.
+
+**D-128 Owner's review of 2026-11-02, third round: readable key figures, unassigned requests, a lighter
+request side column, measures required.** (1) Key-figure labels wrap to two lines and captions wrap
+instead of being cut with an ellipsis; a row of six is three by three below 2xl. (2) The unit manager's
+notice about unassigned requests gains «عرض غير المسندة», and the «غير مسندة» figure links to the same
+list (`supervisor=none`). That filter now counts open requests only, so the list matches the figure. The
+notice's sentence follows what it reports. (3) The staff request page loses «سجل الاطلاع والتدقيق»
+(the `requests.auditTrail` permission is removed; the entries stay in `/admin/audit`) and the
+«الإسناد» card. The supervisor stays in the key facts, marked «(حساب معطل)» when disabled. Reassigning
+is done from the requests lists only, which narrows D-126. (4) «سجل الطلب» no longer repeats the
+supervisor's signed evaluation, which «تقييم المشرف» shows; changes to it are still logged.
+(5) «مؤشرات القياس» is required at submission («مؤشرات القياس مطلوبة.»); drafts and returned requests
+without it are stopped by the completeness check. Plural labels take «مطلوبة». (6) Dashboard card tabs
+share the card's whole width.

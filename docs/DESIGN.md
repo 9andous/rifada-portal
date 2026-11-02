@@ -309,8 +309,8 @@ logo (72px) below it, and the copyright bar. No invented contact details or soci
   a halo, rejected red) and the key facts in icon cells. Each section (description, initiative
   data, attachments, completeness, conversation) is its own card. The side column holds the
   «القرار» panel (green-bordered, approve green, return amber outline, reject red outline), the
-  assignment, the status timeline «مسار الطلب» (the shared diamond timeline, latest entry gold) and
-  the audit trail.
+  supervisor's evaluation and the status timeline «مسار الطلب» / «سجل الطلب» (the shared diamond
+  timeline, latest entry gold). No assignment card and no audit trail (D-128).
 - **New request and the request form** belong to the association and follow «Association
   interface» (D-102, D-103): the steps at the side as on the registration page; programme cards,
   then the initiatives as a list of choices with a search box, then the wizard (one subject per
@@ -329,7 +329,8 @@ logo (72px) below it, and the copyright bar. No invented contact details or soci
   featured green first tile (`KpiRow`), shortcut tiles with real counts (`QuickActions`, unit
   manager and association), card headers with the 36px icon tile, the arch empty state in cards,
   deadline pills in request tables. Building blocks: `src/components/dashboard/kpis.tsx`,
-  `cards.tsx`.
+  `cards.tsx`. Key-figure labels and captions wrap, never end in an ellipsis; card tabs share the
+  card's width (D-128).
 - **Unit manager:** the page head shows a small time-based greeting (صباح الخير before noon, مساء الخير
   after, Asia/Riyadh time) above the large title «نظرة عامة على الإشراف», the Hijri date, and the
   key figures: إجمالي الطلبات، مفتوحة، متأخرة عن المهلة، متوسط المعالجة، نسبة الاعتماد، غير مسندة,

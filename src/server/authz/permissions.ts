@@ -81,10 +81,6 @@ export const PERMISSIONS = {
     description: "إعادة الطلب للتعديل أو اعتماده أو رفضه",
     grants: { UNIT_MANAGER: "all", SUPERVISOR: "tracks" },
   },
-  "requests.auditTrail": {
-    description: "عرض سجل الاطلاع والتدقيق في صفحة الطلب",
-    grants: { SUPER_ADMIN: "all", UNIT_MANAGER: "all" },
-  },
   "requests.assign": {
     description: "إسناد الطلب إلى مشرف أو إعادة إسناده",
     grants: { UNIT_MANAGER: "all" },

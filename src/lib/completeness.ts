@@ -36,6 +36,7 @@ export type CompletenessInput = {
     description: string | null;
     goals: string | null;
     expectedBeneficiaries: string | null;
+    kpis: string | null;
     estimatedBudget: number | null;
     startDate: Date | null;
     endDate: Date | null;
@@ -89,7 +90,9 @@ export function checkCompleteness(input: CompletenessInput): MissingItem[] {
 
   const g = input.general;
   for (const field of REQUIRED_GENERAL_FIELDS) {
-    if (!g[field]?.trim()) add("general_missing", field, `${GENERAL_FIELD_LABELS[field]} مطلوب.`);
+    // Plural labels («الفئات المستهدفة»، «مؤشرات القياس») take the feminine.
+    const required = field === "expectedBeneficiaries" || field === "kpis" ? "مطلوبة" : "مطلوب";
+    if (!g[field]?.trim()) add("general_missing", field, `${GENERAL_FIELD_LABELS[field]} ${required}.`);
   }
   const start = g.startDate && !Number.isNaN(g.startDate.getTime()) ? g.startDate.toISOString().slice(0, 10) : null;
   const end = g.endDate && !Number.isNaN(g.endDate.getTime()) ? g.endDate.toISOString().slice(0, 10) : null;

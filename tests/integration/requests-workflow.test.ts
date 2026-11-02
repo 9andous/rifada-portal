@@ -98,9 +98,12 @@ describe("drafts", () => {
 });
 
 describe("track and request type at submission (D-123)", () => {
-  it("does not ask for measures or partners; an archived track blocks by name", async () => {
+  it("asks for measures but not partners (D-128); an archived track blocks by name", async () => {
     const id = await newDraft(w);
     expect(await saveDraft(w.actors.officer, id, validDraft({ kpis: "", partners: "" }))).toEqual({ ok: true });
+    const noMeasures = await submitRequest(w.actors.officer, id);
+    expect(noMeasures).toMatchObject({ ok: false, missing: [expect.objectContaining({ code: "general_missing", field: "kpis" })] });
+    expect(await saveDraft(w.actors.officer, id, validDraft({ partners: "" }))).toEqual({ ok: true });
     await db.track.update({ where: { id: w.t1.id }, data: { archivedAt: new Date() } });
     const blocked = await submitRequest(w.actors.officer, id);
     expect(blocked).toMatchObject({ ok: false, missing: [expect.objectContaining({ code: "track_unavailable", field: "trackId" })] });

@@ -818,10 +818,9 @@ export function RequestWizard({
               </div>
               <FormField
                 id="f-kpis"
-                label={GENERAL_FIELD_LABELS.kpis}
+                label={`${GENERAL_FIELD_LABELS.kpis} *`}
                 hint="كيف ستقيسون النجاح؟ مثال: عدد الأجزاء المحفوظة، نسبة الحضور، رضا المستفيدين."
                 error={err("kpis")}
-                optional
               >
                 <input
                   id="f-kpis"
@@ -971,8 +970,8 @@ export function RequestWizard({
                 >
                   {hijri(values.endDate)}
                 </ReviewRow>
-                <ReviewRow label={GENERAL_FIELD_LABELS.kpis} missing={false}>
-                  {optional(values.kpis)}
+                <ReviewRow label={GENERAL_FIELD_LABELS.kpis} missing={!values.kpis?.trim()}>
+                  {values.kpis}
                 </ReviewRow>
                 <ReviewRow
                   label={GENERAL_FIELD_LABELS.partners}

@@ -40,12 +40,12 @@ export type Kpi = {
 
 /**
  * The row of key figures: icon tile and label, the figure, a caption; the first may be featured.
- * `wrap` lets labels and captions run onto a second line instead of being cut short (the
- * association pages, D-102, where two tiles share a phone's width at the larger text size) and sets
- * them one step larger. Labels are bold and dark, captions semibold, on every role (D-109).
+ * Labels (up to two lines) and captions wrap instead of being cut short (D-128); `wrap` sets the
+ * label one step larger (the association pages, D-102). Labels are bold and dark, captions
+ * semibold, on every role (D-109).
  */
 export function KpiRow({ items, wrap }: { items: Kpi[]; wrap?: boolean }) {
-  const cols = items.length >= 6 ? "sm:grid-cols-3 xl:grid-cols-6" : items.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-4";
+  const cols = items.length >= 6 ? "sm:grid-cols-3 2xl:grid-cols-6" : items.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-4";
   return (
     <dl className={cn("grid grid-cols-2 gap-3.5", cols)}>
       {items.map((k) => {
@@ -71,7 +71,7 @@ export function KpiRow({ items, wrap }: { items: Kpi[]; wrap?: boolean }) {
               <span
                 className={cn(
                   "min-w-0",
-                  wrap ? "text-base font-bold leading-snug" : "truncate text-[0.9375rem] font-bold",
+                  wrap ? "text-base font-bold leading-snug" : "line-clamp-2 text-[0.9375rem] font-bold leading-snug",
                   k.href && "pe-4",
                   k.featured ? "text-band-ink" : "text-ink",
                 )}
@@ -103,7 +103,7 @@ export function KpiRow({ items, wrap }: { items: Kpi[]; wrap?: boolean }) {
                     {k.badge}
                   </span>
                 ) : null}
-                <span className={wrap ? "leading-snug" : "truncate"}>{k.caption}</span>
+                <span className="leading-snug">{k.caption}</span>
               </dd>
             ) : null}
             {k.href ? (
