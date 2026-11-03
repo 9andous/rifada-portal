@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   Compass,
   Eye,
   LogIn,
@@ -67,9 +66,6 @@ export function HomeHero({ figures, quotes }: { figures?: ReactNode; quotes: Rea
             <Link href="/login" className={buttonClasses("gold", "lg")}>
               <LogIn aria-hidden="true" />
               الدخول إلى المنصة
-            </Link>
-            <Link href="/register" className={buttonClasses("outlineOnBand", "lg")}>
-تسجيل جمعية              <ArrowLeft aria-hidden="true" />
             </Link>
           </div>
           {figures ? <div className="mt-10">{figures}</div> : null}

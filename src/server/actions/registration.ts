@@ -14,6 +14,7 @@ import {
   submitRegistration,
   type RegistrationLookup,
 } from "@/server/services/registrations";
+import { REGISTRATION_OPEN } from "@/config/features";
 import { asAdmin, fromRefusal } from "./admin/guard";
 import type { AdminFormState } from "./admin/state";
 
@@ -22,6 +23,9 @@ export type StepCheck = { ok: boolean; errors?: FieldErrors };
 export type LookupState = { ok?: boolean; message?: string; errors?: FieldErrors; result?: RegistrationLookup };
 
 const TOO_MANY = "تجاوزتم عدد المحاولات المسموح بها. حاولوا بعد قليل.";
+// Associations no longer register themselves (owner's review, D-130): the super admin adds them.
+// The public steps refuse; reviewing applications already received stays below.
+const CLOSED = "التسجيل الذاتي للجمعيات متوقف. تُضاف الجمعيات من قِبل إدارة المنصة.";
 
 async function clientKey(): Promise<string> {
   const h = await headers();
@@ -30,6 +34,7 @@ async function clientKey(): Promise<string> {
 
 /** Public: submits an association's application. Limited to five submissions per hour per client. */
 export async function submitRegistrationAction(_: RegistrationFormState, formData: FormData): Promise<RegistrationFormState> {
+  if (!REGISTRATION_OPEN) return { ok: false, message: CLOSED };
   const raw = formObject(formData);
   // Honeypot: the field is hidden from people; a filled value means an automated submission.
   if (typeof raw.website_confirm === "string" && raw.website_confirm !== "") return { ok: false, message: "تعذّر إرسال الطلب." };
@@ -50,6 +55,7 @@ export async function submitRegistrationAction(_: RegistrationFormState, formDat
  * Limited per client, since it answers whether a license or username is registered.
  */
 export async function checkRegistrationStepAction(step: number, formData: FormData): Promise<StepCheck> {
+  if (!REGISTRATION_OPEN) return { ok: false, errors: { form: CLOSED } };
   if (!Number.isInteger(step) || step < 1 || step > 2) return { ok: true };
   if (!rateLimit(`registration-step:${await clientKey()}`, 60, 15 * 60 * 1000)) return { ok: false, errors: { form: TOO_MANY } };
   const parsed = registrationStepSchema(step).safeParse(formObject(formData));
@@ -62,6 +68,7 @@ export async function checkRegistrationStepAction(step: number, formData: FormDa
 
 /** Public: the status of an application by reference and license number. Limited per client. */
 export async function lookupRegistrationAction(_: LookupState, formData: FormData): Promise<LookupState> {
+  if (!REGISTRATION_OPEN) return { ok: false, message: CLOSED };
   if (!rateLimit(`registration-lookup:${await clientKey()}`, 20, 15 * 60 * 1000)) return { ok: false, message: TOO_MANY };
   const parsed = registrationLookupSchema.safeParse(formObject(formData));
   if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };

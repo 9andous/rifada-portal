@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Ban, Inbox } from "lucide-react";
 import { BackLink } from "@/components/association/parts";
+import { FreshOnReturn } from "@/components/association/fresh-on-return";
 import { RequestWizard } from "@/components/association/request-wizard";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
@@ -40,6 +41,7 @@ export default async function NewRequestPage() {
         ) : tracks.length === 0 || requestTypes.length === 0 ? (
           <EmptyState icon={<Inbox strokeWidth={1.75} />} title="لا تُستقبل طلبات حاليًا" description="لم تُضبط المسارات أو أنواع الطلبات بعد. أعيدوا المحاولة لاحقًا أو تواصلوا مع الوحدة الإشرافية." />
         ) : (
+          <FreshOnReturn>
           <RequestWizard
             requestId={null}
             returned={false}
@@ -63,6 +65,7 @@ export default async function NewRequestPage() {
               canRemove: true,
             }}
           />
+          </FreshOnReturn>
         )}
       </PageBody>
     </>

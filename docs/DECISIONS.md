@@ -1389,3 +1389,14 @@ instead of the 403 page; the homepage photo keeps its square shape at any text s
 fields on sign-in, reset and change have the show/hide eye. The help button on the public pages is a
 labelled «المساعدة» pill and its answers follow the current four-step registration. «ربيع الآخر»
 stays: it is the Umm al-Qura name (owner's choice).
+
+**D-131 Owner's review of 2026-11-03, follow-up: no self-registration, a fresh new request, green lead
+figure.** (1) Associations no longer register themselves: `REGISTRATION_OPEN` (src/config/features.ts)
+is off. The registration and status pages redirect to the home page, the public registration actions
+refuse, and every «تسجيل جمعية» entry is gone (home, header, footer, sign-in page, help answers, which
+now cover joining through the unit, signing in, sending and following requests). The super admin adds
+associations; applications received earlier stay reviewable at `/admin/registrations`. (2) With Cache
+Components a page left behind keeps its state, so «تقديم طلب جديد» reopened the draft created on the
+previous visit. The new-request form now starts afresh each time it is opened (`FreshOnReturn`). (3)
+The green first figure (D-130) showed white on white because the tile's white background came later
+in the stylesheet; figure colours are now chosen as one set (`FIGURE_TILE` or `FIGURE_LEAD`).

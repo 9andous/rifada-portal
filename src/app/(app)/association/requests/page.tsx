@@ -81,7 +81,7 @@ async function StatusFilters({ user, searchParams }: { user: CurrentUser; search
                 href={listAddress(t.key, q)}
                 aria-current={selected ? "true" : undefined}
                 scroll={false}
-                className={cn(FIGURE_TILE, "card-link h-full", selected && FIGURE_LEAD)}
+                className={cn(selected ? FIGURE_LEAD : FIGURE_TILE, "card-link h-full")}
               >
                 <span className={cn("text-base", selected ? "font-bold text-band-ink" : "font-medium text-ink-muted")}>{t.name}</span>
                 <span className={cn(FIGURE_VALUE, selected ? "text-band-ink" : "text-ink")}>{formatNumber(t.count)}</span>

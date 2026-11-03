@@ -76,10 +76,12 @@ export type BandFigure = {
 export type FigureAttention = "warn" | "bad";
 
 /** Key-figure tile (docs/DESIGN.md: Key figures), shared with the request list's status filters. */
-export const FIGURE_TILE = "card-hover group relative flex min-w-0 flex-col gap-2.5 overflow-hidden rounded-xl border border-line bg-surface px-[18px] py-4 shadow-1";
+/** A figure card's shape; its colours come from `FIGURE_TILE` (white) or `FIGURE_LEAD` (green). */
+export const FIGURE_SHAPE = "group relative flex min-w-0 flex-col gap-2.5 overflow-hidden rounded-xl border px-[18px] py-4 shadow-1";
+export const FIGURE_TILE = `${FIGURE_SHAPE} card-hover border-line bg-surface`;
 export const FIGURE_VALUE = "t-figure text-[2rem] leading-none";
-/** The green lead or chosen figure (D-130), as the first KPI card. */
-export const FIGURE_LEAD = "band-scope border-band bg-band text-band-ink";
+/** The green lead or chosen figure (D-130), as the first KPI card. Use instead of `FIGURE_TILE`. */
+export const FIGURE_LEAD = `${FIGURE_SHAPE} band-scope border-band bg-band text-band-ink`;
 export const ATTENTION_TEXT: Record<FigureAttention, string> = { warn: "text-st-warn", bad: "text-st-bad" };
 const ATTENTION_DOT: Record<FigureAttention, string> = { warn: "bg-st-warn", bad: "bg-st-bad" };
 
@@ -105,7 +107,7 @@ export function BandFigures({ items }: { items: BandFigure[] }) {
     <dl className={cn("grid grid-cols-2 gap-3.5", items.length === 3 ? cols : cn("sm:grid-cols-3", cols))}>
       {items.map((f, i) => (
         // The first figure is green, like «الطلبات المرسلة» (owner's review, D-130).
-        <div key={f.label} className={cn(FIGURE_TILE, f.href && "card-link", i === 0 && FIGURE_LEAD)}>
+        <div key={f.label} className={cn(i === 0 ? FIGURE_LEAD : FIGURE_TILE, f.href && "card-link")}>
           <dt className="flex items-center gap-2">
             <span className={cn("min-w-0 truncate text-[0.9375rem] font-bold", i === 0 ? "text-band-ink" : "text-ink")}>{f.label}</span>
             {f.href ? <FigureChevron /> : null}

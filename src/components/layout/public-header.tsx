@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
 import { AccessibilityMenu } from "./accessibility-menu";
 import { GovBar } from "./gov-bar";
@@ -41,12 +41,6 @@ export function PublicHeader() {
       >
         <AccessibilityMenu />
         <ThemeToggle />
-        <span className="hidden sm:block">
-          <Link href="/register" className={buttonClasses("outline", "md")}>
-            <Building2 aria-hidden="true" />
-            تسجيل جمعية
-          </Link>
-        </span>
         <Link href="/login" className={buttonClasses("gold", "md", "ms-1")}>
           <LogIn aria-hidden="true" />
           <span className="hidden sm:inline">الدخول إلى المنصة</span>

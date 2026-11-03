@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { REGISTRATION_OPEN } from "@/config/features";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { RegistrationJourney } from "@/components/registration/registration-journey";
@@ -10,6 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default function RegisterPage() {
+  // Self-registration is closed (D-130).
+  if (!REGISTRATION_OPEN) redirect("/");
   return (
     <Suspense
       fallback={
