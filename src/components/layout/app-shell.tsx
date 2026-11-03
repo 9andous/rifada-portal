@@ -74,7 +74,7 @@ export function AppShell({ role, easy, children }: { role: Role; easy?: boolean;
         </nav>
       </div>
 
-      <main id="main" className="flex flex-1 flex-col">
+      <main id="main" data-role={role} className="flex flex-1 flex-col">
         <Suspense fallback={<PageSkeleton />}>
           <AreaGuard role={role}>{children}</AreaGuard>
         </Suspense>

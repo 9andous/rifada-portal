@@ -45,7 +45,14 @@ export type Kpi = {
  * semibold, on every role (D-109).
  */
 export function KpiRow({ items, wrap }: { items: Kpi[]; wrap?: boolean }) {
-  const cols = items.length >= 6 ? "sm:grid-cols-3 2xl:grid-cols-6" : items.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-4";
+  const cols =
+    items.length >= 6
+      ? "sm:grid-cols-3 2xl:grid-cols-6"
+      : items.length === 5
+        ? "sm:grid-cols-3 2xl:grid-cols-5"
+        : items.length === 3
+          ? "sm:grid-cols-3"
+          : "sm:grid-cols-2 xl:grid-cols-4";
   return (
     <dl className={cn("grid grid-cols-2 gap-3.5", cols)}>
       {items.map((k) => {

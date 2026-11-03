@@ -4,8 +4,8 @@ import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
 
 // Text size for readers who need larger type (D-102, D-125). The whole interface is sized in rem, so
-// the root font size scales everything: normal 125% (every area's default), large 137.5%, larger
-// 150% (globals.css). The choice is kept on the device.
+// the root font size scales everything: normal 100% (every area's default), large 112.5%, larger
+// 125% (globals.css). The choice is kept on the device.
 
 export const TEXT_SIZE_STORAGE_KEY = "rifada-text-size";
 

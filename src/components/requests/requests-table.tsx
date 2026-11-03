@@ -5,7 +5,6 @@ import { DateDisplay } from "@/components/ui/date-display";
 import { RefNumber } from "@/components/ui/ref-number";
 import { StatusText } from "@/components/ui/surface";
 import { DataTable, Td, Tr } from "@/components/ui/table";
-import { toArabicDigits } from "@/lib/format";
 import type { RequestRow } from "@/server/services/requests/read";
 import type { SupervisorChoice } from "./decision-dialog";
 import { RequestSelection, RowActions, RowCheckbox, SelectAllCheckbox } from "./request-selection";

@@ -1,0 +1,6 @@
+# Local-only override: port 5433 is already taken by another project's container
+# on this machine, so remap the host port for this project's Postgres.
+services:
+  db:
+    ports: !override
+      - "5440:5432"

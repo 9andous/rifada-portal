@@ -139,17 +139,17 @@
   }
 
   /* Text size (D-102, D-125; components/layout/text-size.tsx). Every size in the interface is in
-     rem, so the root size scales it all. Every area opens at 125% for older readers; the user's own
+     rem, so the root size scales it all. Every area opens at the standard 100%; the user's own
      choice, stored on the device, can go larger. */
   html,
   html[data-text-size="normal"] {
-    font-size: 125%;
+    font-size: 100%;
   }
   html[data-text-size="large"] {
-    font-size: 137.5%;
+    font-size: 112.5%;
   }
   html[data-text-size="xlarge"] {
-    font-size: 150%;
+    font-size: 125%;
   }
 
   :focus-visible {

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
-import { FilePlus2 } from "lucide-react";
+import { CircleCheck, FilePlus2, FileText, Hourglass, RotateCcw, Send, XCircle } from "lucide-react";
+import { KpiRow, type Kpi } from "@/components/dashboard/kpis";
 import { PageBody } from "@/components/layout/app-shell";
 import { FIGURE_TILE, FIGURE_VALUE, FigureChevron, PageBand } from "@/components/layout/page-band";
 import { ListSkeleton } from "@/components/states/list-skeleton";
@@ -30,6 +31,9 @@ async function StatusFigures({ user, view, path, searchParams }: { user: Current
   // «مقدَّم» and «فحص الاكتمال» last only for the instant of submission; shown only when not empty.
   const shown = counts.filter((s) => s.count > 0 || s.key !== "SUBMITTED" || s.key === active);
   const items = [{ key: undefined as string | undefined, name: "الكل", count: total }, ...shown.map((s) => ({ key: s.key as string | undefined, name: s.name, count: s.count }))];
+  if (user.role === "SUPERVISOR" || user.role === "UNIT_MANAGER") {
+    return <StaffStatusFigures items={items} active={active} path={path} params={params} role={user.role} />;
+  }
   return (
     <nav aria-label="تصفية حسب الحالة">
       <ul className="flex flex-wrap gap-3.5">
@@ -56,6 +60,58 @@ async function StatusFigures({ user, view, path, searchParams }: { user: Current
       </ul>
     </nav>
   );
+}
+
+const STATUS_ICONS = {
+  APPROVED: CircleCheck,
+  RETURNED: RotateCcw,
+  UNDER_REVIEW: Hourglass,
+  REJECTED: XCircle,
+  SUBMITTED: Send,
+} as const;
+
+function StaffStatusFigures({
+  items,
+  active,
+  path,
+  params,
+  role,
+}: {
+  items: { key: string | undefined; name: string; count: number }[];
+  active: string | undefined;
+  path: string;
+  params: SearchParams;
+  role: "SUPERVISOR" | "UNIT_MANAGER";
+}) {
+  const kpis: Kpi[] = items.map((item, index) => {
+    const Icon = (item.key && STATUS_ICONS[item.key as keyof typeof STATUS_ICONS]) || (index === 0 ? FileText : Send);
+    const selected = item.key === active || (!active && index === 0);
+    const caption =
+      index === 0
+        ? role === "SUPERVISOR"
+          ? "في البرامج المسندة إليك"
+          : "في جميع البرامج"
+        : item.key === "UNDER_REVIEW"
+          ? role === "SUPERVISOR"
+            ? "بانتظار قرارك"
+            : "بانتظار قرار المشرف أو اعتمادك"
+          : item.key === "RETURNED"
+            ? "تحتاج متابعة"
+            : item.key === "APPROVED"
+              ? "طلبات صدر اعتمادها"
+              : item.key === "REJECTED"
+                ? "طلبات غير معتمدة"
+                : "طلبات واردة";
+    return {
+      label: index === 0 ? (role === "SUPERVISOR" ? "الطلبات المسندة" : "إجمالي الطلبات") : item.name,
+      icon: Icon,
+      featured: selected,
+      value: formatNumber(item.count),
+      caption,
+      href: listHref(path, params, { status: item.key, page: undefined }),
+    };
+  });
+  return <KpiRow items={kpis} />;
 }
 
 function FiguresSkeleton() {

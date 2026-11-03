@@ -53,9 +53,10 @@ figures, icons, navigation, logos and timeline).
   | `t-table` | Table text | 0.875rem, tabular |
   | `t-caption` | Notes, timestamps, helper text | 0.875rem, `ink-subtle` |
 
-  **Reading size (D-125).** The platform is read by older users: the root size is 125% in every
-  area, and no running text is set below 0.875rem (`text-xs` and `text-2xs` are 0.875rem too; only
-  count badges and avatar initials are smaller). Printing uses 100%.
+  **Reading size (D-125).** The platform is read by older users: the default root size is 100%,
+  with larger choices available at 112.5% and 125%. No running text is set below 0.875rem
+  (`text-xs` and `text-2xs` are 0.875rem too; only count badges and avatar initials are smaller).
+  Printing uses 100%.
 
 - **Eyebrows and section headings** start with a gold diamond (`<Diamond>` 7px in eyebrows;
   `<SectionTitle>` and card headers 8px, `<HeaderDiamond>`).

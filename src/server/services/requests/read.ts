@@ -513,7 +513,7 @@ export async function getRequestDetail(actor: Actor, id: string) {
     track: request.track ? { id: request.track.id, number: request.track.number, name: request.track.name } : null,
     requestType: request.requestType,
     /** The programmes the track covers, for the staff to see where the request belongs (D-123). */
-    trackPrograms: isOfficer ? [] : (request.track?.programs ?? []).map((l) => l.program).filter((p) => !p.archivedAt).map(({ archivedAt: _, ...p }) => p),
+    trackPrograms: isOfficer ? [] : (request.track?.programs ?? []).map((l) => l.program).filter((p) => !p.archivedAt).map((p) => ({ id: p.id, number: p.number, name: p.name, description: p.description })),
     program: request.program ? { id: request.program.id, number: request.program.number, name: request.program.name } : null,
     initiative: request.initiative ? { id: request.initiative.id, number: request.initiative.number, name: request.initiative.name } : null,
     /** Every chosen initiative, the main one first (D-115). */
