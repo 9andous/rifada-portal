@@ -11,7 +11,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
 import { Panel, PanelHeader, StatusText } from "@/components/ui/surface";
-import { formatHijri, toArabicDigits } from "@/lib/format";
+import { formatHijriDateTime, toArabicDigits } from "@/lib/format";
 import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/authz/permissions";
 import { getOwnAssociationProfile } from "@/server/services/association-profile";
@@ -132,8 +132,8 @@ export default async function AssociationProfilePage() {
                 <Pair label="رقم طلب التسجيل" ltr>
                   {a.registration?.referenceNo}
                 </Pair>
-                <Pair label="تاريخ الاعتماد">{a.registration?.reviewedAt ? formatHijri(a.registration.reviewedAt) : null}</Pair>
-                <Pair label="التسجيل في المنصة">{formatHijri(a.createdAt)}</Pair>
+                <Pair label="تاريخ الاعتماد">{a.registration?.reviewedAt ? formatHijriDateTime(a.registration.reviewedAt) : null}</Pair>
+                <Pair label="التسجيل في المنصة">{formatHijriDateTime(a.createdAt)}</Pair>
               </dl>
             </Panel>
           </div>

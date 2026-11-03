@@ -7,13 +7,12 @@ import { useState, useTransition, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
 import { RefNumber } from "@/components/ui/ref-number";
-import { Select } from "@/components/ui/select";
 import { Alert, FormError } from "@/components/ui/surface";
 import { formatNumber, requestsPhrase } from "@/lib/format";
 import { DECISION_LABELS, type Decision } from "@/lib/requests";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
 import { PasswordInput } from "@/components/ui/password-input";
-import { approveAction, decideAction, reassignAction } from "@/server/actions/requests";
+import { approveAction, decideAction } from "@/server/actions/requests";
 import type { BulkOutcomeView, RequestFormState } from "@/server/actions/requests-state";
 import { SealNotice } from "./evaluation-dialog";
 
@@ -199,92 +198,6 @@ export function DecisionDialog({
             <Button variant={CONFIRM_VARIANT[decision]} disabled={busy || (needsReason && reason.trim().length < 3) || (approving && !password)} onClick={confirm}>
               {busy ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : null}
               {requests.length > 1 ? `${CONFIRM_LABEL[decision]} (${formatNumber(requests.length)})` : CONFIRM_LABEL[decision]}
-            </Button>
-          </div>
-        </div>
-      )}
-    </Shell>
-  );
-}
-
-export type SupervisorChoice = { id: string; name: string; trackIds: string[]; open?: number };
-
-/** Unit manager: reassign one or more requests to an active supervisor of their track, with a reason. */
-export function ReassignDialog({
-  open,
-  onOpenChange,
-  requests,
-  supervisors,
-  onDone,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  requests: DialogRequest[];
-  supervisors: SupervisorChoice[];
-  onDone: (outcome: BulkOutcomeView) => void;
-}) {
-  const [toUserId, setTo] = useState("");
-  const [reason, setReason] = useState("");
-  const [result, setResult] = useState<RequestFormState | null>(null);
-  const [busy, start] = useTransition();
-  const outcome = result?.outcome;
-
-  function confirm() {
-    start(async () => {
-      const r = await reassignAction(
-        requests.map((x) => x.id),
-        toUserId,
-        reason,
-      );
-      setResult(r);
-      if (r.ok && r.outcome) {
-        onDone(r.outcome);
-        if (r.outcome.skipped.length === 0) onOpenChange(false);
-        toast("تمت إعادة الإسناد");
-      }
-    });
-  }
-
-  return (
-    <Shell open={open} onOpenChange={onOpenChange} title={requests.length > 1 ? "إعادة إسناد: إجراء جماعي" : "إعادة إسناد الطلب"} busy={busy}>
-      {outcome ? (
-        <div className="mt-4 flex flex-col gap-5">
-          <OutcomeSummary outcome={outcome} verb="إعادة الإسناد" />
-          <div className="flex justify-end">
-            <Dialog.Close asChild>
-              <Button>إغلاق</Button>
-            </Dialog.Close>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col">
-          <RequestList requests={requests} />
-          <Field id="reassign-to" label="المشرف" hint="يظهر المشرفون النشطون؛ ويُتخطى كل طلب لا يشرف المختار على مساره." error={result?.errors?.toUserId} required className="mt-4">
-            <Select
-              id="reassign-to"
-              value={toUserId}
-              onChange={(e) => setTo(e.target.value)}
-              placeholder="اختر المشرف"
-              options={supervisors.map((s) => ({ value: s.id, label: s.open === undefined ? s.name : `${s.name} (طلبات مفتوحة: ${formatNumber(s.open)})` }))}
-            />
-          </Field>
-          <Field id="reassign-reason" label="سبب إعادة الإسناد" error={result?.errors?.reason} required className="mt-4">
-            <Textarea id="reassign-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={REQUEST_LIMITS.reason} />
-          </Field>
-          {result?.message && !result.ok && !result.errors ? (
-            <FormError className="mt-4">
-              {result.message}
-            </FormError>
-          ) : null}
-          <div className="mt-6 flex justify-end gap-3">
-            <Dialog.Close asChild>
-              <Button variant="ghost" disabled={busy}>
-                إلغاء
-              </Button>
-            </Dialog.Close>
-            <Button disabled={busy || !toUserId || reason.trim().length < 3} onClick={confirm}>
-              {busy ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : null}
-              إعادة الإسناد
             </Button>
           </div>
         </div>

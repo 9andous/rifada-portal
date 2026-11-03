@@ -3,9 +3,8 @@ import { EmptyState } from "@/components/states/states";
 import { buttonClasses } from "@/components/ui/button";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Pagination } from "@/components/ui/pagination";
-import { SortHeader } from "@/components/ui/sort-header";
 import { Panel, PanelHeader, StatusText } from "@/components/ui/surface";
-import { DataTable, SORT_TH, THead, Td, Th, Tr } from "@/components/ui/table";
+import { DataTable, ROW_LINK, THead, Td, Th, Tr } from "@/components/ui/table";
 import { formatNumber, toArabicDigits } from "@/lib/format";
 import type { SearchParams } from "@/lib/list-params";
 import type { Actor } from "@/server/authz/scope";
@@ -30,7 +29,6 @@ export async function AssociationsList({
   const list = parseAssociationListParams(params);
   const [page, regions] = await Promise.all([listAssociations(actor, list), associationRegions(actor)]);
   const filtered = Boolean(list.q || list.status || list.officer || list.region);
-  const sortProps = { current: list.sort, dir: list.dir, path: basePath, params, className: SORT_TH };
 
   return (
     <Panel>
@@ -86,18 +84,18 @@ export async function AssociationsList({
         <>
           <DataTable caption="سجل الجمعيات" minWidth="56rem">
             <THead>
-              <SortHeader label="الجمعية" column="name" {...sortProps} />
-              <SortHeader label="المدينة" column="city" {...sortProps} />
-              <SortHeader label="المنطقة" column="region" {...sortProps} />
+              <Th>الجمعية</Th>
+              <Th>المدينة</Th>
+              <Th>المنطقة</Th>
               <Th>مسؤول التواصل</Th>
               <Th>حساب المسؤول</Th>
               <Th>الحالة</Th>
             </THead>
             <tbody>
               {page.items.map((a) => (
-                <Tr key={a.id}>
+                <Tr key={a.id} linked>
                   <Td>
-                    <Link href={`${basePath}/${a.id}`} className="font-semibold text-ink hover:text-primary hover:underline">
+                    <Link href={`${basePath}/${a.id}`} className={`font-semibold text-ink hover:text-primary hover:underline ${ROW_LINK}`}>
                       {a.name}
                     </Link>
                     <span className="t-caption mt-0.5 block">

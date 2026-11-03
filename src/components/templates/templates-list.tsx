@@ -5,9 +5,8 @@ import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Pagination } from "@/components/ui/pagination";
-import { SortHeader } from "@/components/ui/sort-header";
 import { Panel, PanelHeader, StatusText, type StatusTone } from "@/components/ui/surface";
-import { DataTable, SORT_TH, THead, Td, Th, Tr } from "@/components/ui/table";
+import { DataTable, ROW_LINK, THead, Td, Th, Tr } from "@/components/ui/table";
 import { formatFileSize, formatNumber, toArabicDigits } from "@/lib/format";
 import type { SearchParams } from "@/lib/list-params";
 import { FILE_TYPES, type AllowedExtension } from "@/lib/uploads";
@@ -44,7 +43,6 @@ export async function TemplatesList({ actor, searchParams, path, view }: { actor
     db.program.findMany({ where: { archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true } }),
   ]);
   const filtered = Boolean(list.q || list.state || list.program);
-  const sortProps = { current: list.sort, dir: list.dir, path, params, className: SORT_TH };
 
   return (
     <Panel>
@@ -88,22 +86,22 @@ export async function TemplatesList({ actor, searchParams, path, view }: { actor
         <>
           <DataTable caption="النماذج" minWidth="52rem">
             <THead>
-              <SortHeader label="النموذج" column="title" {...sortProps} />
+              <Th>النموذج</Th>
               <Th className="w-20">النوع</Th>
               <Th>البرنامج والمبادرة</Th>
               <Th className="w-40">الملف</Th>
               {view === "admin" ? <Th className="w-28">الحالة</Th> : null}
-              <SortHeader label="آخر تحديث" column="updatedAt" {...sortProps} />
+              <Th>آخر تحديث</Th>
               <Th className="w-28">
                 <span className="sr-only">تنزيل</span>
               </Th>
             </THead>
             <tbody>
               {page.items.map((t) => (
-                <Tr key={t.id} className={t.state === "archived" ? "text-ink-subtle" : undefined}>
+                <Tr key={t.id} linked={view === "admin"} className={t.state === "archived" ? "text-ink-subtle" : undefined}>
                   <Td>
                     {view === "admin" ? (
-                      <Link href={`${path}/${t.id}`} className="font-semibold text-ink hover:text-primary hover:underline">
+                      <Link href={`${path}/${t.id}`} className={`font-semibold text-ink hover:text-primary hover:underline ${ROW_LINK}`}>
                         {t.title}
                       </Link>
                     ) : (
@@ -131,7 +129,7 @@ export async function TemplatesList({ actor, searchParams, path, view }: { actor
                   </Td>
                   <Td>
                     {/* A plain link: the route handler sends the file as an attachment. */}
-                    <a href={downloadHref(t.id)} className={buttonClasses("outline", "sm")} aria-label={`تنزيل «${t.title}»`}>
+                    <a href={downloadHref(t.id)} className={`${buttonClasses("outline", "sm")} relative z-10`} aria-label={`تنزيل «${t.title}»`}>
                       <Download aria-hidden="true" strokeWidth={1.75} />
                       تنزيل
                     </a>

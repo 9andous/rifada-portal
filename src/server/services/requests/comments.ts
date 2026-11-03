@@ -6,7 +6,7 @@ import { scopeComments, scopeRequests, type Actor } from "@/server/authz/scope";
 import { db } from "@/server/db";
 import { assertCan, fieldRefusal, refuse, type Result } from "@/server/services/admin/common";
 import { audit } from "@/server/services/audit";
-import { notify } from "@/server/services/notifications";
+import { notify, recordRequestAction } from "@/server/services/notifications";
 import { getStorage } from "@/server/storage/storage";
 import { consumeUpload, NOT_USABLE, peekUpload, type ConsumedUpload } from "@/server/uploads/stage";
 import { quotaRefusal, uploadContext } from "./attachments";
@@ -83,6 +83,7 @@ export async function addComment(actor: Actor, requestId: string, input: Comment
         const version = await tx.attachmentVersion.create({ data: { attachmentId: attachment.id, versionNo: 1, ...file, uploadedById: actor.id } });
         await tx.attachment.update({ where: { id: attachment.id }, data: { currentVersionId: version.id } });
       }
+      await recordRequestAction(tx, actor.id, requestId);
       await audit(
         {
           actorId: actor.id,

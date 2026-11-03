@@ -15,7 +15,9 @@ import { GeometricPattern } from "@/components/brand/geometric-pattern";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
+import { NewBadge } from "@/components/ui/new-badge";
 import { RefNumber } from "@/components/ui/ref-number";
+import { ROW_LINK } from "@/components/ui/table";
 import { Panel, PanelHeader, StatusText, type StatusTone } from "@/components/ui/surface";
 import { daysPhrase, formatNumber, requestsPhrase, toArabicDigits } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -77,7 +79,7 @@ function IconLink({ href, label, children }: { href: string; label: string; chil
       href={href}
       title={label}
       aria-label={label}
-      className="flex size-[34px] shrink-0 items-center justify-center rounded-sm border border-line bg-surface text-ink-muted transition-colors hover:border-primary hover:text-primary [&_svg]:size-4"
+      className="relative z-10 flex size-[34px] shrink-0 items-center justify-center rounded-sm border border-line bg-surface text-ink-muted transition-colors hover:border-primary hover:text-primary [&_svg]:size-4"
     >
       {children}
     </Link>
@@ -369,12 +371,18 @@ export function WorkloadCard({ rows, unassigned, requestsHref }: { rows: Workloa
               {rows.map((r) => {
                 const share = totalOpen ? r.open / totalOpen : 0;
                 return (
-                  <tr key={r.id} className="border-b border-line/70 last:border-0 hover:bg-surface-muted">
+                  <tr key={r.id} className={cn("border-b border-line/70 last:border-0 hover:bg-surface-muted", requestsHref && "relative cursor-pointer")}>
                     <td className={TD}>
                       <span className="flex items-center gap-2.5">
                         <Avatar name={r.name} />
                         <span>
-                          <span className="block font-semibold leading-tight">{r.name}</span>
+                          {requestsHref ? (
+                            <Link href={`${requestsHref}?supervisor=${r.id}`} className={`block font-semibold leading-tight hover:text-primary hover:underline ${ROW_LINK}`}>
+                              {r.name}
+                            </Link>
+                          ) : (
+                            <span className="block font-semibold leading-tight">{r.name}</span>
+                          )}
                           <span className="t-caption">مشرف مسارات</span>
                         </span>
                       </span>
@@ -486,11 +494,14 @@ export function RequestsTableCard({
                 {rows.map((r) => {
                   const edit = editHref && r.status.key === "RETURNED";
                   return (
-                    <tr key={r.id} className="border-b border-line/70 last:border-0 hover:bg-surface-muted">
+                    <tr key={r.id} className="relative cursor-pointer border-b border-line/70 last:border-0 hover:bg-surface-muted">
                       <td className={TD}>
-                        <Link href={`${hrefBase}/${r.id}`} className="font-semibold text-primary hover:underline">
-                          {r.referenceNo ? <RefNumber value={r.referenceNo} /> : "مسودة"}
-                        </Link>
+                        <span className="flex flex-wrap items-center gap-2">
+                          {r.isNew ? <NewBadge /> : null}
+                          <Link href={`${hrefBase}/${r.id}`} className={`font-semibold text-primary hover:underline ${ROW_LINK}`}>
+                            {r.referenceNo ? <RefNumber value={r.referenceNo} /> : "مسودة"}
+                          </Link>
+                        </span>
                       </td>
                       {columns.includes("association") ? (
                         <td className={TD}>
@@ -517,12 +528,12 @@ export function RequestsTableCard({
                       ) : null}
                       <td className={cn(TD, "text-end")}>
                         {edit ? (
-                          <Link href={editHref(r.id)} className={buttonClasses("gold", "sm")}>
+                          <Link href={editHref(r.id)} className={cn(buttonClasses("gold", "sm"), "relative z-10")}>
                             <PenLine aria-hidden="true" />
                             تعديل
                           </Link>
                         ) : (
-                          <Link href={`${hrefBase}/${r.id}`} className={buttonClasses("outline", "sm")}>
+                          <Link href={`${hrefBase}/${r.id}`} tabIndex={-1} className={cn(buttonClasses("outline", "sm"), "relative z-10")}>
                             <Eye aria-hidden="true" />
                             {actionLabel}
                           </Link>

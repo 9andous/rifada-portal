@@ -5,7 +5,7 @@ import { buttonClasses } from "@/components/ui/button";
 import { Panel } from "@/components/ui/surface";
 import { TabNav } from "@/components/ui/tab-nav";
 import { cn } from "@/lib/cn";
-import { formatFileSize, formatHijri, formatNumber, toArabicDigits } from "@/lib/format";
+import { formatFileSize, formatHijriDateTime, formatNumber, toArabicDigits } from "@/lib/format";
 import { firstParam, type SearchParams } from "@/lib/list-params";
 import { FILE_TYPES, type AllowedExtension } from "@/lib/uploads";
 import { TEMPLATE_KIND_LABEL, type TemplateKindKey } from "@/lib/validation/templates";
@@ -75,7 +75,7 @@ function TemplateCard({ t }: { t: ReaderTemplate }) {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-3">
         <span className="t-caption">
-          {formatFileSize(t.size)} · آخر تحديث {formatHijri(t.updatedAt)}
+          {formatFileSize(t.size)} · آخر تحديث {formatHijriDateTime(t.updatedAt)}
         </span>
         {/* A plain link: the route handler sends the file as an attachment. */}
         <a href={downloadHref(t.id)} className={buttonClasses("gold", "md")} aria-label={`تنزيل ${TEMPLATE_KIND_LABEL[t.kind]} «${t.title}»`}>

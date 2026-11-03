@@ -11,7 +11,7 @@ import { DateDisplay } from "@/components/ui/date-display";
 import { Pagination } from "@/components/ui/pagination";
 import { Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { TabNav } from "@/components/ui/tab-nav";
-import { DataTable, THead, Td, Th, Tr } from "@/components/ui/table";
+import { DataTable, ROW_LINK, THead, Td, Th, Tr } from "@/components/ui/table";
 import type { RegistrationStatus } from "@/generated/prisma/client";
 import { formatNumber, toArabicDigits } from "@/lib/format";
 import type { SearchParams } from "@/lib/list-params";
@@ -93,9 +93,9 @@ async function RegistrationsList({ user, counts, searchParams }: { user: Current
             </THead>
             <tbody>
               {page.items.map((r) => (
-                <Tr key={r.id}>
+                <Tr key={r.id} linked>
                   <Td>
-                    <Link href={`/admin/registrations/${r.id}`} className="font-semibold text-ink hover:text-primary hover:underline">
+                    <Link href={`/admin/registrations/${r.id}`} className={`font-semibold text-ink hover:text-primary hover:underline ${ROW_LINK}`}>
                       {r.name}
                     </Link>
                     <span className="t-caption mt-0.5 flex flex-wrap items-center gap-x-2">

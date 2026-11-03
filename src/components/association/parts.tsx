@@ -1,11 +1,14 @@
 import { ArrowLeft, ArrowRight, Eye, PenLine } from "lucide-react";
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui/button";
+import { DateDisplay } from "@/components/ui/date-display";
+import { NewBadge } from "@/components/ui/new-badge";
 import { RefNumber } from "@/components/ui/ref-number";
+import { ROW_LINK } from "@/components/ui/table";
 import { StatusText } from "@/components/ui/surface";
 import { statusHelp, TURN_LABEL } from "@/lib/association-status";
 import { cn } from "@/lib/cn";
-import { formatHijri, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import type { RequestRow } from "@/server/services/requests/read";
 
 // Shared parts of the association pages (D-102): the platform's own look, with the facts an
@@ -44,7 +47,8 @@ export function NextStep({ statusKey }: { statusKey: string }) {
 /** The one button a request needs: continue a draft, correct a returned request, or open it. */
 export function RequestAction({ r, block }: { r: Pick<RequestRow, "id" | "status">; block?: boolean }) {
   // `block`: full width in a narrow list, its own width once the entry has room beside it.
-  const width = block ? "w-full shrink-0 @2xl:w-auto" : undefined;
+  // Above the row link (the whole row opens the request, D-130).
+  const width = cn("relative z-10", block && "w-full shrink-0 @2xl:w-auto");
   if (r.status.key === "DRAFT") {
     return (
       <Link href={editHref(r.id)} className={buttonClasses("gold", "md", width)}>
@@ -105,11 +109,14 @@ export function AssocRequestsTable({ rows, caption }: { rows: RequestRow[]; capt
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className={cn("border-b border-line/70 last:border-0", r.status.key === "RETURNED" ? "bg-st-warn-soft/40" : "hover:bg-surface-muted")}>
+              <tr key={r.id} className={cn("relative cursor-pointer border-b border-line/70 last:border-0", r.status.key === "RETURNED" ? "bg-st-warn-soft/40" : "hover:bg-surface-muted")}>
                 <td className={cn(TD, "min-w-64")}>
-                  <Link href={detailHref(r.id)} className="font-semibold text-ink hover:text-primary hover:underline">
-                    {r.title || "طلب بلا عنوان"}
-                  </Link>
+                  <span className="flex flex-wrap items-center gap-2">
+                    {r.isNew ? <NewBadge /> : null}
+                    <Link href={detailHref(r.id)} className={cn("font-semibold text-ink hover:text-primary hover:underline", ROW_LINK)}>
+                      {r.title || "طلب بلا عنوان"}
+                    </Link>
+                  </span>
                   <span className="mt-0.5 block text-sm text-ink-muted">
                     {r.referenceNo ? (
                       <>
@@ -119,7 +126,7 @@ export function AssocRequestsTable({ rows, caption }: { rows: RequestRow[]; capt
                     {r.track?.name ?? ""}
                   </span>
                 </td>
-                <td className={cn(TD, "whitespace-nowrap text-ink-muted")}>{r.submittedAt ? formatHijri(r.submittedAt) : "لم يُرسل بعد"}</td>
+                <td className={cn(TD, "whitespace-nowrap text-ink-muted")}>{r.submittedAt ? <DateDisplay date={r.submittedAt} variant="hijri" /> : "لم يُرسل بعد"}</td>
                 <td className={TD}>
                   <StatusText tone={r.status.tone}>{r.status.name}</StatusText>
                 </td>
@@ -140,7 +147,7 @@ export function AssocRequestsTable({ rows, caption }: { rows: RequestRow[]; capt
           <li
             key={r.id}
             className={cn(
-              "flex flex-col gap-3 border-t border-line px-5 py-4 first:border-t-0 @2xl:flex-row @2xl:items-center @2xl:gap-8 @2xl:px-6",
+              "relative flex flex-col gap-3 border-t border-line px-5 py-4 first:border-t-0 @2xl:flex-row @2xl:items-center @2xl:gap-8 @2xl:px-6",
               r.status.key === "RETURNED" && "bg-st-warn-soft/40",
             )}
           >
@@ -149,14 +156,17 @@ export function AssocRequestsTable({ rows, caption }: { rows: RequestRow[]; capt
                 <StatusText tone={r.status.tone}>{r.status.name}</StatusText>
                 <span className="text-sm text-ink-muted">{r.referenceNo ? <RefNumber value={r.referenceNo} /> : "مسودة"}</span>
               </div>
-              <Link href={detailHref(r.id)} className="text-lg font-bold leading-snug text-ink">
-                {r.title || "طلب بلا عنوان"}
-              </Link>
+              <span className="flex flex-wrap items-center gap-2">
+                {r.isNew ? <NewBadge /> : null}
+                <Link href={detailHref(r.id)} className={cn("text-lg font-bold leading-snug text-ink", ROW_LINK)}>
+                  {r.title || "طلب بلا عنوان"}
+                </Link>
+              </span>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-base">
                 <dt className="text-ink-muted">المسار</dt>
                 <dd className="text-ink">{r.track?.name ?? "—"}</dd>
                 <dt className="text-ink-muted">تاريخ الإرسال</dt>
-                <dd className="text-ink">{r.submittedAt ? formatHijri(r.submittedAt) : "لم يُرسل بعد"}</dd>
+                <dd className="text-ink">{r.submittedAt ? <DateDisplay date={r.submittedAt} variant="hijri" /> : "لم يُرسل بعد"}</dd>
                 <dt className="text-ink-muted">الخطوة التالية</dt>
                 <dd>
                   <NextStep statusKey={r.status.key} />

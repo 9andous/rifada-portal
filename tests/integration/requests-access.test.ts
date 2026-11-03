@@ -163,7 +163,8 @@ describe("internal notes never reach association officers", () => {
     expect(await addComment(w.actors.officer2, id, { body: "x", internal: false })).toMatchObject({ ok: false });
     // The supervisor got the officer's reply as a notification; nobody gets their own.
     expect(await db.notification.count({ where: { userId: w.users.supervisor.id, type: "comment.reply" } })).toBe(1);
-    expect(await db.notification.count({ where: { userId: w.users.officer.id, type: { in: ["comment.reply", "comment.created"] } } })).toBe(1);
+    // The officer's own notice of the question was settled by answering it (D-130).
+    expect(await db.notification.count({ where: { userId: w.users.officer.id, type: { in: ["comment.reply", "comment.created"] } } })).toBe(0);
   });
 });
 

@@ -7,7 +7,7 @@ import type { Actor } from "@/server/authz/scope";
 import { db } from "@/server/db";
 import { assertCan, refuse, type Refusal } from "@/server/services/admin/common";
 import { audit } from "@/server/services/audit";
-import { notify } from "@/server/services/notifications";
+import { notify, recordRequestAction } from "@/server/services/notifications";
 import { getSetting } from "@/server/settings/read";
 import { assignOnSubmission } from "./assignment";
 import { LIFECYCLE_BLOCKED, statusMap, transitionAllowed, WorkflowRefusal, type Tx } from "./common";
@@ -121,8 +121,11 @@ export async function submitRequest(actor: Actor, id: string, now: Date = new Da
           requirementsSnapshot: requirements,
           // New to the supervisor again, so their dashboard flags it (D-127).
           reviewerOpenedAt: null,
+          // A returned request sent back shows as «بعد التعديل» to the unit while under review (D-130).
+          resubmittedAt: firstSubmission ? null : now,
         },
       });
+      await recordRequestAction(tx, actor.id, id);
       const supervisorId = await assignOnSubmission(tx, { ...request, referenceNo }, actor.id);
       if (!firstSubmission && supervisorId && supervisorId === request.assignedSupervisorId) {
         await notify(tx, [supervisorId], { type: "request.resubmitted", title: "أُعيد تقديم طلب بعد التعديل", body: `${referenceNo} — ${request.title}`, requestId: id }, actor.id);

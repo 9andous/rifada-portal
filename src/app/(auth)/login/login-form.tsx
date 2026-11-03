@@ -6,6 +6,7 @@ import { useState, useTransition, type FormEvent } from "react";
 import { ChevronLeft, Fingerprint, LoaderCircle, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Alert, FormError } from "@/components/ui/surface";
 import { authClient } from "@/lib/auth-client";
 import { toArabicDigits } from "@/lib/format";
@@ -76,7 +77,7 @@ export function LoginForm() {
           <Input id="username" name="username" autoComplete="username" dir="ltr" required autoFocus className="h-11" />
         </Field>
         <Field id="password" label="كلمة المرور" required>
-          <Input id="password" name="password" type="password" autoComplete="current-password" dir="ltr" required className="h-11" />
+          <PasswordInput id="password" name="password" autoComplete="current-password" dir="ltr" required className="h-11" />
         </Field>
         <Button type="submit" variant="gold" size="lg" disabled={pending} className="mt-1">
           {pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <LogIn aria-hidden="true" />}

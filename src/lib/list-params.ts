@@ -24,6 +24,19 @@ export function enumParam<T extends string>(params: SearchParams, key: string, a
   return v !== undefined && (allowed as readonly string[]).includes(v) ? (v as T) : undefined;
 }
 
+/**
+ * A search as typed or copied from the screen: references are shown in Arabic-Indic digits with
+ * direction marks around the hyphens (`RefNumber`) but stored in ASCII, so both are undone (D-130).
+ */
+export function normalizeSearch(value: string): string {
+  return value
+    .replace(/[‎‏؜⁦-⁩]/g, "")
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .trim()
+    .slice(0, 100);
+}
+
 export function parseListParams<S extends string>(
   params: SearchParams,
   sorts: readonly S[],
@@ -31,7 +44,7 @@ export function parseListParams<S extends string>(
 ): ListParams<S> {
   const page = Number.parseInt(firstParam(params, "page") ?? "1", 10);
   return {
-    q: (firstParam(params, "q") ?? "").trim().slice(0, 100),
+    q: normalizeSearch(firstParam(params, "q") ?? ""),
     sort: enumParam(params, "sort", sorts) ?? defaults.sort,
     dir: enumParam(params, "dir", ["asc", "desc"] as const) ?? defaults.dir,
     page: Number.isFinite(page) && page > 0 ? Math.min(page, 10_000) : 1,

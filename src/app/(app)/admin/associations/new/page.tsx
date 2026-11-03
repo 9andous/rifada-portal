@@ -6,7 +6,6 @@ import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
 import { buttonClasses } from "@/components/ui/button";
-import { Panel } from "@/components/ui/surface";
 import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/authz/permissions";
 import { createAssociationAction } from "@/server/actions/admin/associations";
@@ -32,9 +31,9 @@ export default async function NewAssociationPage() {
         }
       />
       <PageBody>
-        <Panel className="max-w-4xl p-6">
+        <div className="max-w-4xl">
           <AssociationForm mode="create" action={createAssociationAction} />
-        </Panel>
+        </div>
       </PageBody>
     </>
   );

@@ -284,8 +284,9 @@ export function InitiativeSection() {
     <section aria-labelledby="initiative-title" id="initiative" className="scroll-mt-28 border-y border-line bg-surface">
       <div className={cn(WRAP, "py-16")}>
         <SectionHead id="initiative-title" eyebrow="عن المنصة" title={INITIATIVE.name} />
-        {/* The heading spans the row; the photo starts at the paragraph and ends with the cards (owner's request). */}
-        <div className="mt-3 grid gap-10 lg:grid-cols-[1.2fr_1fr]">
+        {/* The heading spans the row; the photo starts at the paragraph. It keeps its own square shape,
+            so the sky and the Kaaba stay in view whatever the text size (owner's review, D-130). */}
+        <div className="mt-3 grid items-start gap-10 lg:grid-cols-[1.2fr_1fr]">
           <div>
             <p className="max-w-3xl text-[0.9375rem] leading-[1.9] text-ink-muted">{INITIATIVE.intro}</p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -298,14 +299,14 @@ export function InitiativeSection() {
               ))}
             </div>
           </div>
-          <div className="relative overflow-hidden rounded-2xl">
+          <div className="mx-auto w-full max-w-[560px] overflow-hidden rounded-2xl shadow-2">
             <Image
               src="/images/haramain/kaaba-clock-tower.jpg"
               alt="المسجد الحرام والكعبة المشرفة"
               width={745}
               height={746}
-              sizes="(min-width: 1024px) 40vw, 100vw"
-              className="aspect-[4/3] w-full object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:h-full"
+              sizes="(min-width: 1024px) 560px, 100vw"
+              className="aspect-[745/746] h-auto w-full object-cover"
             />
           </div>
         </div>

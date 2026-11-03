@@ -53,6 +53,7 @@ model User {
   statusChanges         RequestStatusHistory[]
   comments              Comment[]
   notifications         Notification[]
+  requestsSeen          RequestSeen[]
   auditLogs             AuditLog[]
   assignmentsMade       AssignmentHistory[]       @relation("AssignmentActor")
   assignmentsReceived   AssignmentHistory[]       @relation("AssignmentTo")
@@ -440,6 +441,12 @@ model Request {
   reviewStage           ReviewStage @default(SUPERVISOR)
   createdById           String
   submittedAt           DateTime?
+  // Set when the association sends a returned request back (D-130); while it is under review the
+  // unit sees it as «بعد التعديل». A first submission leaves it null.
+  resubmittedAt         DateTime?
+  // The last action on the request (submission, decision, evaluation, classification, message); a
+  // user who has not opened it since sees «جديد» on its row (D-130).
+  lastActivityAt        DateTime    @default(now())
   decidedAt             DateTime?
   slaDueAt              DateTime?
   isDemo                Boolean     @default(false)
@@ -464,6 +471,8 @@ model Request {
   approvals          RequestApproval[]
   scopeChanges       RequestScopeChange[]
   seals              RequestSeal[]
+  seenBy             RequestSeen[]
+  notifications      Notification[]
 
   @@index([associationId])
   @@index([trackId])
@@ -820,6 +829,20 @@ model Guide {
   @@map("guides")
 }
 
+// When a user last opened a request (D-130): rows changed since then show «جديد».
+model RequestSeen {
+  userId    String
+  requestId String
+  seenAt    DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@id([userId, requestId])
+  @@index([requestId])
+  @@map("request_seen")
+}
+
 model Notification {
   id        String    @id @default(cuid())
   userId    String
@@ -827,13 +850,17 @@ model Notification {
   title     String
   body      String?
   link      String?
+  // The request it is about (D-130): acting on that request clears the actor's notifications for it.
+  requestId String?
   readAt    DateTime?
   isDemo    Boolean   @default(false)
   createdAt DateTime  @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request Request? @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
+  @@index([userId, requestId])
   @@map("notifications")
 }
 

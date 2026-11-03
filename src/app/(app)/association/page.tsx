@@ -10,7 +10,7 @@ import { PageBand } from "@/components/layout/page-band";
 import { EmptyState } from "@/components/states/states";
 import { buttonClasses } from "@/components/ui/button";
 import { Alert, Panel, PanelHeader } from "@/components/ui/surface";
-import { daysPhrase, formatHijri, formatNumber, greeting } from "@/lib/format";
+import { daysPhrase, formatHijriDateTime, formatNumber, greeting } from "@/lib/format";
 import { requireUser } from "@/server/auth/session";
 import { getAssociationHome } from "@/server/services/association-home";
 import { getOverview } from "@/server/services/dashboard";
@@ -78,7 +78,7 @@ export default async function AssociationHome() {
                 ) : (
                   <span className="mt-1 block">وافقت الوحدة الإشرافية على طلبكم.</span>
                 )}
-                <span className="mt-1 block text-sm">قُبل في {formatHijri(r.approvedAt)}</span>
+                <span className="mt-1 block text-sm">قُبل في {formatHijriDateTime(r.approvedAt)}</span>
               </Alert>
             ))}
             {home.returned.map((r) => (
@@ -109,7 +109,7 @@ export default async function AssociationHome() {
                 ) : (
                   <span className="mt-1 block">اطّلعوا على الطلب وعدّلوه، ثم أعيدوا إرساله.</span>
                 )}
-                {r.returnedAt ? <span className="mt-1 block text-sm">أُعيد في {formatHijri(r.returnedAt)}</span> : null}
+                {r.returnedAt ? <span className="mt-1 block text-sm">أُعيد في {formatHijriDateTime(r.returnedAt)}</span> : null}
               </Alert>
             ))}
             <KpiRow
@@ -167,7 +167,7 @@ export default async function AssociationHome() {
             }
           >
             <span className="mt-1 block">
-              {home.drafts.length === 1 ? `«${draft.title || "طلب بلا عنوان"}»، آخر حفظ في ${formatHijri(draft.updatedAt)}. ` : null}
+              {home.drafts.length === 1 ? `«${draft.title || "طلب بلا عنوان"}»، آخر حفظ في ${formatHijriDateTime(draft.updatedAt)}. ` : null}
               لا تصل المسودة إلى الوحدة الإشرافية حتى تُرسلوها.
             </span>
           </Alert>

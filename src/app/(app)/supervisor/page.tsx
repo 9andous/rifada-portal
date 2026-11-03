@@ -14,10 +14,11 @@ import { requireUser } from "@/server/auth/session";
 import { getByTrack, getOverview } from "@/server/services/dashboard";
 import { listRequests, parseRequestListParams } from "@/server/services/requests/read";
 
-export const metadata: Metadata = { title: "قائمة أعمالي" };
+export const metadata: Metadata = { title: "لوحة المشرف" };
 
 const DETAIL = "/supervisor/requests";
-const QUEUE = "/supervisor/queue";
+// «قائمة أعمالي» was folded into «قائمة الطلبات» (owner's review, D-130).
+const QUEUE = "/supervisor/requests";
 
 /**
  * Tabs of the queue card (owner's request, D-127): the latest requests, newest submission first, and
@@ -53,7 +54,6 @@ export default async function SupervisorDashboard({ searchParams }: PageProps<"/
   ]);
   const hasPrograms = user.trackIds.length > 0;
   const tabCount = (t: (typeof TABS)[number]) => (t.key === "priority" ? priority.total : all.total);
-  const next = all.items.find((r) => r.status.key === "UNDER_REVIEW") ?? all.items[0];
   // One new request opens directly; several open the queue filtered to them.
   const unopenedHref = unopened.total === 1 ? `${DETAIL}/${unopened.items[0].id}` : `${QUEUE}?unopened=1`;
 
@@ -61,19 +61,9 @@ export default async function SupervisorDashboard({ searchParams }: PageProps<"/
     <>
       <PageBand
         eyebrow={`${greeting(now)}، ${user.name}`}
-        title="قائمة أعمالي"
+        title="لوحة المشرف"
         lead="الطلبات المسندة إليك والطلبات الواردة في المسارات التي تشرف عليها."
-        actions={
-          <>
-            <BandDate date={now} />
-            {next ? (
-              <Link href={`${DETAIL}/${next.id}`} className={buttonClasses("primary")}>
-                <Eye aria-hidden="true" />
-                مراجعة الطلب التالي
-              </Link>
-            ) : null}
-          </>
-        }
+        actions={<BandDate date={now} />}
         figures={
           <KpiRow
             items={[

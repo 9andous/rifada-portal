@@ -27,13 +27,23 @@ export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElemen
   return <th scope="col" className={cn("relative whitespace-nowrap py-3 pe-4 text-start text-[0.875rem] font-bold text-ink first:ps-6 last:pe-6", className)} {...props} />;
 }
 
-export function Tr({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn("border-b border-line/70 transition-colors last:border-0 hover:bg-surface-muted", className)} {...props} />;
+/**
+ * A table row. With `linked`, the whole row opens the record (owner's review, D-130): the row is the
+ * positioning box and the row's one real link (`ROW_LINK`) stretches over it, so a click on any cell
+ * follows it while the keyboard still meets a single link per row.
+ */
+export function Tr({ className, linked, ...props }: HTMLAttributes<HTMLTableRowElement> & { linked?: boolean }) {
+  return (
+    <tr
+      className={cn("border-b border-line/70 transition-colors last:border-0 hover:bg-surface-muted", linked && "relative cursor-pointer", className)}
+      {...props}
+    />
+  );
 }
+
+/** Class for the row's main link in a `linked` row: it covers the whole row. */
+export const ROW_LINK = "after:absolute after:inset-0 after:content-['']";
 
 export function Td({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
   return <td className={cn("py-3.5 pe-4 align-middle first:ps-6 last:pe-6", className)} {...props} />;
 }
-
-/** Class for <SortHeader> so sortable and plain headers line up. */
-export const SORT_TH = "first:ps-6 last:pe-6";

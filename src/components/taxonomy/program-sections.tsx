@@ -2,8 +2,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/states/states";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Pagination } from "@/components/ui/pagination";
-import { SortHeader } from "@/components/ui/sort-header";
-import { DataTable, SORT_TH, THead, Td, Th, Tr } from "@/components/ui/table";
+import { DataTable, ROW_LINK, THead, Td, Th, Tr } from "@/components/ui/table";
 import { cn } from "@/lib/cn";
 import { formatNumber, toArabicDigits } from "@/lib/format";
 import { listHref, type SearchParams } from "@/lib/list-params";
@@ -33,7 +32,6 @@ export async function InitiativesSection({
   const list = parseInitiativeListParams(params);
   const page = await listInitiatives(actor, programId, list, editor);
   const filtered = Boolean(list.q || list.status);
-  const sortProps = { current: list.sort, dir: list.dir, path, params, className: SORT_TH };
 
   return (
     <>
@@ -55,18 +53,18 @@ export async function InitiativesSection({
         <>
           <DataTable caption="مبادرات البرنامج" minWidth="44rem">
             <THead>
-              <SortHeader label="الرقم" column="number" {...sortProps} className={cn(SORT_TH, "w-20")} />
-              <SortHeader label="المبادرة" column="name" {...sortProps} />
+              <Th className="w-20">الرقم</Th>
+              <Th>المبادرة</Th>
               <Th className="w-28">الأهداف</Th>
               <Th className="w-28">المتطلبات</Th>
               <Th className="w-28">الحالة</Th>
             </THead>
             <tbody>
               {page.items.map((i) => (
-                <Tr key={i.id} className={i.state === "archived" ? "text-ink-subtle" : undefined}>
+                <Tr key={i.id} linked className={i.state === "archived" ? "text-ink-subtle" : undefined}>
                   <Td className="t-figure font-semibold text-ink-subtle">{toArabicDigits(i.number)}</Td>
                   <Td>
-                    <Link href={`${initiativeBase}/${i.id}`} className={cn("hover:text-primary hover:underline", i.state === "archived" ? "text-ink-subtle" : "text-ink")}>
+                    <Link href={`${initiativeBase}/${i.id}`} className={cn("hover:text-primary hover:underline", ROW_LINK, i.state === "archived" ? "text-ink-subtle" : "text-ink")}>
                       {i.name}
                     </Link>
                   </Td>

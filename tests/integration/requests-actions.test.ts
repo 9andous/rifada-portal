@@ -17,7 +17,7 @@ vi.mock("@/server/auth/session", () => ({
     return session.current;
   }),
 }));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), refresh: vi.fn() }));
 
 const a = await import("@/server/actions/requests");
 const { FORBIDDEN_MESSAGE } = await import("@/server/actions/admin/state");
@@ -111,16 +111,12 @@ describe("review actions", () => {
     for (const actor of [w.actors.officer, w.actors.admin]) {
       signIn(actor);
       expect(await a.decideAction([r1.id], "approve", "")).toMatchObject({ ok: false, message: FORBIDDEN_MESSAGE });
-      expect(await a.reassignAction([r1.id], w.users.supervisor2.id, "سبب")).toMatchObject({ ok: false, message: FORBIDDEN_MESSAGE });
     }
     signIn(w.actors.supervisor);
-    expect(await a.reassignAction([r1.id], w.users.supervisor2.id, "سبب")).toMatchObject({ ok: false, message: FORBIDDEN_MESSAGE });
     const sup = await a.decideAction([r1.id, r2.id], "return", "يرجى التعديل");
     expect(sup.outcome?.done.map((d) => d.id)).toEqual([r1.id]);
     expect(sup.outcome?.skipped.map((s) => s.id)).toEqual([r2.id]);
     signIn(w.actors.manager);
-    const mgr = await a.reassignAction([r2.id], w.users.supervisor.id, "توزيع");
-    expect(mgr.outcome?.done.map((d) => d.id)).toEqual([r2.id]);
     expect((await a.decideAction([r2.id], "reject", ""))).toMatchObject({ ok: false }); // reason required
     expect((await a.decideAction([r2.id], "reject", "لا يستوفي")).outcome?.done).toHaveLength(1);
   });

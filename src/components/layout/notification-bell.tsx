@@ -61,6 +61,9 @@ export function NotificationBell({ items: initialItems, unread: initialUnread }:
       const arrived = next.items.filter((n) => !n.read && !seen.current.has(n.id));
       for (const n of next.items) seen.current.add(n.id);
       if (!next.fresh) return;
+      // Something changed for this user (a decision, a message): the open page shows it without a
+      // manual reload (owner's review, D-130).
+      if (arrived.length) router.refresh();
       const latest = arrived[0];
       if (latest) {
         toast(latest.title, { description: latest.body ?? undefined, tone: "info" });
@@ -68,7 +71,7 @@ export function NotificationBell({ items: initialItems, unread: initialUnread }:
       }
     });
     return () => source.close();
-  }, []);
+  }, [router]);
 
   function markRead(id?: string) {
     startTransition(async () => {

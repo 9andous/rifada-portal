@@ -12,10 +12,9 @@ import { Avatar } from "@/components/ui/avatar";
 import { DateDisplay } from "@/components/ui/date-display";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Pagination } from "@/components/ui/pagination";
-import { SortHeader } from "@/components/ui/sort-header";
 import { TabNav } from "@/components/ui/tab-nav";
 import { Panel, PanelHeader, StatusText } from "@/components/ui/surface";
-import { DataTable, SORT_TH, THead, Td, Th, Tr } from "@/components/ui/table";
+import { DataTable, ROW_LINK, THead, Td, Th, Tr } from "@/components/ui/table";
 import { formatNumber, toArabicDigits } from "@/lib/format";
 import type { SearchParams } from "@/lib/list-params";
 import { requireUser, type CurrentUser } from "@/server/auth/session";
@@ -83,7 +82,6 @@ async function UsersList({
     db.track.findMany({ where: { archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true } }),
   ]);
   const filtered = Boolean(list.q || (!officers && list.role) || list.status || (!officers && list.track));
-  const sortProps = { current: list.sort, dir: list.dir, path: PATH, params, className: SORT_TH };
   const statusFilter = {
     name: "status",
     label: "الحالة",
@@ -99,7 +97,9 @@ async function UsersList({
     <Panel>
       <PanelHeader title="قائمة المستخدمين" description={`عدد النتائج: ${formatNumber(page.total)}`} className="mb-0!" />
       {/* Switching tabs starts a fresh list: filters belong to one kind of account. */}
+      {/* Room between the tabs and the search row (owner's review, D-130). */}
       <TabNav
+        className="mb-5"
         label="نوع الحساب"
         active={list.tab}
         items={[
@@ -111,7 +111,7 @@ async function UsersList({
         action={PATH}
         q={list.q}
         searchLabel="الاسم أو اسم المستخدم أو البريد أو الهاتف"
-        keep={{ tab: officers ? "officers" : undefined, sort: params.sort as string | undefined, dir: params.dir as string | undefined }}
+        keep={{ tab: officers ? "officers" : undefined }}
         hasActive={filtered}
         filters={
           officers
@@ -152,20 +152,20 @@ async function UsersList({
         <>
           <DataTable caption="قائمة المستخدمين">
             <THead>
-              <SortHeader label="الاسم" column="name" {...sortProps} />
-              {officers ? <Th>الجمعية</Th> : <SortHeader label="الدور" column="role" {...sortProps} />}
+              <Th>الاسم</Th>
+              {officers ? <Th>الجمعية</Th> : <Th>الدور</Th>}
               <Th>الحالة</Th>
-              <SortHeader label="آخر دخول" column="lastLoginAt" {...sortProps} />
-              <SortHeader label="تاريخ الإنشاء" column="createdAt" {...sortProps} />
+              <Th>آخر دخول</Th>
+              <Th>تاريخ الإنشاء</Th>
             </THead>
             <tbody>
               {page.items.map((u) => (
-                <Tr key={u.id}>
+                <Tr key={u.id} linked>
                   <Td>
                     <span className="flex items-center gap-3">
                       <Avatar name={u.name} src={u.imageUrl} />
                       <span className="min-w-0">
-                        <Link href={`/admin/users/${u.id}`} className="font-semibold text-ink hover:text-primary hover:underline">
+                        <Link href={`/admin/users/${u.id}`} className={`font-semibold text-ink hover:text-primary hover:underline ${ROW_LINK}`}>
                           {u.name}
                         </Link>
                         <span className="t-caption mt-0.5 block">

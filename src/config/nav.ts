@@ -29,7 +29,6 @@ export const NAV: Record<Role, NavItem[]> = {
     { label: "الرئيسية", href: "/admin", icon: "home" },
     { label: "المستخدمون", href: "/admin/users", icon: "users" },
     { label: "الجمعيات", href: "/admin/associations", icon: "building" },
-    { label: "طلبات التسجيل", href: "/admin/registrations", icon: "registrations" },
     { label: "البرامج والمبادرات", href: "/admin/taxonomy", icon: "layers" },
     { label: "الإعدادات", href: "/admin/settings", icon: "settings" },
     { label: "سجل التدقيق", href: "/admin/audit", icon: "audit" },
@@ -43,8 +42,7 @@ export const NAV: Record<Role, NavItem[]> = {
   ],
   SUPERVISOR: [
     { label: "الرئيسية", href: "/supervisor", icon: "home" },
-    { label: "قائمة أعمالي", href: "/supervisor/queue", icon: "queue" },
-    { label: "الطلبات", href: "/supervisor/requests", icon: "inbox" },
+    { label: "قائمة الطلبات", href: "/supervisor/requests", icon: "inbox" },
     { label: "الجمعيات", icon: "building" },
     { label: "الأدلة والنماذج", href: "/supervisor/templates", icon: "templates" },
     { label: "التقارير", icon: "chart" },
@@ -73,7 +71,6 @@ export const VERIFY_HREF: Partial<Record<Role, string>> = {
 /** The gold call-to-action at the end of the navigation bar, per role. */
 export const NAV_CTA: Partial<Record<Role, NavItem>> = {
   SUPER_ADMIN: { label: "إضافة مستخدم", href: "/admin/users/new", icon: "addUser" },
-  SUPERVISOR: { label: "قائمة أعمالي", href: "/supervisor/queue", icon: "queue" },
   ASSOCIATION_OFFICER: { label: "تقديم طلب جديد", href: "/association/requests/new", icon: "newRequest" },
 };
 

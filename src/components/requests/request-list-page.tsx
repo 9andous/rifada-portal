@@ -1,26 +1,21 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
-import { CircleCheck, FilePlus2, FileText, Hourglass, RotateCcw, Send, XCircle } from "lucide-react";
+import { CircleCheck, FilePen, FilePlus2, FileText, Hourglass, RefreshCw, RotateCcw, Send, XCircle } from "lucide-react";
 import { KpiRow, type Kpi } from "@/components/dashboard/kpis";
 import { PageBody } from "@/components/layout/app-shell";
-import { FIGURE_TILE, FIGURE_VALUE, FigureChevron, PageBand } from "@/components/layout/page-band";
+import { PageBand } from "@/components/layout/page-band";
 import { ListSkeleton } from "@/components/states/list-skeleton";
 import { EmptyState } from "@/components/states/states";
 import { buttonClasses } from "@/components/ui/button";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Pagination } from "@/components/ui/pagination";
-import { SortHeader } from "@/components/ui/sort-header";
 import { Panel, PanelHeader } from "@/components/ui/surface";
-import { SORT_TH, Th } from "@/components/ui/table";
-import { cn } from "@/lib/cn";
+import { Th } from "@/components/ui/table";
 import { formatNumber, toArabicDigits } from "@/lib/format";
 import { listHref, type SearchParams } from "@/lib/list-params";
 import type { CurrentUser } from "@/server/auth/session";
-import { can } from "@/server/authz/permissions";
-import { supervisorOptions } from "@/server/services/requests/assignment";
 import { listRequests, parseRequestListParams, requestFilterOptions, requestStatusCounts, type RequestListView } from "@/server/services/requests/read";
-import { getSetting } from "@/server/settings/read";
 import { RequestsTable } from "./requests-table";
 
 /** Big status numbers under the page head that act as filters (change 16). */
@@ -31,35 +26,8 @@ async function StatusFigures({ user, view, path, searchParams }: { user: Current
   // «مقدَّم» and «فحص الاكتمال» last only for the instant of submission; shown only when not empty.
   const shown = counts.filter((s) => s.count > 0 || s.key !== "SUBMITTED" || s.key === active);
   const items = [{ key: undefined as string | undefined, name: "الكل", count: total }, ...shown.map((s) => ({ key: s.key as string | undefined, name: s.name, count: s.count }))];
-  if (user.role === "SUPERVISOR" || user.role === "UNIT_MANAGER") {
-    return <StaffStatusFigures items={items} active={active} path={path} params={params} role={user.role} />;
-  }
-  return (
-    <nav aria-label="تصفية حسب الحالة">
-      <ul className="flex flex-wrap gap-3.5">
-        {items.map((s) => {
-          const selected = s.key === active;
-          return (
-            <li key={s.name} className="min-w-36">
-              <Link
-                href={listHref(path, params, { status: s.key, page: undefined })}
-                aria-current={selected ? "true" : undefined}
-                scroll={false}
-                className={cn(FIGURE_TILE, "card-link h-full", selected && "border-primary dark:border-accent")}
-              >
-                {selected ? <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-accent" /> : null}
-                <span className="flex items-center gap-2">
-                  <span className="min-w-0 truncate text-[0.875rem] font-medium text-ink-muted">{s.name}</span>
-                  <FigureChevron />
-                </span>
-                <span className={cn(FIGURE_VALUE, "text-ink")}>{formatNumber(s.count)}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
+  // Every role: the first figure is green until another is chosen, then the chosen one is (D-130).
+  return <StaffStatusFigures items={items} active={active} path={path} params={params} role={user.role} />;
 }
 
 const STATUS_ICONS = {
@@ -68,7 +36,17 @@ const STATUS_ICONS = {
   UNDER_REVIEW: Hourglass,
   REJECTED: XCircle,
   SUBMITTED: Send,
+  RESUBMITTED: RefreshCw,
+  DRAFT: FilePen,
 } as const;
+
+const OFFICER_CAPTIONS: Record<string, string> = {
+  DRAFT: "لم تُرسل بعد",
+  UNDER_REVIEW: "لدى الوحدة الإشرافية",
+  RETURNED: "بانتظار تعديلكم",
+  APPROVED: "طلبات معتمدة",
+  REJECTED: "طلبات غير معتمدة",
+};
 
 function StaffStatusFigures({
   items,
@@ -81,17 +59,24 @@ function StaffStatusFigures({
   active: string | undefined;
   path: string;
   params: SearchParams;
-  role: "SUPERVISOR" | "UNIT_MANAGER";
+  role: CurrentUser["role"];
 }) {
+  const officer = role === "ASSOCIATION_OFFICER";
   const kpis: Kpi[] = items.map((item, index) => {
     const Icon = (item.key && STATUS_ICONS[item.key as keyof typeof STATUS_ICONS]) || (index === 0 ? FileText : Send);
     const selected = item.key === active || (!active && index === 0);
     const caption =
       index === 0
-        ? role === "SUPERVISOR"
-          ? "في البرامج المسندة إليك"
-          : "في جميع البرامج"
-        : item.key === "UNDER_REVIEW"
+        ? officer
+          ? "جميع طلبات الجمعية"
+          : role === "SUPERVISOR"
+            ? "في البرامج المسندة إليك"
+            : "في جميع البرامج"
+        : officer
+          ? OFFICER_CAPTIONS[item.key ?? ""] ?? "طلبات الجمعية"
+          : item.key === "RESUBMITTED"
+            ? "أعادتها الجمعية بعد التعديل"
+            : item.key === "UNDER_REVIEW"
           ? role === "SUPERVISOR"
             ? "بانتظار قرارك"
             : "بانتظار قرار المشرف أو اعتمادك"
@@ -103,7 +88,7 @@ function StaffStatusFigures({
                 ? "طلبات غير معتمدة"
                 : "طلبات واردة";
     return {
-      label: index === 0 ? (role === "SUPERVISOR" ? "الطلبات المسندة" : "إجمالي الطلبات") : item.name,
+      label: index === 0 ? (role === "SUPERVISOR" ? "الطلبات المسندة" : officer ? "جميع الطلبات" : "إجمالي الطلبات") : item.name,
       icon: Icon,
       featured: selected,
       value: formatNumber(item.count),
@@ -175,18 +160,13 @@ export function RequestListPage(props: RequestListPageProps) {
 async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDescription, emptyAction, searchParams }: RequestListPageProps) {
   const params = await searchParams;
   const list = parseRequestListParams(params, view);
-  const isManager = can(user.role, "requests.assign");
   const staff = user.role !== "ASSOCIATION_OFFICER";
-  const [page, options, maxBulk, supervisors] = await Promise.all([
+  const [page, options] = await Promise.all([
     listRequests(user, list, view),
     staff ? requestFilterOptions(user) : Promise.resolve({ tracks: [], supervisors: [] }),
-    getSetting("bulk.maxItems"),
-    isManager ? supervisorOptions(user) : Promise.resolve(null),
   ]);
   const filtered = Boolean(list.q || list.status || list.track || list.program || list.supervisor || list.association || list.overdue || list.stage);
-  const sortProps = { current: list.sort, dir: list.dir, path, params, className: SORT_TH };
   const showSupervisor = staff && view !== "queue";
-  const canDecide = can(user.role, "requests.review");
 
   const filters = [];
   if (staff && options.tracks.length > 1) {
@@ -224,7 +204,7 @@ async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDesc
         action={path}
         q={list.q}
         searchLabel={staff ? "رقم الطلب أو العنوان أو اسم الجمعية" : "رقم الطلب أو العنوان"}
-        keep={{ status: list.status, association: list.association, sort: params.sort as string | undefined, dir: params.dir as string | undefined }}
+        keep={{ status: list.status, association: list.association }}
         hasActive={filtered}
         filters={filters}
       />
@@ -241,18 +221,14 @@ async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDesc
             detailBase={detailBase}
             showAssociation={staff}
             showSupervisor={showSupervisor}
-            bulk={{ enabled: canDecide, max: maxBulk, supervisors: supervisors?.map((s) => ({ id: s.id, name: s.name, trackIds: s.trackIds })) ?? null }}
             headers={
               <>
-                <SortHeader label="الطلب" column="title" {...sortProps} />
+                <Th>الطلب</Th>
                 <Th>المسار</Th>
                 <Th>الحالة</Th>
                 {showSupervisor ? <Th>المشرف</Th> : null}
-                <SortHeader label="تاريخ التقديم" column="submittedAt" {...sortProps} />
-                <SortHeader label="المهلة" column="slaDueAt" {...sortProps} />
-                <Th>
-                  <span className="sr-only">إجراءات</span>
-                </Th>
+                <Th>تاريخ التقديم</Th>
+                <Th>المهلة</Th>
               </>
             }
           />

@@ -55,7 +55,7 @@ export async function notify(
   const users = await tx.user.findMany({ where: { id: { in: ids }, isActive: true }, select: { id: true, role: true } });
   const rows = users
     .filter((u) => isRole(u.role))
-    .map((u) => ({ userId: u.id, type: input.type, title: input.title, body: input.body ?? null, link: requestHref(u.role, input.requestId) }));
+    .map((u) => ({ userId: u.id, type: input.type, title: input.title, body: input.body ?? null, link: requestHref(u.role, input.requestId), requestId: input.requestId }));
   if (rows.length) {
     await tx.notification.createMany({ data: rows });
     // Live bell and toast: delivered to the recipients' open pages when this transaction commits.
@@ -95,9 +95,30 @@ export async function markNotificationsRead(userId: string, id?: string): Promis
 
 /**
  * Opening a request settles what it was about: every unread notification of the user that links
- * to that request is marked read. Does nothing (and signals nothing) when there are none.
+ * to that request is marked read, and the request's row loses its «جديد» (D-130).
  */
 export async function markRequestNotificationsRead(userId: string, requestId: string): Promise<void> {
-  const { count } = await db.notification.updateMany({ where: { userId, readAt: null, link: { endsWith: `/${requestId}` } }, data: { readAt: new Date() } });
+  const now = new Date();
+  const { count } = await db.notification.updateMany({ where: { userId, readAt: null, ...aboutRequest(requestId) }, data: { readAt: now } });
+  if ((await db.request.count({ where: { id: requestId } })) > 0) {
+    await db.requestSeen.upsert({ where: { userId_requestId: { userId, requestId } }, create: { userId, requestId, seenAt: now }, update: { seenAt: now } });
+  }
   if (count) await signalUsers(db, [userId], "read");
+}
+
+/** Notifications about one request (older rows name it only in their link). */
+const aboutRequest = (requestId: string): Prisma.NotificationWhereInput => ({ OR: [{ requestId }, { link: { endsWith: `/${requestId}` } }] });
+
+/**
+ * An action on a request (D-130), inside its transaction. The actor's notifications about it are
+ * settled (deleted), whether or not they were opened from the bell, and the actor has seen it as it
+ * now stands. With `activity` (the default) its last activity moves to now, so everyone else who
+ * has not opened it since sees «جديد» on its row.
+ */
+export async function recordRequestAction(tx: Prisma.TransactionClient, actorId: string, requestId: string, { activity = true }: { activity?: boolean } = {}): Promise<void> {
+  const now = new Date();
+  if (activity) await tx.request.update({ where: { id: requestId }, data: { lastActivityAt: now } });
+  await tx.requestSeen.upsert({ where: { userId_requestId: { userId: actorId, requestId } }, create: { userId: actorId, requestId, seenAt: now }, update: { seenAt: now } });
+  const { count } = await tx.notification.deleteMany({ where: { userId: actorId, ...aboutRequest(requestId) } });
+  if (count) await signalUsers(tx, [actorId], "read");
 }

@@ -381,21 +381,17 @@ these rules on top (`src/components/association/`).
 - Big status numbers above the table (as in C) acting as filters; a search and filter row;
   numbered pagination; initial circles beside supervisor names; status as dot plus text; medium row
   density.
-- **Row actions:** for requests under review, approve / return / reject icons appear on hover or
-  keyboard focus (always visible on touch), only for the responsible supervisor and the unit
-  manager.
-- **Confirmation modal** (centred) for every action: request title and reference, the chosen
-  action, a required reason field for return and reject, cancel and confirm (confirm coloured by
-  action). Esc closes.
-- **Bulk actions:** a leading checkbox column; when rows are selected a bar appears with
-  اعتماد المحدد / إعادة للتعديل / رفض, plus إعادة إسناد to a supervisor for the unit manager only.
-  - Return and reject need one reason, applied to every selected request.
-  - The same centred modal shows the count and the selected titles.
-  - Every request still gets its own status-history and audit entry.
-  - Only in-review requests inside the user's scope are selectable; the server re-checks and
-    reports out-of-scope or non-review requests as skipped.
-  - If some fail, the others proceed and a result summary lists the skipped ones.
-  - Maximum 25 per bulk action, adjustable in settings (Phase 2).
+- **Rows (D-130):** the whole row opens the request (and every navigating table works the same way:
+  `<Tr linked>` with the row's main link given `ROW_LINK`; other controls in the row sit above it).
+  No sort arrows in column headers. A row with something the viewer has not seen since their last
+  visit starts with a soft-pulsing green «جديد» (`NewBadge`).
+- **No checkboxes, bulk actions or row decision icons (D-130):** decisions are taken on the request
+  page, one request at a time, in the centred confirmation modal (request title and reference, the
+  chosen action, a required reason for return and reject).
+- **Status figures:** the first («الكل») is green until another is chosen; the chosen one is green
+  (`featured`). Staff have a «بعد التعديل» figure for requests the association sent back after edits.
+- **Dates** in tables and timelines show the time (D-130); only calendar dates (a project's start and
+  end) are date-only.
 
 ## Request detail (Phase 3)
 

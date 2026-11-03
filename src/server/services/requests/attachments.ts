@@ -9,6 +9,7 @@ import { scopeRequests, type Actor } from "@/server/authz/scope";
 import { db } from "@/server/db";
 import { fieldRefusal, refuse, type Result } from "@/server/services/admin/common";
 import { audit } from "@/server/services/audit";
+import { recordRequestAction } from "@/server/services/notifications";
 import { getSetting } from "@/server/settings/read";
 import { getStorage } from "@/server/storage/storage";
 import { consumeUpload, NOT_USABLE, peekUpload, type ConsumedUpload, type StagedMeta } from "@/server/uploads/stage";
@@ -129,6 +130,7 @@ export async function attachRequirementFile(actor: Actor, requestId: string, req
       });
       const version = await tx.attachmentVersion.create({ data: { attachmentId: attachment.id, versionNo: 1, ...file, uploadedById: actor.id } });
       await tx.attachment.update({ where: { id: attachment.id }, data: { currentVersionId: version.id } });
+      await recordRequestAction(tx, actor.id, requestId, { activity: false });
       await audit(
         {
           actorId: actor.id,
@@ -168,6 +170,7 @@ export async function attachOwnFile(actor: Actor, requestId: string, uploadId: s
       const attachment = await tx.attachment.create({ data: { ownerType: "REQUEST", requestId, attachmentTypeId: null, title: file.fileName, uploadedById: actor.id } });
       const version = await tx.attachmentVersion.create({ data: { attachmentId: attachment.id, versionNo: 1, ...file, uploadedById: actor.id } });
       await tx.attachment.update({ where: { id: attachment.id }, data: { currentVersionId: version.id } });
+      await recordRequestAction(tx, actor.id, requestId, { activity: false });
       await audit(
         {
           actorId: actor.id,
@@ -210,6 +213,7 @@ export async function addAttachmentVersion(actor: Actor, requestId: string, atta
       const versionNo = (last._max.versionNo ?? 0) + 1;
       const version = await tx.attachmentVersion.create({ data: { attachmentId, versionNo, ...file, uploadedById: actor.id } });
       await tx.attachment.update({ where: { id: attachmentId }, data: { currentVersionId: version.id, title: file.fileName } });
+      await recordRequestAction(tx, actor.id, requestId, { activity: false });
       await audit(
         {
           actorId: actor.id,
@@ -240,6 +244,7 @@ export async function removeDraftAttachment(actor: Actor, requestId: string, att
     keys.push(...attachment.versions.map((v) => v.storageKey));
     await tx.attachment.update({ where: { id: attachmentId }, data: { currentVersionId: null } });
     await tx.attachment.delete({ where: { id: attachmentId } });
+    await recordRequestAction(tx, actor.id, requestId, { activity: false });
     await audit(
       {
         actorId: actor.id,

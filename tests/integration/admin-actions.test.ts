@@ -8,7 +8,7 @@ import { proxy } from "@/proxy";
 import { auth } from "@/server/auth/auth";
 import type { CurrentUser } from "@/server/auth/session";
 import type { Role } from "@/server/authz/roles";
-import { ROLES } from "@/server/authz/roles";
+import { ROLE_HOME, ROLES } from "@/server/authz/roles";
 import { makeRoleActors, TEST_PASSWORD } from "../support/admin";
 import { db, resetDatabase } from "../support/db";
 
@@ -20,7 +20,7 @@ vi.mock("@/server/auth/session", () => ({
     return session.current;
   }),
 }));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), refresh: vi.fn() }));
 
 const { createUserAction, resetUserPasswordAction, setUserActiveAction, updateUserAction } = await import("@/server/actions/admin/users");
 const { createAssociationAction, createAssociationOfficerAction, setAssociationActiveAction, updateAssociationAction } = await import(
@@ -182,7 +182,7 @@ describe("Phase 2a routes (proxy)", () => {
     ["/manager/associations/some-id", "UNIT_MANAGER"],
   ];
 
-  it("let only the owning role through and answer 403 to every other role", async () => {
+  it("let only the owning role through and send every other role to its own home", async () => {
     const usernames = { SUPER_ADMIN: ctx.users.admin, UNIT_MANAGER: ctx.users.manager, SUPERVISOR: ctx.users.supervisor, ASSOCIATION_OFFICER: ctx.users.officer };
     for (const role of ROLES) {
       const cookie = await cookieFor(usernames[role].username!);
@@ -192,8 +192,8 @@ describe("Phase 2a routes (proxy)", () => {
           expect(response.status, `${role} -> ${path}`).toBe(200);
           expect(response.headers.get("x-middleware-rewrite")).toBeNull();
         } else {
-          expect(response.status, `${role} -> ${path}`).toBe(403);
-          expect(response.headers.get("x-middleware-rewrite")).toContain("/forbidden");
+          expect(response.status, `${role} -> ${path}`).toBe(307); // to the role's own home (D-130)
+          expect(new URL(response.headers.get("location") ?? "").pathname).toBe(ROLE_HOME[role]);
         }
       }
     }

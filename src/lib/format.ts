@@ -79,6 +79,11 @@ export function formatTime(date: Date): string {
   return time.format(date);
 }
 
+/** Hijri date and Riyadh time, e.g. «٢٣ جمادى الأولى ١٤٤٨ هـ، ١:٠٤ ص»: every event shows its time (D-130). */
+export function formatHijriDateTime(date: Date): string {
+  return `${formatHijri(date)}، ${formatTime(date)}`;
+}
+
 /** Current Hijri (Umm al-Qura) year as a number, in the Riyadh time zone. */
 export function hijriYear(date: Date = new Date()): number {
   const part = hijriYearParts.formatToParts(date).find((p) => p.type === "year");

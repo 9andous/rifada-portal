@@ -1,7 +1,7 @@
 import { Download, FileText } from "lucide-react";
 import type { ReactNode } from "react";
 import { buttonClasses } from "@/components/ui/button";
-import { formatFileSize, formatHijri } from "@/lib/format";
+import { formatFileSize, formatHijriDateTime } from "@/lib/format";
 import { fileHref } from "@/lib/requests";
 import type { FileView } from "@/server/services/requests/read";
 
@@ -20,7 +20,7 @@ export function FileRow({ requestId, file, actions }: { requestId: string; file:
         </p>
         {current ? (
           <p className="text-sm text-ink-muted">
-            {formatFileSize(current.size)} · رُفع في {formatHijri(current.createdAt)}
+            {formatFileSize(current.size)} · رُفع في {formatHijriDateTime(current.createdAt)}
           </p>
         ) : null}
       </div>

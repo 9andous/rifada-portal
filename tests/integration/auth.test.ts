@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Role } from "@/generated/prisma/client";
 import { proxy } from "@/proxy";
+import { ROLE_HOME } from "@/server/authz/roles";
 import { auth } from "@/server/auth/auth";
 import { createUserWithPassword } from "@/server/auth/users";
 import { db, resetDatabase } from "../support/db";
@@ -167,7 +168,7 @@ describe("route protection (proxy)", () => {
     }
   });
 
-  it("answers 403 when a role opens another role's area", async () => {
+  it("sends a role that opens another role's area to its own home (D-130)", async () => {
     const cases: [Role, string, string[]][] = [
       ["ASSOCIATION_OFFICER", "officer", ["/admin", "/manager", "/supervisor"]],
       ["SUPERVISOR", "supervisor", ["/admin", "/manager", "/association"]],
@@ -178,8 +179,8 @@ describe("route protection (proxy)", () => {
       const cookie = await sessionCookie(`${username}.proxy`, role);
       for (const path of denied) {
         const response = await visit(`${path}/anything`, cookie);
-        expect(response.status, `${role} -> ${path}`).toBe(403);
-        expect(response.headers.get("x-middleware-rewrite")).toContain("/forbidden");
+        expect(response.status, `${role} -> ${path}`).toBe(307);
+        expect(new URL(response.headers.get("location") ?? "").pathname).toBe(ROLE_HOME[role]);
       }
     }
   });

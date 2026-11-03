@@ -12,7 +12,7 @@ import { RefNumber } from "@/components/ui/ref-number";
 import { Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { statusHelp } from "@/lib/association-status";
 import { cn } from "@/lib/cn";
-import { formatGregorian, formatHijri, formatNumber, toArabicDigits } from "@/lib/format";
+import { formatGregorian, formatHijri, formatHijriDateTime, formatNumber, toArabicDigits } from "@/lib/format";
 import { acceptAttribute } from "@/lib/uploads";
 import { workingDaysBetween } from "@/lib/working-days";
 import type { RequestDetail } from "@/server/services/requests/read";
@@ -70,7 +70,7 @@ function Note({ title, date, tone, children }: { title: string; date?: Date | nu
     <div className={cn("mt-4 rounded-lg border-s-4 px-4 py-3", rule)}>
       <p className="flex flex-wrap items-baseline justify-between gap-2 text-sm font-bold text-ink">
         {title}
-        {date ? <span className="font-normal text-ink-muted">{formatHijri(date)}</span> : null}
+        {date ? <span className="font-normal text-ink-muted">{formatHijriDateTime(date)}</span> : null}
       </p>
       <p className="mt-1 whitespace-pre-line text-base leading-relaxed text-ink">{children}</p>
     </div>
@@ -108,11 +108,11 @@ export function AssociationRequestView({
   const editLabel = r.status.key === "RETURNED" ? "تعديل الطلب وإعادة إرساله" : "إكمال الطلب وإرساله";
 
   const facts: { label: string; value: ReactNode; icon: ReactNode }[] = [
-    { label: "تاريخ الإرسال", value: r.submittedAt ? formatHijri(r.submittedAt) : "لم يُرسل بعد", icon: <CalendarDays strokeWidth={1.75} /> },
-    { label: "آخر تحديث", value: formatHijri(r.updatedAt), icon: <RefreshCw strokeWidth={1.75} /> },
+    { label: "تاريخ الإرسال", value: r.submittedAt ? formatHijriDateTime(r.submittedAt) : "لم يُرسل بعد", icon: <CalendarDays strokeWidth={1.75} /> },
+    { label: "آخر تحديث", value: formatHijriDateTime(r.updatedAt), icon: <RefreshCw strokeWidth={1.75} /> },
     { label: "الخطوة التالية", value: <NextStep statusKey={r.status.key} />, icon: <ListChecks strokeWidth={1.75} /> },
     r.decidedAt
-      ? { label: "تاريخ القرار", value: formatHijri(r.decidedAt), icon: <CircleCheck strokeWidth={1.75} /> }
+      ? { label: "تاريخ القرار", value: formatHijriDateTime(r.decidedAt), icon: <CircleCheck strokeWidth={1.75} /> }
       : {
           label: "مدة المراجعة",
           value: timing ?? `${DAYS(slaDays)} بعد ${r.status.key === "RETURNED" ? "إعادة الإرسال" : "الإرسال"}`,

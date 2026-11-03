@@ -9,9 +9,8 @@ import { AttachmentTypeRowActions, NewAttachmentTypeButton } from "@/components/
 import { TaxonomyNav } from "@/components/taxonomy/taxonomy-nav";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Pagination } from "@/components/ui/pagination";
-import { SortHeader } from "@/components/ui/sort-header";
 import { Panel, PanelHeader, StatusText } from "@/components/ui/surface";
-import { DataTable, SORT_TH, THead, Td, Th, Tr } from "@/components/ui/table";
+import { DataTable, THead, Td, Th, Tr } from "@/components/ui/table";
 import { arabicList, formatNumber } from "@/lib/format";
 import type { SearchParams } from "@/lib/list-params";
 import { UPLOAD_GROUP_LABELS, type UploadGroup } from "@/lib/validation/settings";
@@ -52,7 +51,6 @@ async function TypesList({ user, searchParams }: { user: CurrentUser; searchPara
   const [page, allowed] = await Promise.all([listAttachmentTypes(user, list), getSetting("uploads.allowedGroups")]);
   const allowedSet = new Set<string>(allowed);
   const filtered = Boolean(list.q || list.status);
-  const sortProps = { current: list.sort, dir: list.dir, path: PATH, params, className: SORT_TH };
 
   return (
     <Panel>
@@ -82,8 +80,8 @@ async function TypesList({ user, searchParams }: { user: CurrentUser; searchPara
         <>
           <DataTable caption="أنواع المرفقات" minWidth="48rem">
             <THead>
-              <SortHeader label="الاسم" column="name" {...sortProps} />
-              <SortHeader label="المفتاح" column="key" {...sortProps} />
+              <Th>الاسم</Th>
+              <Th>المفتاح</Th>
               <Th>الملفات المقبولة</Th>
               <Th className="w-28">الاستخدام</Th>
               <Th className="w-24">الحالة</Th>

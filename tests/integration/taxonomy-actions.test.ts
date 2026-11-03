@@ -17,7 +17,7 @@ vi.mock("@/server/auth/session", () => ({
     return session.current;
   }),
 }));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), refresh: vi.fn() }));
 
 const t = await import("@/server/actions/admin/taxonomy");
 const at = await import("@/server/actions/admin/attachment-types");
@@ -167,13 +167,13 @@ describe("Phase 2b stop 1 routes (proxy)", () => {
     ["/manager/taxonomy/objectives", "UNIT_MANAGER"],
   ];
 
-  it("let only the owning role through and answer 403 to every other role", async () => {
+  it("let only the owning role through and send every other role to its own home", async () => {
     const users = { SUPER_ADMIN: ctx.users.admin, UNIT_MANAGER: ctx.users.manager, SUPERVISOR: ctx.users.supervisor, ASSOCIATION_OFFICER: ctx.users.officer };
     for (const role of ROLES) {
       const cookie = await cookieFor(users[role].username!);
       for (const [path, owner] of ROUTES) {
         const response = await proxy(new NextRequest(`${BASE}${path}`, { headers: { cookie } }));
-        expect(response.status, `${role} -> ${path}`).toBe(role === owner ? 200 : 403);
+        expect(response.status, `${role} -> ${path}`).toBe(role === owner ? 200 : 307); // others go to their own home (D-130)
       }
     }
   });

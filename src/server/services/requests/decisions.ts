@@ -7,7 +7,7 @@ import { db } from "@/server/db";
 import { createSeal } from "@/server/seal/seal";
 import { assertCan, refuse, type Result } from "@/server/services/admin/common";
 import { audit } from "@/server/services/audit";
-import { notify, type NotificationType } from "@/server/services/notifications";
+import { notify, recordRequestAction, type NotificationType } from "@/server/services/notifications";
 import { getSetting } from "@/server/settings/read";
 import { bulkLimitMessage, type BulkOutcome } from "./assignment";
 import { associationRecipients, requestRef, statusMap, transitionAllowed } from "./common";
@@ -114,6 +114,7 @@ export async function decideRequests(
       await tx.requestStatusHistory.create({
         data: { requestId: id, fromStatusId: statuses.UNDER_REVIEW.id, toStatusId: target.id, actorId: actor.id, note: reason, createdAt: now },
       });
+      await recordRequestAction(tx, actor.id, id);
       if (decision === "approve" && approval) {
         const approved = await tx.requestApproval.create({ data: { requestId: id, managerId: actor.id, createdAt: now } });
         await createSeal(tx, { kind: "APPROVAL", requestId: id, signerId: actor.id, approvalId: approved.id, at: now });

@@ -1357,3 +1357,35 @@ supervisor's signed evaluation, which «تقييم المشرف» shows; changes
 (5) «مؤشرات القياس» is required at submission («مؤشرات القياس مطلوبة.»); drafts and returned requests
 without it are stopped by the completeness check. Plural labels take «مطلوبة». (6) Dashboard card tabs
 share the card's whole width.
+
+**D-130 Owner's review of 2026-11-03: tables, «جديد», «بعد التعديل», notifications and fixes.**
+(D-129 is held by the layout-B trial on `redesign/request-page`.) (1) Tables: the whole row opens the
+record (`Tr linked` with the row's one link stretched over it, `ROW_LINK`); other controls in a row sit
+above it. Sort arrows are gone (`SortHeader` removed; lists keep their default order). The requests
+table loses its checkboxes, the selection bar and the hover decision icons: every decision is taken on
+the request page. Reassigning by hand is gone with them (the owner chose no reassigning); the service
+stays for tests and later use. (2) «جديد»: `RequestSeen` records when each user last opened a request
+and `Request.lastActivityAt` its last action (submission, decision, evaluation, classification,
+message). A row shows a soft-pulsing green «جديد» until the viewer opens it, and again after someone
+else's next action; drafts never. The migration marks what existed as seen. (3) Acting on a request
+deletes the actor's own notifications about it (`recordRequestAction`, inside the action's
+transaction), whether or not they were opened from the bell; `Notification.requestId` names the
+request (backfilled from the link). The bell's live stream refreshes the open page when something
+arrives, and request actions call `refresh()` as well as revalidating. (4) «بعد التعديل»:
+`Request.resubmittedAt` is set when a returned request is sent again. While it is under review the unit
+(supervisor, manager, super admin) sees it as «بعد التعديل», with its own figure and filter
+(`status=RESUBMITTED`); it is reviewed exactly like «قيد المراجعة». The association keeps «قيد
+المراجعة». No new row in `request_statuses`: the lifecycle is unchanged. (5) Key figures: the first is
+green (the «الطلبات المرسلة» style) on every page, and on status figures the chosen one becomes green.
+(6) Supervisor: «قائمة أعمالي» is removed (its address redirects) and «الطلبات» is renamed «قائمة
+الطلبات»; «مراجعة الطلب التالي» is removed; the home is «لوحة المشرف». Super admin: «طلبات التسجيل»
+leaves the navigation (the page stays reachable by address). «المستخدمون حسب الدور» is a ring chart.
+(7) Every event date shows its time (`DateDisplay` shows it by default; `dateOnly` for calendar dates
+such as a project's start and end). (8) Fixes: a new request's supporting files appear in the review
+(after the first save the form continues on the draft's edit page, `?step=`); a reference typed or
+copied in Arabic-Indic digits with direction marks is found (`normalizeSearch`); a user who opens
+another role's area (for example a `next` left by the previous account) is sent to their own home
+instead of the 403 page; the homepage photo keeps its square shape at any text size. (9) Password
+fields on sign-in, reset and change have the show/hide eye. The help button on the public pages is a
+labelled «المساعدة» pill and its answers follow the current four-step registration. «ربيع الآخر»
+stays: it is the Umm al-Qura name (owner's choice).

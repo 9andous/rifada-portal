@@ -45,9 +45,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(ROLE_HOME[user.role], request.url));
   }
 
+  // Another role's area (typically a `next` left by the previous account after switching users):
+  // go to this account's own home instead of a 403 page (owner's review, D-130).
   const area = areaForPath(pathname);
   if (area && !AREA_ROLES[area].includes(user.role)) {
-    return NextResponse.rewrite(new URL("/forbidden", request.url), { status: 403 });
+    return NextResponse.redirect(new URL(ROLE_HOME[user.role], request.url));
   }
 
   return NextResponse.next();

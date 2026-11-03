@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { History } from "lucide-react";
+import { Building2, History, Layers, Target, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { BandDate } from "@/components/dashboard/band-date";
 import { ProgramsCard, TracksCard } from "@/components/dashboard/cards";
+import { DonutChart } from "@/components/dashboard/donut-chart";
+import { KpiRow } from "@/components/dashboard/kpis";
 import { PageBody } from "@/components/layout/app-shell";
-import { BandFigures, PageBand } from "@/components/layout/page-band";
+import { PageBand } from "@/components/layout/page-band";
 import { buttonClasses } from "@/components/ui/button";
 import { DateDisplay } from "@/components/ui/date-display";
 import { Panel, PanelHeader } from "@/components/ui/surface";
@@ -37,7 +39,6 @@ export default async function AdminDashboard() {
   ]);
   const roleCount = (role: string) => usersByRole.find((r) => r.role === role)?._count._all ?? 0;
   const totalUsers = usersByRole.reduce((sum, r) => sum + r._count._all, 0);
-  const maxRole = Math.max(1, ...ROLES.map(roleCount));
 
   return (
     <>
@@ -47,12 +48,12 @@ export default async function AdminDashboard() {
         lead="حالة الحسابات والبيانات المرجعية وآخر العمليات المسجلة."
         actions={<BandDate date={now} />}
         figures={
-          <BandFigures
+          <KpiRow
             items={[
-              { label: "المستخدمون النشطون", value: formatNumber(totalUsers), caption: "في جميع الأدوار", href: "/admin/users" },
-              { label: "الجمعيات النشطة", value: formatNumber(associations), caption: "حساب واحد لكل جمعية", href: "/admin/associations" },
-              { label: "البرامج", value: formatNumber(programs), caption: `المبادرات: ${formatNumber(initiatives)}`, href: "/admin/taxonomy" },
-              { label: "الأهداف الإستراتيجية", value: formatNumber(objectives), caption: "من إستراتيجية الرئاسة", href: "/admin/taxonomy/objectives" },
+              { label: "المستخدمون النشطون", icon: Users, featured: true, value: formatNumber(totalUsers), caption: "في جميع الأدوار", href: "/admin/users" },
+              { label: "الجمعيات النشطة", icon: Building2, value: formatNumber(associations), caption: "حساب واحد لكل جمعية", href: "/admin/associations" },
+              { label: "البرامج", icon: Layers, value: formatNumber(programs), caption: `المبادرات: ${formatNumber(initiatives)}`, href: "/admin/taxonomy" },
+              { label: "الأهداف الإستراتيجية", icon: Target, value: formatNumber(objectives), caption: "من إستراتيجية الرئاسة", href: "/admin/taxonomy/objectives" },
             ]}
           />
         }
@@ -66,17 +67,7 @@ export default async function AdminDashboard() {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.4fr]">
           <Panel>
             <PanelHeader title="المستخدمون حسب الدور" description="الحسابات النشطة" />
-            <ul className="flex flex-col gap-4 px-6 pb-6">
-              {ROLES.map((role) => (
-                <li key={role} className="grid grid-cols-[8rem_1fr_2.5rem] items-center gap-4 text-sm">
-                  <span className="text-ink-muted">{ROLE_LABELS[role]}</span>
-                  <span className="h-2.5 overflow-hidden rounded-full bg-chart-track">
-                    <span className="block h-full rounded-full bg-chart-1" style={{ width: `${(roleCount(role) / maxRole) * 100}%` }} />
-                  </span>
-                  <span className="t-figure text-end">{formatNumber(roleCount(role))}</span>
-                </li>
-              ))}
-            </ul>
+            <DonutChart totalLabel="حسابًا نشطًا" slices={ROLES.map((role) => ({ label: ROLE_LABELS[role], value: roleCount(role) }))} />
           </Panel>
 
           <Panel>

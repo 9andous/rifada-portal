@@ -1,9 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh as refreshRouter, revalidatePath } from "next/cache";
 import { DECISIONS, type Decision } from "@/lib/requests";
 import { draftFromForm } from "@/lib/validation/requests";
-import { reassignRequests } from "@/server/services/requests/assignment";
 import { addAttachmentVersion, attachOwnFile, attachRequirementFile, removeDraftAttachment } from "@/server/services/requests/attachments";
 import { addComment } from "@/server/services/requests/comments";
 import { decideRequests } from "@/server/services/requests/decisions";
@@ -32,6 +31,8 @@ const MAX_IDS = 100;
 function refresh() {
   // Request data appears on lists, detail pages and dashboards of every role.
   revalidatePath("/", "layout");
+  // And the page that sent the action re-renders with the new state at once (owner's review, D-130).
+  refreshRouter();
 }
 
 const str = (formData: FormData, name: string) => {
@@ -208,17 +209,6 @@ export async function changeScopeAction(requestId: string, programId: string, in
     if (!r.ok) return fromRefusal(r);
     refresh();
     return { ok: true };
-  });
-}
-
-export async function reassignAction(requestIds: string[], toUserId: string, reason: string): Promise<RequestFormState> {
-  return asUser<RequestFormState>(async (user) => {
-    const list = ids(requestIds);
-    if (!list || !ID.test(toUserId) || typeof reason !== "string") return { ok: false, message: INVALID_MESSAGE };
-    const r = await reassignRequests(user, list, toUserId, reason);
-    if (!r.ok) return fromRefusal(r);
-    refresh();
-    return { ok: true, outcome: r.outcome };
   });
 }
 

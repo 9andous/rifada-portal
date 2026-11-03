@@ -146,13 +146,14 @@ describe("download route", () => {
 
 describe("request pages behind the proxy", () => {
   const page = async (path: string, cookie?: string) => proxy(new NextRequest(`${BASE}${path}`, { headers: cookie ? { cookie } : {} }));
-  const forbidden = (res: Response) => res.status === 403 && (res.headers.get("x-middleware-rewrite") ?? "").includes("/forbidden");
+  // Another role's area sends the user to their own home (D-130).
+  const forbidden = (res: Response) => res.status === 307 && !(res.headers.get("location") ?? "").includes("/login");
 
   it("open each role's own request area and refuse the others", async () => {
     const n = names();
     const areas = {
       officer: ["/association/requests", "/association/requests/new"],
-      supervisor: ["/supervisor/queue", "/supervisor/requests"],
+      supervisor: ["/supervisor", "/supervisor/requests"],
       manager: ["/manager/requests"],
       admin: ["/admin/requests"],
     } as const;

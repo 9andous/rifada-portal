@@ -9,7 +9,7 @@ import { db } from "@/server/db";
 import { createSeal } from "@/server/seal/seal";
 import { assertCan, fieldRefusal, refuse, type Result } from "@/server/services/admin/common";
 import { audit } from "@/server/services/audit";
-import { notify } from "@/server/services/notifications";
+import { notify, recordRequestAction } from "@/server/services/notifications";
 import { availableInitiativeWhere } from "@/server/services/taxonomy";
 import { decideRequests } from "./decisions";
 import { activeManagerIds, requestRef, statusMap, type Tx } from "./common";
@@ -100,6 +100,7 @@ export async function editEvaluation(actor: Actor, id: string, raw: EvaluationEd
     const before = { criteria: current.criteria, note: current.note };
     if (JSON.stringify(before) === JSON.stringify({ criteria, note: parsed.data.note })) return { ok: true };
     await tx.requestEvaluation.update({ where: { id: current.id }, data: { criteria, note: parsed.data.note, editedById: actor.id, editedAt: new Date() } });
+    await recordRequestAction(tx, actor.id, id);
     await audit({ actorId: actor.id, action: "request.evaluation_edited", entityType: "Request", entityId: id, before, after: { ...requestRef(request), criteria, note: parsed.data.note } }, tx);
     await notify(
       tx,
@@ -172,6 +173,7 @@ export async function evaluateRequest(actor: Actor, id: string, raw: EvaluationI
     const evaluation = await tx.requestEvaluation.create({ data: { requestId: id, reviewerId: actor.id, criteria, note: input.note, createdAt: now } });
     const seal = await createSeal(tx, { kind: "EVALUATION", requestId: id, signerId: actor.id, evaluationId: evaluation.id, at: now });
     const met = criteria.filter((c) => c.met).length;
+    await recordRequestAction(tx, actor.id, id);
     await audit(
       {
         actorId: actor.id,
@@ -275,6 +277,7 @@ export async function changeRequestScope(actor: Actor, id: string, input: { prog
     await tx.requestInitiative.createMany({ data: ids.map((initiativeId, sortOrder) => ({ requestId: id, initiativeId, sortOrder })) });
     const after = await scopeSnapshot(tx, program.id, ids);
     await tx.requestScopeChange.create({ data: { requestId: id, actorId: actor.id, before, after, note: parsedNote.data } });
+    await recordRequestAction(tx, actor.id, id);
     await audit({ actorId: actor.id, action: "request.scope_changed", entityType: "Request", entityId: id, before, after: { ...requestRef(request), ...after, note: parsedNote.data } }, tx);
     if (actor.role === "UNIT_MANAGER") {
       await notify(

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ChevronRight, Headset, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, Headset, MessageSquare, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -15,15 +15,16 @@ const TOPICS: Topic[] = [
   {
     question: "كيف أسجّل جمعيتي في المنصة؟",
     answer: [
-      "التسجيل خمس خطوات: الترحيب، ثم بيانات الجمعية، ثم مجالات العمل ضمن برامج الرئاسة، ثم بيانات المسؤول والحساب، وأخيرًا القيم والتعهد.",
-      "يستغرق نحو خمس دقائق.",
+      "التسجيل أربع خطوات: الترحيب، ثم بيانات الجمعية (الترخيص والموقع والتواصل)، ثم بيانات مسؤول الجمعية وحسابه، وأخيرًا القيم والتعهد ثم الإرسال.",
+      "يستغرق نحو خمس دقائق، ويظهر لكم رقم الطلب بعد الإرسال.",
     ],
     action: { label: "ابدأ التسجيل", href: "/register" },
   },
   {
     question: "ما الذي أجهّزه قبل البدء؟",
     answer: [
-      "رقم ترخيص الجمعية من المركز الوطني لتنمية القطاع غير الربحي، وبيانات التواصل الرسمية للجمعية، وبيانات مسؤول الجمعية الذي يدير حسابها، وبرامج الرئاسة التي تعمل جمعيتكم في مجالها.",
+      "اسم الجمعية ورقم ترخيصها من المركز الوطني لتنمية القطاع غير الربحي، ومدينتها، وهاتفها وبريدها الإلكتروني الرسمي.",
+      "وبيانات مسؤول الجمعية الذي يدير حسابها: اسمه الكامل وبريده، واسم المستخدم الذي يختاره.",
     ],
     action: { label: "صفحة التسجيل", href: "/register" },
   },
@@ -36,6 +37,14 @@ const TOPICS: Topic[] = [
     question: "كيف أتابع طلب التسجيل؟",
     answer: ["أدخلوا رقم الطلب الذي ظهر لكم بعد الإرسال ورقم ترخيص الجمعية في صفحة متابعة الطلب."],
     action: { label: "متابعة طلب التسجيل", href: "/register/status" },
+  },
+  {
+    question: "ماذا أفعل بعد تفعيل الحساب؟",
+    answer: [
+      "سجّلوا الدخول باسم المستخدم وكلمة المرور، ثم اختاروا «تقديم طلب جديد» لتقديم مشروع أو برنامج: تكتبون بياناته خطوة خطوة، وتُرفقون ملفاته الداعمة، ثم ترسلونه.",
+      "تتابعون حالة كل طلب في «طلباتي»، وتصلكم إشعارات عند مراجعته أو إعادته للتعديل أو صدور القرار، ويمكنكم مراسلة الوحدة الإشرافية من صفحة الطلب.",
+    ],
+    action: { label: "تسجيل الدخول", href: "/login" },
   },
   {
     question: "نسيت كلمة المرور",
@@ -92,7 +101,7 @@ export function SupportWidget() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-bold">مساعد {brand.productName}</p>
-                <p className="text-xs text-band-ink-muted">إجابات سريعة عن التسجيل والدخول</p>
+                <p className="text-xs text-band-ink-muted">إجابات سريعة عن التسجيل والدخول وتقديم الطلبات</p>
               </div>
               <button
                 type="button"
@@ -166,13 +175,13 @@ export function SupportWidget() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-controls={open ? "support-panel" : undefined}
-        aria-label={open ? "إغلاق المساعد" : "فتح مساعد رفادة"}
         className={cn(
-          "group relative flex size-14 items-center justify-center rounded-full bg-band text-band-gold shadow-2 ring-4 ring-band-gold/25 transition-transform hover:-translate-y-0.5",
+          // A labelled pill (owner's review, D-130): «المساعدة» says what it is without guessing at an icon.
+          "inline-flex h-12 items-center gap-2 rounded-full bg-band px-5 text-[0.9375rem] font-bold text-band-ink shadow-2 transition-transform hover:-translate-y-0.5",
         )}
       >
-        {open ? <X aria-hidden="true" className="size-6" /> : <Headset aria-hidden="true" className="size-6" strokeWidth={1.75} />}
-        {!open ? <span aria-hidden="true" className="absolute top-1 start-1 size-3 rounded-full border-2 border-band bg-band-gold" /> : null}
+        {open ? <X aria-hidden="true" className="size-5" /> : <MessageSquare aria-hidden="true" className="size-5" strokeWidth={1.75} />}
+        {open ? "إغلاق" : "المساعدة"}
       </button>
     </div>
   );

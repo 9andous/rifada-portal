@@ -26,8 +26,16 @@ import { canChangeScope } from "./review";
 // association, D-079) and comments from `scopeComments` (internal notes never for officers). The
 // detail is shaped per role: the officer's version is built without any internal data.
 
-export type StatusView = { key: SystemStatusKey; name: string; tone: StatusTone };
+/** A system status, or «بعد التعديل»: what the unit sees for a resubmitted request under review (D-130). */
+export type StatusKey = SystemStatusKey | "RESUBMITTED";
+export type StatusView = { key: StatusKey; name: string; tone: StatusTone };
 const statusView = (s: { key: string; name: string; colorToken: string }): StatusView => ({ key: s.key as SystemStatusKey, name: s.name, tone: statusTone(s.colorToken) });
+
+export const RESUBMITTED_STATUS: StatusView = { key: "RESUBMITTED", name: "بعد التعديل", tone: "info" };
+/** Staff see a request the association sent back after edits as «بعد التعديل» while it is under review. */
+function unitStatus(actor: Actor, s: { key: string; name: string; colorToken: string }, resubmittedAt: Date | null): StatusView {
+  return actor.role !== "ASSOCIATION_OFFICER" && s.key === "UNDER_REVIEW" && resubmittedAt ? RESUBMITTED_STATUS : statusView(s);
+}
 
 // ---------------------------------------------------------------------------
 // Lists
@@ -50,7 +58,7 @@ export function parseRequestListParams(params: SearchParams, view: RequestListVi
   const association = firstParam(params, "association");
   return {
     ...parseListParams(params, REQUEST_SORTS, { sort: view === "mine" ? "updatedAt" : "submittedAt", dir: "desc" }),
-    status: enumParam(params, "status", SYSTEM_STATUS_KEYS),
+    status: enumParam(params, "status", [...SYSTEM_STATUS_KEYS, "RESUBMITTED"] as const),
     track: track && /^[a-z0-9]{8,40}$/.test(track) ? track : undefined,
     /** Classified requests only (D-123): the dashboards link here. */
     program: program && /^[a-z0-9]{8,40}$/.test(program) ? program : undefined,
@@ -96,6 +104,8 @@ const listSelect = {
   initiative: { select: { number: true, name: true } },
   association: { select: { name: true } },
   assignedSupervisor: { select: { name: true, isActive: true } },
+  resubmittedAt: true,
+  lastActivityAt: true,
 } satisfies Prisma.RequestSelect;
 
 export type RequestRow = {
@@ -121,12 +131,17 @@ export type RequestRow = {
   approvable: boolean;
   /** Staff only: under review and with the unit manager (D-116). */
   withManager: boolean;
+  /** Something happened on it since the viewer last opened it: the row shows «جديد» (D-130). */
+  isNew: boolean;
 };
 
 export async function listRequests(actor: Actor, params: RequestListParams, view: RequestListView, now: Date = new Date()): Promise<Page<RequestRow>> {
   const base = await baseWhere(actor, view);
   const and: Prisma.RequestWhereInput[] = [base];
-  if (params.status) and.push({ status: { key: params.status } });
+  const staff = actor.role !== "ASSOCIATION_OFFICER";
+  if (params.status === "RESUBMITTED") and.push(staff ? { status: { key: "UNDER_REVIEW" }, resubmittedAt: { not: null } } : { id: { in: [] } });
+  else if (params.status === "UNDER_REVIEW" && staff) and.push({ status: { key: "UNDER_REVIEW" }, resubmittedAt: null });
+  else if (params.status) and.push({ status: { key: params.status } });
   if (params.track) and.push({ trackId: params.track });
   if (params.program) and.push({ programId: params.program });
   if (params.association) and.push({ associationId: params.association });
@@ -150,12 +165,13 @@ export async function listRequests(actor: Actor, params: RequestListParams, view
     { id: "asc" },
   ];
   const rows = await db.request.findMany({ where, orderBy, skip: win.skip, take: win.take, select: listSelect });
+  const seen = await seenMap(actor.id, rows.map((r) => r.id));
   const slaKeys: readonly string[] = SLA_STATUS_KEYS;
   const items = rows.map((r) => ({
     id: r.id,
     referenceNo: r.referenceNo,
     title: r.title,
-    status: statusView(r.status),
+    status: unitStatus(actor, r.status, r.resubmittedAt),
     track: r.track,
     requestType: r.requestType?.name ?? null,
     program: r.program,
@@ -169,22 +185,44 @@ export async function listRequests(actor: Actor, params: RequestListParams, view
     decidable: r.status.key === "UNDER_REVIEW" && isDecider(actor, r.assignedSupervisorId) && (actor.role === "UNIT_MANAGER" || r.reviewStage === "SUPERVISOR"),
     approvable: r.status.key === "UNDER_REVIEW" && actor.role === "UNIT_MANAGER" && isDecider(actor, r.assignedSupervisorId) && r.reviewStage === "MANAGER",
     withManager: actor.role !== "ASSOCIATION_OFFICER" && r.status.key === "UNDER_REVIEW" && r.reviewStage === "MANAGER",
+    isNew: isNewTo(seen, r),
   }));
   return { items, total, page: win.page, pageSize: PAGE_SIZE, pageCount: win.pageCount };
+}
+
+/** The viewer's last opening of each listed request (D-130). */
+async function seenMap(userId: string, requestIds: string[]): Promise<Map<string, Date>> {
+  if (requestIds.length === 0) return new Map();
+  const rows = await db.requestSeen.findMany({ where: { userId, requestId: { in: requestIds } }, select: { requestId: true, seenAt: true } });
+  return new Map(rows.map((r) => [r.requestId, r.seenAt]));
+}
+
+/** «جديد»: never opened by the viewer, or acted on since; a draft is the officer's own work. */
+function isNewTo(seen: Map<string, Date>, r: { id: string; lastActivityAt: Date; status: { key: string } }): boolean {
+  if (r.status.key === "DRAFT") return false;
+  const at = seen.get(r.id);
+  return !at || at < r.lastActivityAt;
 }
 
 /** Counts per status for the big status numbers (all statuses in order, zeros included). */
 export async function requestStatusCounts(actor: Actor, view: RequestListView): Promise<(StatusView & { count: number })[]> {
   const base = await baseWhere(actor, view);
-  const [statuses, grouped] = await Promise.all([
+  const staff = actor.role !== "ASSOCIATION_OFFICER";
+  const [statuses, grouped, resubmitted] = await Promise.all([
     db.requestStatus.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, key: true, name: true, colorToken: true } }),
     db.request.groupBy({ by: ["statusId"], where: base, _count: { _all: true } }),
+    staff ? db.request.count({ where: { AND: [base, { status: { key: "UNDER_REVIEW" }, resubmittedAt: { not: null } }] } }) : Promise.resolve(0),
   ]);
   const showDrafts = view === "mine";
   return statuses
     .filter((s) => (showDrafts || s.key !== "DRAFT") && s.key !== "COMPLETENESS_CHECK")
     .filter((s) => view !== "queue" || (OPEN_STATUS_KEYS as readonly string[]).includes(s.key))
-    .map((s) => ({ ...statusView(s), count: grouped.find((g) => g.statusId === s.id)?._count._all ?? 0 }));
+    .flatMap((s) => {
+      const count = grouped.find((g) => g.statusId === s.id)?._count._all ?? 0;
+      // The unit's own figure for requests sent back after edits, beside «قيد المراجعة» (D-130).
+      if (staff && s.key === "UNDER_REVIEW") return [{ ...statusView(s), count: count - resubmitted }, { ...RESUBMITTED_STATUS, count: resubmitted }];
+      return [{ ...statusView(s), count }];
+    });
 }
 
 /** Tracks and supervisors offered in the list filters, limited to the actor's scope. */
@@ -480,7 +518,7 @@ export async function getRequestDetail(actor: Actor, id: string) {
     };
   }
 
-  // Staff see who holds the request; reassigning is done from the requests list (D-128).
+  // Staff see who holds the request; requests are not reassigned by hand (D-130).
   const assignment = isOfficer
     ? null
     : { supervisor: request.assignedSupervisor ? { id: request.assignedSupervisor.id, name: request.assignedSupervisor.name, isActive: request.assignedSupervisor.isActive } : null };
@@ -509,7 +547,7 @@ export async function getRequestDetail(actor: Actor, id: string) {
     estimatedBudget: request.estimatedBudget,
     kpis: request.kpis,
     partners: request.partners,
-    status: statusView(request.status),
+    status: unitStatus(actor, request.status, request.resubmittedAt),
     track: request.track ? { id: request.track.id, number: request.track.number, name: request.track.name } : null,
     requestType: request.requestType,
     /** The programmes the track covers, for the staff to see where the request belongs (D-123). */

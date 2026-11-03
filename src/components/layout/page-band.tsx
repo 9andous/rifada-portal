@@ -78,6 +78,8 @@ export type FigureAttention = "warn" | "bad";
 /** Key-figure tile (docs/DESIGN.md: Key figures), shared with the request list's status filters. */
 export const FIGURE_TILE = "card-hover group relative flex min-w-0 flex-col gap-2.5 overflow-hidden rounded-xl border border-line bg-surface px-[18px] py-4 shadow-1";
 export const FIGURE_VALUE = "t-figure text-[2rem] leading-none";
+/** The green lead or chosen figure (D-130), as the first KPI card. */
+export const FIGURE_LEAD = "band-scope border-band bg-band text-band-ink";
 export const ATTENTION_TEXT: Record<FigureAttention, string> = { warn: "text-st-warn", bad: "text-st-bad" };
 const ATTENTION_DOT: Record<FigureAttention, string> = { warn: "bg-st-warn", bad: "bg-st-bad" };
 
@@ -87,32 +89,33 @@ export function FigureChevron() {
     <ChevronLeft
       aria-hidden="true"
       strokeWidth={1.75}
-      className="ms-auto size-4 shrink-0 text-primary opacity-0 transition-[opacity,translate] group-focus-within:opacity-100 group-hover:-translate-x-0.5 group-hover:opacity-100 group-focus-visible:opacity-100 dark:text-accent"
+      className="ms-auto size-4 shrink-0 text-primary opacity-0 [.band-scope_&]:text-band-ink transition-[opacity,translate] group-focus-within:opacity-100 group-hover:-translate-x-0.5 group-hover:opacity-100 group-focus-visible:opacity-100 dark:text-accent"
     />
   );
 }
 
 /**
- * Key figures as cards: label, the figure, a caption. All tiles share one style; colour appears
- * only when a figure needs attention. Tiles with an href link to the matching list.
+ * Key figures as cards: label, the figure, a caption. The first tile is green (D-130); otherwise
+ * colour appears only when a figure needs attention. Tiles with an href link to the matching list.
  */
 export function BandFigures({ items }: { items: BandFigure[] }) {
   const cols =
     items.length >= 6 ? "xl:grid-cols-6" : items.length === 5 ? "xl:grid-cols-5" : items.length === 3 ? "sm:grid-cols-3" : "xl:grid-cols-4";
   return (
     <dl className={cn("grid grid-cols-2 gap-3.5", items.length === 3 ? cols : cn("sm:grid-cols-3", cols))}>
-      {items.map((f) => (
-        <div key={f.label} className={cn(FIGURE_TILE, f.href && "card-link")}>
+      {items.map((f, i) => (
+        // The first figure is green, like «الطلبات المرسلة» (owner's review, D-130).
+        <div key={f.label} className={cn(FIGURE_TILE, f.href && "card-link", i === 0 && FIGURE_LEAD)}>
           <dt className="flex items-center gap-2">
-            <span className="min-w-0 truncate text-[0.9375rem] font-bold text-ink">{f.label}</span>
+            <span className={cn("min-w-0 truncate text-[0.9375rem] font-bold", i === 0 ? "text-band-ink" : "text-ink")}>{f.label}</span>
             {f.href ? <FigureChevron /> : null}
           </dt>
           <dd className="flex items-baseline gap-1">
-            <span className={cn(FIGURE_VALUE, f.attention ? ATTENTION_TEXT[f.attention] : "text-ink")}>{f.value}</span>
-            {f.unit ? <span className="text-sm font-medium text-ink-subtle">{f.unit}</span> : null}
+            <span className={cn(FIGURE_VALUE, i === 0 ? "text-band-ink" : f.attention ? ATTENTION_TEXT[f.attention] : "text-ink")}>{f.value}</span>
+            {f.unit ? <span className={cn("text-sm font-medium", i === 0 ? "text-band-ink-muted" : "text-ink-subtle")}>{f.unit}</span> : null}
           </dd>
           {f.caption ? (
-            <dd className="flex items-center gap-1.5 text-xs text-ink-subtle">
+            <dd className={cn("flex items-center gap-1.5 text-xs", i === 0 ? "text-band-ink-muted" : "text-ink-subtle")}>
               {f.attention ? <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", ATTENTION_DOT[f.attention])} /> : null}
               {f.caption}
             </dd>

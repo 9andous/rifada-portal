@@ -11,9 +11,8 @@ import { DateDisplay } from "@/components/ui/date-display";
 import { Input } from "@/components/ui/field";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Pagination } from "@/components/ui/pagination";
-import { SortHeader } from "@/components/ui/sort-header";
 import { Panel, PanelHeader } from "@/components/ui/surface";
-import { DataTable, SORT_TH, THead, Td, Th, Tr } from "@/components/ui/table";
+import { DataTable, THead, Td, Th, Tr } from "@/components/ui/table";
 import { auditActionLabel, auditEntityLabel } from "@/lib/audit-labels";
 import { formatHijri, formatNumber } from "@/lib/format";
 import type { SearchParams } from "@/lib/list-params";
@@ -124,7 +123,7 @@ async function AuditList({ user, searchParams }: { user: CurrentUser; searchPara
         <>
           <DataTable caption="سجل التدقيق" minWidth="60rem">
             <THead>
-              <SortHeader label="التاريخ والوقت" column="createdAt" current="createdAt" dir={list.dir} path={PATH} params={params} className={SORT_TH} />
+              <Th>التاريخ والوقت</Th>
               <Th>المنفّذ</Th>
               <Th>العملية</Th>
               <Th>السجل</Th>

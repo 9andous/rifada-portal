@@ -25,10 +25,12 @@ export const metadata: Metadata = { title: "كتابة بيانات الطلب" 
 const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
 
 /** The officer writes or corrects a request, one step at a time (D-102). */
-export default async function EditRequestPage({ params }: PageProps<"/association/requests/[id]/edit">) {
+export default async function EditRequestPage({ params, searchParams }: PageProps<"/association/requests/[id]/edit">) {
   const user = await requireUser();
   if (!can(user.role, "requests.editDraft")) return <ForbiddenPage />;
   const { id } = await params;
+  const { step } = await searchParams;
+  const initialStep = Number.parseInt(typeof step === "string" ? step : "", 10) || 0;
   const [request, maxMb, allowedGroups] = await Promise.all([getRequestDetail(user, id), getSetting("uploads.maxFileMb"), getSetting("uploads.allowedGroups")]);
   if (!request) notFound();
   const returned = request.status.key === "RETURNED";
@@ -84,6 +86,7 @@ export default async function EditRequestPage({ params }: PageProps<"/associatio
         <MarkRequestSeen requestId={id} />
         <RequestWizard
           requestId={id}
+          initialStep={initialStep}
           returned={returned}
           returnNote={returnMove?.note ?? null}
           returnedAt={returnMove?.createdAt ?? null}

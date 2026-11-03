@@ -157,3 +157,15 @@ The track wording of D-126 (registration step, «مسارات الجمعية», 
 | Manager home, notice (D-128) | «عرض غير المسندة»; «أسند الطلبات إلى مشرف لتبدأ مراجعتها.» | Staff singular imperative. |
 | Completeness (D-128) | «مؤشرات القياس مطلوبة.»، «الفئات المستهدفة مطلوبة.» | Feminine for plural labels. |
 | Staff request page (D-128) | المشرف: «… (حساب معطل)» | |
+
+## Owner's review of 2026-11-03 (D-130)
+
+| Where | Current text | Note |
+|---|---|---|
+| Table rows | جديد | Green marker on rows with something unseen. |
+| Status (staff) | بعد التعديل; figure caption «أعادتها الجمعية بعد التعديل» | A resubmitted request under review. |
+| Supervisor navigation | قائمة الطلبات; home title «لوحة المشرف» | Replaces «قائمة أعمالي» and «الطلبات». |
+| Association list figures | جميع طلبات الجمعية / لم تُرسل بعد / لدى الوحدة الإشرافية / بانتظار تعديلكم / طلبات معتمدة / طلبات غير معتمدة | Captions. |
+| Admin home chart | حسابًا نشطًا (under the total) | Accusative after the number. |
+| Association form (admin) | Section help lines; «الحقول المعلَّمة بـ* مطلوبة.»; «يمكن إنشاؤه لاحقًا من صفحة المستخدمين.» | |
+| Help button | المساعدة; new answers «ماذا أفعل بعد تفعيل الحساب؟» and the four-step registration | Check against the screens. |

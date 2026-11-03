@@ -31,7 +31,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
 
 type FieldProps = {
   id: string;
-  label: string;
+  label: ReactNode;
   hint?: string;
   error?: string;
   required?: boolean;

@@ -10,7 +10,7 @@ import { Alert, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { DataTable, THead, Td, Th, Tr } from "@/components/ui/table";
 import { acceptedGroups } from "@/lib/completeness";
 import { cn } from "@/lib/cn";
-import { arabicList, formatGregorian, formatHijri, formatNumber, toArabicDigits } from "@/lib/format";
+import { arabicList, formatGregorian, formatHijri, formatHijriDateTime, formatNumber, toArabicDigits } from "@/lib/format";
 import { acceptAttribute } from "@/lib/uploads";
 import { UPLOAD_GROUP_LABELS } from "@/lib/validation/settings";
 import { workingDaysBetween } from "@/lib/working-days";
@@ -75,7 +75,7 @@ function Block({ label, children, className }: { label: string; children: ReactN
   );
 }
 
-const dateOnly = (d: Date | null) => (d ? <DateDisplay date={d} /> : <span className="text-ink-subtle">—</span>);
+const dateOnly = (d: Date | null) => (d ? <DateDisplay date={d} dateOnly /> : <span className="text-ink-subtle">—</span>);
 
 /** A stored field value for display: dates Hijri first, digits Arabic-Indic. */
 function fieldValue(type: string | null, value: string | null): ReactNode {
@@ -116,7 +116,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, scopePro
   const acts = caps.canDecide || caps.canEvaluate || caps.canApprove;
 
   const facts: [string, ReactNode, ReactNode][] = [
-    ["تاريخ التقديم", r.submittedAt ? formatHijri(r.submittedAt) : "لم يُقدَّم بعد", <CalendarDays key="i" strokeWidth={1.75} />],
+    ["تاريخ التقديم", r.submittedAt ? formatHijriDateTime(r.submittedAt) : "لم يُقدَّم بعد", <CalendarDays key="i" strokeWidth={1.75} />],
     ["مهلة المراجعة", slaText(r, now), <Clock key="i" strokeWidth={1.75} />],
   ];
   const supervisor = r.assignment?.supervisor;

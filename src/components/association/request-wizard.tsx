@@ -19,7 +19,7 @@ import { Alert } from "@/components/ui/surface";
 import type { MissingItem } from "@/lib/completeness";
 import { cn } from "@/lib/cn";
 import { toast } from "@/components/ui/toaster";
-import { formatHijri, formatNumber, formatTime } from "@/lib/format";
+import { formatHijriDateTime, formatNumber, formatTime } from "@/lib/format";
 import { GENERAL_FIELD_LABELS, REQUIRED_GENERAL_FIELDS } from "@/lib/requests";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
 import { riyadhDateString } from "@/lib/working-days";
@@ -271,9 +271,12 @@ export function RequestWizard({
   ownFiles,
   canDiscard,
   requestTitle,
+  initialStep = 0,
 }: {
   /** Null for a new request: the draft is created on the first move to the next step. */
   requestId: string | null;
+  /** The step to open on (the edit page's `?step=`, after a new request's draft is created). */
+  initialStep?: number;
   returned: boolean;
   returnNote: string | null;
   returnedAt: Date | null;
@@ -298,7 +301,8 @@ export function RequestWizard({
   // The start may not be before today (D-123); computed once, in Riyadh time like the server.
   const [today] = useState(() => riyadhDateString(new Date()));
 
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => Math.min(Math.max(0, initialStep), STEPS.length - 1));
+  const created = useRef<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [missing, setMissing] = useState<MissingItem[]>([]);
   const [busy, setBusy] = useState<null | "move" | "leave" | "submit">(null);
@@ -355,9 +359,12 @@ export function RequestWizard({
       ? await saveDraftAction(id, {}, data)
       : await createDraftFromFormAction({}, data);
     setSaving(false);
-    // The draft exists from here on, even if a value was refused. The address stays as it is: the
-    // refresh after each save re-renders the current page, and this one keeps the form's state.
-    if (!id && r.createdId) setId(r.createdId);
+    // The draft exists from here on, even if a value was refused. The next successful move continues
+    // on the draft's own edit page, so its files are read back from the server (owner's review, D-130).
+    if (!id && r.createdId) {
+      setId(r.createdId);
+      created.current = r.createdId;
+    }
     if (!r.ok) {
       setErrors(r.errors ?? {});
       const first = Object.keys(r.errors ?? {})[0];
@@ -383,6 +390,12 @@ export function RequestWizard({
     setValues(out);
   }
 
+  // Opened straight on the review step: read the saved values the review lists.
+  useEffect(() => {
+    if (steps[step].key === "review") readValues();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function scrollTop() {
     requestAnimationFrame(() =>
       topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -396,6 +409,10 @@ export function RequestWizard({
     const ok = await save();
     setBusy(null);
     if (!ok) return;
+    if (!requestId && created.current) {
+      router.replace(`/association/requests/${created.current}/edit?step=${index}`, { scroll: false });
+      return;
+    }
     if (steps[index].key === "review") readValues();
     setMissing([]);
     setStep(index);
@@ -516,7 +533,7 @@ export function RequestWizard({
             <span className="mt-1 block whitespace-pre-line text-ink">
               <span className="font-bold">
                 ملاحظات المشرف
-                {returnedAt ? ` (${formatHijri(returnedAt)})` : ""}:{" "}
+                {returnedAt ? ` (${formatHijriDateTime(returnedAt)})` : ""}:{" "}
               </span>
               {returnNote}
             </span>

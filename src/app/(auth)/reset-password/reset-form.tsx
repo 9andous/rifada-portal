@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { Field, Input } from "@/components/ui/field";
+import { Field } from "@/components/ui/field";
+import { PasswordInput } from "@/components/ui/password-input";
 import { SubmitButton } from "@/components/ui/form-bits";
 import { Alert, FormError } from "@/components/ui/surface";
 import { resetPasswordAction, type FormState } from "@/server/actions/password";
@@ -26,10 +27,10 @@ export function ResetForm({ token }: { token: string }) {
       <input type="hidden" name="token" value={token} />
       {state.message ? <FormError>{state.message}</FormError> : null}
       <Field id="newPassword" label="كلمة المرور الجديدة" hint="عشرة أحرف على الأقل، تتضمن حرفًا لاتينيًا ورقمًا." error={state.errors?.newPassword} required>
-        <Input id="newPassword" name="newPassword" type="password" dir="ltr" autoComplete="new-password" required aria-invalid={Boolean(state.errors?.newPassword)} />
+        <PasswordInput id="newPassword" name="newPassword" dir="ltr" autoComplete="new-password" required aria-invalid={Boolean(state.errors?.newPassword)} />
       </Field>
       <Field id="confirmPassword" label="تأكيد كلمة المرور" error={state.errors?.confirmPassword} required>
-        <Input id="confirmPassword" name="confirmPassword" type="password" dir="ltr" autoComplete="new-password" required aria-invalid={Boolean(state.errors?.confirmPassword)} />
+        <PasswordInput id="confirmPassword" name="confirmPassword" dir="ltr" autoComplete="new-password" required aria-invalid={Boolean(state.errors?.confirmPassword)} />
       </Field>
       <SubmitButton pendingLabel="جارٍ الحفظ…">تعيين كلمة المرور</SubmitButton>
     </form>

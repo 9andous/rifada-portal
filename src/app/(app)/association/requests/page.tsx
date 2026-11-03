@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { FilePlus2, ListChecks, Search } from "lucide-react";
 import { AssocRequestsTable, ListPager } from "@/components/association/parts";
 import { PageBody } from "@/components/layout/app-shell";
-import { FIGURE_TILE, FIGURE_VALUE, PageBand } from "@/components/layout/page-band";
+import { FIGURE_LEAD, FIGURE_TILE, FIGURE_VALUE, PageBand } from "@/components/layout/page-band";
 import { ListSkeleton } from "@/components/states/list-skeleton";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
 import { EmptyState } from "@/components/states/states";
@@ -81,11 +81,10 @@ async function StatusFilters({ user, searchParams }: { user: CurrentUser; search
                 href={listAddress(t.key, q)}
                 aria-current={selected ? "true" : undefined}
                 scroll={false}
-                className={cn(FIGURE_TILE, "card-link h-full", selected && "border-primary bg-primary-soft/40 dark:border-accent")}
+                className={cn(FIGURE_TILE, "card-link h-full", selected && FIGURE_LEAD)}
               >
-                {selected ? <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-accent" /> : null}
-                <span className={cn("text-base", selected ? "font-bold text-ink" : "font-medium text-ink-muted")}>{t.name}</span>
-                <span className={cn(FIGURE_VALUE, "text-ink")}>{formatNumber(t.count)}</span>
+                <span className={cn("text-base", selected ? "font-bold text-band-ink" : "font-medium text-ink-muted")}>{t.name}</span>
+                <span className={cn(FIGURE_VALUE, selected ? "text-band-ink" : "text-ink")}>{formatNumber(t.count)}</span>
               </Link>
             </li>
           );
