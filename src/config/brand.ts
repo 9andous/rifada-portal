@@ -17,6 +17,8 @@ export const brand = {
     src: "/brand/prh-logo.png",
     width: 236,
     height: 150,
+    /** For dark surfaces (the footer). */
+    white: { src: "/brand/prh-logo-white.png", width: 273, height: 184 },
     alt: "رئاسة الشؤون الدينية بالمسجد الحرام والمسجد النبوي",
   },
   presidencyUrl: "https://www.prh.gov.sa",

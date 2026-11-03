@@ -38,7 +38,7 @@ export default async function TaxonomyPage({ searchParams }: PageProps<"/admin/t
           <BandFigures
             items={[
               { label: "البرامج", value: formatNumber(figures.programs), caption: figures.paused ? `منها موقوف: ${formatNumber(figures.paused)}` : "غير المؤرشفة" },
-              { label: "المبادرات", value: formatNumber(figures.initiatives), emphasis: true },
+              { label: "المبادرات", value: formatNumber(figures.initiatives) },
               { label: "روابط الأهداف", value: formatNumber(figures.links) },
               { label: "أنواع المرفقات", value: formatNumber(figures.attachmentTypes) },
               { label: "متطلبات المبادرات", value: formatNumber(figures.requirements), caption: "حقول ومرفقات" },

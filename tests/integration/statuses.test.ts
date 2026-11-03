@@ -74,12 +74,12 @@ describe("statuses: permissions", () => {
 
 describe("statuses: rename, recolour, reorder", () => {
   it("changes name and colour only, keeps key and terminal flag, and audits", async () => {
-    expect((await updateStatus(admin, ids.APPROVED, { name: "مقبول", tone: "info" })).ok).toBe(true);
-    expect(await db.requestStatus.findUniqueOrThrow({ where: { id: ids.APPROVED } })).toMatchObject({ key: "APPROVED", name: "مقبول", colorToken: "info", isTerminal: true });
+    expect((await updateStatus(admin, ids.APPROVED, { name: "معتمد", tone: "info" })).ok).toBe(true);
+    expect(await db.requestStatus.findUniqueOrThrow({ where: { id: ids.APPROVED } })).toMatchObject({ key: "APPROVED", name: "معتمد", colorToken: "info", isTerminal: true });
     const entry = await db.auditLog.findFirstOrThrow({ where: { action: "status.updated" } });
-    expect(entry.before).toMatchObject({ key: "APPROVED", name: "معتمد", tone: "ok" });
-    expect(entry.after).toMatchObject({ key: "APPROVED", name: "مقبول", tone: "info" });
-    expect(await updateStatus(admin, ids.REJECTED, { name: "مقبول", tone: "bad" })).toMatchObject({ ok: false, errors: { name: expect.any(String) } });
+    expect(entry.before).toMatchObject({ key: "APPROVED", name: "مقبول", tone: "ok" });
+    expect(entry.after).toMatchObject({ key: "APPROVED", name: "معتمد", tone: "info" });
+    expect(await updateStatus(admin, ids.REJECTED, { name: "معتمد", tone: "bad" })).toMatchObject({ ok: false, errors: { name: expect.any(String) } });
   });
 
   it("reorders with up/down and audits the order", async () => {

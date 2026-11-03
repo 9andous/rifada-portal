@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { UserAccountActions } from "@/components/admin/user-account-actions";
 import { UserForm } from "@/components/admin/user-form";
+import { imageUrl } from "@/lib/images";
 import { PageBody } from "@/components/layout/app-shell";
 import { PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -59,7 +60,7 @@ export default async function UserPage({ params }: PageProps<"/admin/users/[id]"
                 mode="edit"
                 action={updateUserAction.bind(null, detail.id)}
                 isSelf={isSelf}
-                programs={options.programs}
+                tracks={options.tracks}
                 associations={options.associations}
                 defaults={{
                   username: detail.username ?? "",
@@ -67,8 +68,9 @@ export default async function UserPage({ params }: PageProps<"/admin/users/[id]"
                   email: detail.email ?? "",
                   phone: detail.phone ?? "",
                   role: detail.role,
-                  programIds: detail.programIds,
+                  trackIds: detail.trackIds,
                   associationId: detail.associationId ?? "",
+                  imageUrl: imageUrl("user", detail.id, detail.avatarKey),
                 }}
               />
             </div>

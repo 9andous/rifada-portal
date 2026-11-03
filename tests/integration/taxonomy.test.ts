@@ -5,7 +5,7 @@ import { ForbiddenError, type Actor } from "@/server/authz/scope";
 import { getTaxonomy, getTaxonomyReview } from "@/server/services/taxonomy";
 import { db, resetDatabase } from "../support/db";
 
-const actor = (role: Actor["role"]): Actor => ({ id: "u1", role, associationId: null, programIds: [] });
+const actor = (role: Actor["role"]): Actor => ({ id: "u1", role, associationId: null, trackIds: [] });
 
 async function seedObjectives() {
   for (let number = 1; number <= 7; number++) {

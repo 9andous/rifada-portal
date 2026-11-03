@@ -21,7 +21,7 @@ function ArchIllustration({ icon, tone }: { icon: ReactNode; tone: string }) {
         <path d={ARCH_PATH} stroke="currentColor" strokeWidth="6" opacity="0.85" />
         <path d={ARCH_INNER_PATH} stroke="var(--accent)" strokeWidth="4" />
       </svg>
-      <span className="relative mt-6 [&_svg]:size-6">{icon}</span>
+      <span className="relative mt-6 [&_svg]:size-5">{icon}</span>
     </div>
   );
 }

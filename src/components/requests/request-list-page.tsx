@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
-import { FilePlus2, ListChecks } from "lucide-react";
+import { CircleCheck, FilePlus2, FileText, Hourglass, RotateCcw, Send, XCircle } from "lucide-react";
+import { KpiRow, type Kpi } from "@/components/dashboard/kpis";
 import { PageBody } from "@/components/layout/app-shell";
-import { PageBand } from "@/components/layout/page-band";
+import { FIGURE_TILE, FIGURE_VALUE, FigureChevron, PageBand } from "@/components/layout/page-band";
 import { ListSkeleton } from "@/components/states/list-skeleton";
 import { EmptyState } from "@/components/states/states";
 import { buttonClasses } from "@/components/ui/button";
@@ -28,26 +29,30 @@ async function StatusFigures({ user, view, path, searchParams }: { user: Current
   const active = typeof params.status === "string" ? params.status : undefined;
   const total = counts.reduce((n, s) => n + s.count, 0);
   // «مقدَّم» and «فحص الاكتمال» last only for the instant of submission; shown only when not empty.
-  const shown = counts.filter((s) => s.count > 0 || !["SUBMITTED", "COMPLETENESS_CHECK"].includes(s.key) || s.key === active);
+  const shown = counts.filter((s) => s.count > 0 || s.key !== "SUBMITTED" || s.key === active);
   const items = [{ key: undefined as string | undefined, name: "الكل", count: total }, ...shown.map((s) => ({ key: s.key as string | undefined, name: s.name, count: s.count }))];
+  if (user.role === "SUPERVISOR" || user.role === "UNIT_MANAGER") {
+    return <StaffStatusFigures items={items} active={active} path={path} params={params} role={user.role} />;
+  }
   return (
     <nav aria-label="تصفية حسب الحالة">
-      <ul className="flex flex-wrap gap-3">
+      <ul className="flex flex-wrap gap-3.5">
         {items.map((s) => {
           const selected = s.key === active;
           return (
-            <li key={s.name}>
+            <li key={s.name} className="min-w-36">
               <Link
                 href={listHref(path, params, { status: s.key, page: undefined })}
                 aria-current={selected ? "true" : undefined}
                 scroll={false}
-                className={cn(
-                  "group block min-w-28 rounded-xl border px-4 py-3 shadow-1 transition-colors",
-                  selected ? "band-scope border-band bg-band" : "border-line bg-surface hover:border-primary",
-                )}
+                className={cn(FIGURE_TILE, "card-link h-full", selected && "border-primary dark:border-accent")}
               >
-                <span className={cn("block text-sm font-medium", selected ? "text-band-ink-muted" : "text-ink-muted")}>{s.name}</span>
-                <span className={cn("t-figure mt-2 block text-[1.75rem] leading-none", selected ? "text-band-ink" : "text-ink")}>{formatNumber(s.count)}</span>
+                {selected ? <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-accent" /> : null}
+                <span className="flex items-center gap-2">
+                  <span className="min-w-0 truncate text-[0.875rem] font-medium text-ink-muted">{s.name}</span>
+                  <FigureChevron />
+                </span>
+                <span className={cn(FIGURE_VALUE, "text-ink")}>{formatNumber(s.count)}</span>
               </Link>
             </li>
           );
@@ -57,11 +62,63 @@ async function StatusFigures({ user, view, path, searchParams }: { user: Current
   );
 }
 
+const STATUS_ICONS = {
+  APPROVED: CircleCheck,
+  RETURNED: RotateCcw,
+  UNDER_REVIEW: Hourglass,
+  REJECTED: XCircle,
+  SUBMITTED: Send,
+} as const;
+
+function StaffStatusFigures({
+  items,
+  active,
+  path,
+  params,
+  role,
+}: {
+  items: { key: string | undefined; name: string; count: number }[];
+  active: string | undefined;
+  path: string;
+  params: SearchParams;
+  role: "SUPERVISOR" | "UNIT_MANAGER";
+}) {
+  const kpis: Kpi[] = items.map((item, index) => {
+    const Icon = (item.key && STATUS_ICONS[item.key as keyof typeof STATUS_ICONS]) || (index === 0 ? FileText : Send);
+    const selected = item.key === active || (!active && index === 0);
+    const caption =
+      index === 0
+        ? role === "SUPERVISOR"
+          ? "في البرامج المسندة إليك"
+          : "في جميع البرامج"
+        : item.key === "UNDER_REVIEW"
+          ? role === "SUPERVISOR"
+            ? "بانتظار قرارك"
+            : "بانتظار قرار المشرف أو اعتمادك"
+          : item.key === "RETURNED"
+            ? "تحتاج متابعة"
+            : item.key === "APPROVED"
+              ? "طلبات صدر اعتمادها"
+              : item.key === "REJECTED"
+                ? "طلبات غير معتمدة"
+                : "طلبات واردة";
+    return {
+      label: index === 0 ? (role === "SUPERVISOR" ? "الطلبات المسندة" : "إجمالي الطلبات") : item.name,
+      icon: Icon,
+      featured: selected,
+      value: formatNumber(item.count),
+      caption,
+      href: listHref(path, params, { status: item.key, page: undefined }),
+    };
+  });
+  return <KpiRow items={kpis} />;
+}
+
 function FiguresSkeleton() {
   return (
-    <div className="flex flex-wrap gap-3" aria-hidden="true">
+    <div className="flex flex-wrap gap-3.5" aria-hidden="true">
       {[0, 1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className="block h-[78px] w-28 animate-pulse rounded-xl bg-surface-sunken" />
+        <span key={i} className="block h-[86px] w-36 animate-pulse rounded-xl bg-surface-sunken" />
       ))}
     </div>
   );
@@ -122,18 +179,18 @@ async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDesc
   const staff = user.role !== "ASSOCIATION_OFFICER";
   const [page, options, maxBulk, supervisors] = await Promise.all([
     listRequests(user, list, view),
-    staff ? requestFilterOptions(user) : Promise.resolve({ programs: [], supervisors: [] }),
+    staff ? requestFilterOptions(user) : Promise.resolve({ tracks: [], supervisors: [] }),
     getSetting("bulk.maxItems"),
     isManager ? supervisorOptions(user) : Promise.resolve(null),
   ]);
-  const filtered = Boolean(list.q || list.status || list.program || list.supervisor || list.association);
+  const filtered = Boolean(list.q || list.status || list.track || list.program || list.supervisor || list.association || list.overdue || list.stage);
   const sortProps = { current: list.sort, dir: list.dir, path, params, className: SORT_TH };
   const showSupervisor = staff && view !== "queue";
   const canDecide = can(user.role, "requests.review");
 
   const filters = [];
-  if (staff && options.programs.length > 1) {
-    filters.push({ name: "program", label: "البرنامج", allLabel: "جميع البرامج", value: list.program, options: options.programs.map((p) => ({ value: p.id, label: `${toArabicDigits(p.number)}. ${p.name}` })) });
+  if (staff && options.tracks.length > 1) {
+    filters.push({ name: "track", label: "المسار", allLabel: "جميع المسارات", value: list.track, options: options.tracks.map((t) => ({ value: t.id, label: `${toArabicDigits(t.number)}. ${t.name}` })) });
   }
   if (options.supervisors.length && view !== "queue") {
     filters.push({
@@ -145,9 +202,24 @@ async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDesc
     });
   }
 
+  if (staff) {
+    filters.push({ name: "overdue", label: "المهلة", allLabel: "جميع المهل", value: list.overdue ? "1" : undefined, options: [{ value: "1", label: "المتأخرة عن المهلة" }] });
+    // The two-step review (D-116): who has the request under review now.
+    filters.push({
+      name: "stage",
+      label: "مرحلة المراجعة",
+      allLabel: "جميع المراحل",
+      value: list.stage,
+      options: [
+        { value: "supervisor", label: "لدى المشرف" },
+        { value: "manager", label: "بانتظار مدير الوحدة" },
+      ],
+    });
+  }
+
   return (
     <Panel>
-      <PanelHeader icon={<ListChecks strokeWidth={1.75} />} title="قائمة الطلبات" description={`عدد النتائج: ${formatNumber(page.total)}`} />
+      <PanelHeader title="قائمة الطلبات" description={`عدد النتائج: ${formatNumber(page.total)}`} />
       <ListToolbar
         action={path}
         q={list.q}
@@ -169,11 +241,11 @@ async function RequestList({ user, view, path, detailBase, emptyTitle, emptyDesc
             detailBase={detailBase}
             showAssociation={staff}
             showSupervisor={showSupervisor}
-            bulk={{ enabled: canDecide, max: maxBulk, supervisors: supervisors?.map((s) => ({ id: s.id, name: s.name, programIds: s.programIds })) ?? null }}
+            bulk={{ enabled: canDecide, max: maxBulk, supervisors: supervisors?.map((s) => ({ id: s.id, name: s.name, trackIds: s.trackIds })) ?? null }}
             headers={
               <>
                 <SortHeader label="الطلب" column="title" {...sortProps} />
-                <Th>البرنامج والمبادرة</Th>
+                <Th>المسار</Th>
                 <Th>الحالة</Th>
                 {showSupervisor ? <Th>المشرف</Th> : null}
                 <SortHeader label="تاريخ التقديم" column="submittedAt" {...sortProps} />

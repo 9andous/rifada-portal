@@ -54,6 +54,10 @@ const pairs = [
   ["ink", "st-review-soft", 4.5],
   ["band", "gold-on-band", 4.5],
   ["ink-muted", "accent-soft", 4.5],
+  // The president's card on the home page is soft gold: its captions and names sit on it.
+  ["ink-subtle", "accent-soft", 4.5],
+  ["ink", "accent-soft", 4.5],
+  ["brand-ink", "accent-soft", 4.5],
   ...["brand-ink"].flatMap((fg) => SURFACES.map((bg) => [fg, bg, 4.5])),
   ["on-gold-action", "gold-action", 4.5],
   ["on-gold-action", "gold-action-hover", 4.5],

@@ -29,7 +29,7 @@ export function Breadcrumbs({ current }: { current?: string }) {
   if (pathname !== best.href && current && current !== best.label) crumbs.push({ label: current });
 
   return (
-    <nav aria-label="مسار التنقل" className="mb-3 text-[0.8125rem] text-ink-subtle">
+    <nav aria-label="مسار التنقل" className="mb-3 text-sm text-ink-subtle">
       <ol className="flex flex-wrap items-center gap-1.5">
         <li>
           <Link href={best.root} className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">

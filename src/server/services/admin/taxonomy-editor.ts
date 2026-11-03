@@ -3,8 +3,8 @@ import type { Prisma } from "@/generated/prisma/client";
 import { enumParam, pageWindow, parseListParams, type Page, type SearchParams } from "@/lib/list-params";
 import { keepOriginalWording } from "@/lib/original-wording";
 import { WORDING_SLIPS } from "@/lib/wording-review";
-import type { GoalFormInput, InitiativeFormInput, ObjectiveFormInput, ProgramFormInput } from "@/lib/validation/taxonomy";
-import type { Actor } from "@/server/authz/scope";
+import type { GoalFormInput, InitiativeFormInput, ObjectiveFormInput, ProgramFormInput, TrackFormInput } from "@/lib/validation/taxonomy";
+import { ForbiddenError, type Actor } from "@/server/authz/scope";
 import { db } from "@/server/db";
 import { audit } from "@/server/services/audit";
 import { PAGE_SIZE, assertCan, containsAny, fieldRefusal, lockAdminWrites, refuse, type Result } from "./common";
@@ -522,4 +522,111 @@ export async function taxonomyFigures(actor: Actor, editor = true) {
     db.initiativeRequirement.count({ where: { initiative: { archivedAt: null } } }),
   ]);
   return { programs, paused, initiatives, links, attachmentTypes, requirements };
+}
+
+// ---------------------------------------------------------------------------
+// Tracks («المسارات الخمسة في نطاق الإشراف الفني», D-119): internal, above the programmes. A programme
+// may sit in several tracks. Tracks are archived, never deleted; their number is never reused.
+// ---------------------------------------------------------------------------
+
+const trackSnapshot = (t: { number: number; name: string; description: string | null }) => ({ number: t.number, name: t.name, description: t.description });
+
+/** Tracks are internal (D-119): never for association officers, although they read the taxonomy. */
+function assertStaff(actor: Actor) {
+  if (actor.role === "ASSOCIATION_OFFICER") throw new ForbiddenError("tracks are internal");
+}
+
+export async function listTracks(actor: Actor, editor = true) {
+  assertView(actor, editor);
+  assertStaff(actor);
+  const [tracks, programs] = await Promise.all([
+    db.track.findMany({
+      where: editor ? {} : { archivedAt: null },
+      orderBy: [{ sortOrder: "asc" }, { number: "asc" }],
+      select: {
+        id: true,
+        number: true,
+        name: true,
+        description: true,
+        archivedAt: true,
+        programs: { orderBy: { program: { number: "asc" } }, select: { program: { select: { id: true, number: true, name: true, archivedAt: true } } } },
+      },
+    }),
+    db.program.findMany({ where: { archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true } }),
+  ]);
+  const placed = new Set(tracks.filter((t) => !t.archivedAt).flatMap((t) => t.programs.map((l) => l.program.id)));
+  return {
+    // Active tracks first, archived ones after.
+    tracks: tracks
+      .map(({ programs: links, ...t }) => ({ ...t, programs: links.map((l) => l.program) }))
+      .sort((x, y) => Number(Boolean(x.archivedAt)) - Number(Boolean(y.archivedAt))),
+    programs,
+    /** Open programmes in no active track: their requests count as «غير مصنّفة». */
+    unplaced: programs.filter((p) => !placed.has(p.id)),
+  };
+}
+
+export type TrackList = Awaited<ReturnType<typeof listTracks>>;
+
+export async function createTrack(actor: Actor, input: TrackFormInput): Promise<Result<{ id: string }>> {
+  assertCan(actor, "taxonomy.manage");
+  return db.$transaction(async (tx) => {
+    await lockAdminWrites(tx);
+    const last = await tx.track.aggregate({ _max: { number: true } });
+    const number = (last._max.number ?? 0) + 1;
+    const track = await tx.track.create({ data: { ...input, number, sortOrder: number } });
+    await audit({ actorId: actor.id, action: "track.created", entityType: "Track", entityId: track.id, after: trackSnapshot(track) }, tx);
+    return { ok: true, id: track.id };
+  });
+}
+
+export async function updateTrack(actor: Actor, id: string, input: TrackFormInput): Promise<Result> {
+  assertCan(actor, "taxonomy.manage");
+  return db.$transaction(async (tx) => {
+    const current = await tx.track.findUnique({ where: { id } });
+    if (!current) return refuse(MSG.notFound);
+    const updated = await tx.track.update({ where: { id }, data: input });
+    const before = trackSnapshot(current);
+    const after = trackSnapshot(updated);
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      await audit({ actorId: actor.id, action: "track.updated", entityType: "Track", entityId: id, before, after }, tx);
+    }
+    return { ok: true };
+  });
+}
+
+export async function setTrackArchived(actor: Actor, id: string, archived: boolean): Promise<Result> {
+  assertCan(actor, "taxonomy.manage");
+  return db.$transaction(async (tx) => {
+    const current = await tx.track.findUnique({ where: { id } });
+    if (!current) return refuse(MSG.notFound);
+    if (Boolean(current.archivedAt) === archived) return { ok: true };
+    await tx.track.update({ where: { id }, data: { archivedAt: archived ? new Date() : null } });
+    await audit({ actorId: actor.id, action: archived ? "track.archived" : "track.restored", entityType: "Track", entityId: id, before: { archived: !archived }, after: { archived } }, tx);
+    return { ok: true };
+  });
+}
+
+/** The open programmes of a track, replaced as a whole (a programme may also sit in other tracks). */
+export async function setTrackPrograms(actor: Actor, id: string, programIds: string[]): Promise<Result> {
+  assertCan(actor, "taxonomy.manage");
+  const ids = [...new Set(programIds)];
+  return db.$transaction(async (tx) => {
+    const track = await tx.track.findUnique({
+      where: { id },
+      select: { archivedAt: true, programs: { where: { program: { archivedAt: null } }, select: { program: { select: { number: true } } } } },
+    });
+    if (!track) return refuse(MSG.notFound);
+    if (track.archivedAt) return refuse("المسار مؤرشف؛ استعده أولًا.");
+    const programs = await tx.program.findMany({ where: { id: { in: ids }, archivedAt: null }, select: { number: true } });
+    if (programs.length !== ids.length) return fieldRefusal("programIds", "أحد البرامج المختارة غير موجود أو مؤرشف.");
+    const before = track.programs.map((l) => l.program.number).sort((a, b) => a - b);
+    const after = programs.map((p) => p.number).sort((a, b) => a - b);
+    if (before.join() === after.join()) return { ok: true };
+    // Archived programmes keep their links; only open ones are replaced.
+    await tx.trackProgram.deleteMany({ where: { trackId: id, program: { archivedAt: null } } });
+    await tx.trackProgram.createMany({ data: ids.map((programId) => ({ trackId: id, programId })), skipDuplicates: true });
+    await audit({ actorId: actor.id, action: "track.programs_changed", entityType: "Track", entityId: id, before: { programs: before }, after: { programs: after } }, tx);
+    return { ok: true };
+  });
 }

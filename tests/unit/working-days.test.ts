@@ -39,11 +39,11 @@ describe("working days (Sunday to Thursday, Asia/Riyadh)", () => {
 });
 
 describe("draft privacy in the query scopers (change 19)", () => {
-  const base = { id: "u", associationId: null, programIds: [] as string[] };
+  const base = { id: "u", associationId: null, trackIds: [] as string[] };
   const actors: Record<string, Actor> = {
     admin: { ...base, role: "SUPER_ADMIN" },
     manager: { ...base, role: "UNIT_MANAGER" },
-    supervisor: { ...base, role: "SUPERVISOR", programIds: ["p1"] },
+    supervisor: { ...base, role: "SUPERVISOR", trackIds: ["p1"] },
   };
 
   it.each(Object.keys(actors))("%s only ever sees submitted requests", (name) => {

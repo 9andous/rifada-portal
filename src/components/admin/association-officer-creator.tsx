@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { UserPlus } from "lucide-react";
+import { UserRoundPlus } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/form-bits";
 import { OneTimeSecret } from "@/components/ui/one-time-secret";
-import { Alert, Panel, PanelHeader } from "@/components/ui/surface";
+import { FormError, Panel, PanelHeader } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import { createAssociationOfficerAction } from "@/server/actions/admin/associations";
 import type { AdminFormState } from "@/server/actions/admin/state";
@@ -56,7 +56,7 @@ export function AssociationOfficerCreator({
       <Card>
         <p className="t-body text-sm">لا يوجد حساب مسؤول لهذه الجمعية بعد؛ لن تتمكن الجمعية من الدخول وتقديم طلباتها حتى يُنشأ.</p>
         <Button variant="primary" className="self-start" onClick={() => setOpen(true)}>
-          <UserPlus aria-hidden="true" strokeWidth={1.75} />
+          <UserRoundPlus aria-hidden="true" strokeWidth={1.75} />
           إنشاء حساب مسؤول
         </Button>
       </Card>
@@ -67,7 +67,7 @@ export function AssociationOfficerCreator({
     <Card>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         <p className="t-caption">لكل جمعية حساب واحد. تظهر كلمة المرور المؤقتة مرة واحدة بعد الحفظ، ويُطلب تغييرها عند أول دخول.</p>
-        {state.message ? <Alert tone="danger">{state.message}</Alert> : null}
+        {state.message ? <FormError>{state.message}</FormError> : null}
         <OfficerFields errors={state.errors} />
         <div className="flex flex-wrap gap-3">
           <SubmitButton pending={pending} pendingLabel="جارٍ الإنشاء…">

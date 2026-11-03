@@ -5,7 +5,6 @@ import { DateDisplay } from "@/components/ui/date-display";
 import { RefNumber } from "@/components/ui/ref-number";
 import { StatusText } from "@/components/ui/surface";
 import { DataTable, Td, Tr } from "@/components/ui/table";
-import { toArabicDigits } from "@/lib/format";
 import type { RequestRow } from "@/server/services/requests/read";
 import type { SupervisorChoice } from "./decision-dialog";
 import { RequestSelection, RowActions, RowCheckbox, SelectAllCheckbox } from "./request-selection";
@@ -35,7 +34,7 @@ export function RequestsTable({
   showSupervisor: boolean;
   bulk: { enabled: boolean; max: number; supervisors: SupervisorChoice[] | null };
 }) {
-  const selectable = rows.filter((r) => r.decidable).map((r) => ({ id: r.id, title: r.title, referenceNo: r.referenceNo }));
+  const selectable = rows.filter((r) => r.decidable).map((r) => ({ id: r.id, title: r.title, referenceNo: r.referenceNo, approvable: r.approvable }));
   const table = (
     <DataTable caption="قائمة الطلبات" minWidth="56rem">
       <thead className="border-y border-line bg-surface-muted">
@@ -71,31 +70,28 @@ export function RequestsTable({
               </span>
             </Td>
             <Td className="max-w-[13rem]">
-              <span className="block truncate">
-                {toArabicDigits(r.program.number)}. {r.program.name}
-              </span>
-              <span className="t-caption block truncate">
-                {toArabicDigits(r.initiative.number)}. {r.initiative.name}
-              </span>
+              <span className="block truncate">{r.track ? r.track.name : "—"}</span>
+              <span className="t-caption block truncate">{r.program ? r.program.name : (r.requestType ?? "")}</span>
             </Td>
             <Td>
               <StatusText tone={r.status.tone}>{r.status.name}</StatusText>
+              {r.withManager ? <span className="t-caption mt-1 block whitespace-nowrap">بانتظار مدير الوحدة</span> : null}
             </Td>
             {showSupervisor ? (
               <Td>{r.supervisor ? <PersonName name={r.supervisor.name} muted={!r.supervisor.isActive} /> : <span className="whitespace-nowrap text-ink-subtle">لم يُسند بعد</span>}</Td>
             ) : null}
-            <Td className="min-w-[9.5rem]">{r.submittedAt ? <DateDisplay date={r.submittedAt} /> : <span className="text-ink-subtle">—</span>}</Td>
+            <Td className="min-w-[9.5rem]">{r.submittedAt ? <DateDisplay date={r.submittedAt} variant="hijri" /> : <span className="text-ink-subtle">—</span>}</Td>
             <Td className="min-w-[9.5rem]">
               {r.slaDueAt && SLA_KEYS.includes(r.status.key) ? (
                 <span className="inline-flex flex-col items-start gap-1">
-                  <DateDisplay date={r.slaDueAt} className={r.overdue ? "text-st-bad" : undefined} />
+                  <DateDisplay date={r.slaDueAt} variant="hijri" className={r.overdue ? "text-st-bad" : undefined} />
                   {r.overdue ? <StatusText tone="bad">متأخر</StatusText> : null}
                 </span>
               ) : (
                 <span className="text-ink-subtle">—</span>
               )}
             </Td>
-            <Td className="w-28 ps-0">{r.decidable ? <RowActions request={{ id: r.id, title: r.title, referenceNo: r.referenceNo }} /> : null}</Td>
+            <Td className="w-28 ps-0">{r.decidable ? <RowActions request={{ id: r.id, title: r.title, referenceNo: r.referenceNo, approvable: r.approvable }} /> : null}</Td>
           </Tr>
         ))}
       </tbody>

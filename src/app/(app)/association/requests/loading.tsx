@@ -1,5 +1,5 @@
-import { CompactPageSkeleton } from "@/components/states/list-skeleton";
+import { PageSkeleton } from "@/components/layout/app-shell";
 
 export default function Loading() {
-  return <CompactPageSkeleton />;
+  return <PageSkeleton />;
 }

@@ -7,18 +7,20 @@ import type { Role } from "@/server/authz/roles";
 export type NavIcon =
   | "home"
   | "users"
+  | "addUser"
+  | "registrations"
   | "building"
   | "layers"
   | "settings"
   | "audit"
   | "inbox"
-  | "assign"
   | "chart"
   | "queue"
   | "templates"
   | "requests"
   | "newRequest"
-  | "folder";
+  | "folder"
+  | "help";
 
 export type NavItem = { label: string; href?: string; icon: NavIcon };
 
@@ -27,7 +29,7 @@ export const NAV: Record<Role, NavItem[]> = {
     { label: "الرئيسية", href: "/admin", icon: "home" },
     { label: "المستخدمون", href: "/admin/users", icon: "users" },
     { label: "الجمعيات", href: "/admin/associations", icon: "building" },
-    { label: "طلبات التسجيل", href: "/admin/registrations", icon: "assign" },
+    { label: "طلبات التسجيل", href: "/admin/registrations", icon: "registrations" },
     { label: "البرامج والمبادرات", href: "/admin/taxonomy", icon: "layers" },
     { label: "الإعدادات", href: "/admin/settings", icon: "settings" },
     { label: "سجل التدقيق", href: "/admin/audit", icon: "audit" },
@@ -35,7 +37,6 @@ export const NAV: Record<Role, NavItem[]> = {
   UNIT_MANAGER: [
     { label: "الرئيسية", href: "/manager", icon: "home" },
     { label: "الطلبات", href: "/manager/requests", icon: "inbox" },
-    { label: "الإسناد", href: "/manager/assignment", icon: "assign" },
     { label: "الجمعيات", href: "/manager/associations", icon: "building" },
     { label: "البرامج والمبادرات", href: "/manager/taxonomy", icon: "layers" },
     { label: "التقارير", icon: "chart" },
@@ -45,22 +46,33 @@ export const NAV: Record<Role, NavItem[]> = {
     { label: "قائمة أعمالي", href: "/supervisor/queue", icon: "queue" },
     { label: "الطلبات", href: "/supervisor/requests", icon: "inbox" },
     { label: "الجمعيات", icon: "building" },
-    { label: "النماذج", href: "/supervisor/templates", icon: "templates" },
+    { label: "الأدلة والنماذج", href: "/supervisor/templates", icon: "templates" },
     { label: "التقارير", icon: "chart" },
   ],
+  // Short and plain for the associations' officers (D-102); «تقديم طلب جديد» is the gold button.
   ASSOCIATION_OFFICER: [
     { label: "الرئيسية", href: "/association", icon: "home" },
     { label: "طلباتي", href: "/association/requests", icon: "requests" },
-    { label: "طلب جديد", href: "/association/requests/new", icon: "newRequest" },
-    { label: "المستندات", href: "/association/documents", icon: "folder" },
-    { label: "ملف الجمعية", icon: "building" },
+    { label: "الأدلة والنماذج", href: "/association/documents", icon: "folder" },
+    { label: "ملف الجمعية", href: "/association/profile", icon: "building" },
   ],
+};
+
+/** The role's help page, reached from the user menu in the header (owner's request, 2026-10-28). */
+export const HELP_HREF: Partial<Record<Role, string>> = {
+  ASSOCIATION_OFFICER: "/association/help",
+};
+
+/** «التحقق من وثيقة» (D-122), in the user menu of the staff: the public page, outside the role areas. */
+export const VERIFY_HREF: Partial<Record<Role, string>> = {
+  SUPER_ADMIN: "/verify",
+  UNIT_MANAGER: "/verify",
+  SUPERVISOR: "/verify",
 };
 
 /** The gold call-to-action at the end of the navigation bar, per role. */
 export const NAV_CTA: Partial<Record<Role, NavItem>> = {
-  SUPER_ADMIN: { label: "إضافة مستخدم", href: "/admin/users/new", icon: "users" },
-  UNIT_MANAGER: { label: "إسناد الطلبات", href: "/manager/assignment", icon: "assign" },
+  SUPER_ADMIN: { label: "إضافة مستخدم", href: "/admin/users/new", icon: "addUser" },
   SUPERVISOR: { label: "قائمة أعمالي", href: "/supervisor/queue", icon: "queue" },
   ASSOCIATION_OFFICER: { label: "تقديم طلب جديد", href: "/association/requests/new", icon: "newRequest" },
 };

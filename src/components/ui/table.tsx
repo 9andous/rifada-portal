@@ -4,7 +4,9 @@ import { cn } from "@/lib/cn";
 /** Data table in a card: raised header row between hairlines, row hover, tabular digits. */
 export function DataTable({ caption, children, minWidth = "48rem" }: { caption: string; children: ReactNode; minWidth?: string }) {
   return (
-    <div data-table="" className="overflow-x-auto">
+    // relative: screen-reader-only text inside the table (captions, hidden labels) is positioned
+    // against this box, so it scrolls with the table instead of widening the page on phones.
+    <div data-table="" className="relative overflow-x-auto">
       <table className="t-table w-full border-collapse" style={{ minWidth }}>
         <caption className="sr-only">{caption}</caption>
         {children}
@@ -22,7 +24,7 @@ export function THead({ children }: { children: ReactNode }) {
 }
 
 export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th scope="col" className={cn("whitespace-nowrap py-3 pe-4 text-start text-[0.8125rem] font-semibold text-ink-muted first:ps-6 last:pe-6", className)} {...props} />;
+  return <th scope="col" className={cn("relative whitespace-nowrap py-3 pe-4 text-start text-[0.875rem] font-bold text-ink first:ps-6 last:pe-6", className)} {...props} />;
 }
 
 export function Tr({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {

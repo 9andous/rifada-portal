@@ -10,8 +10,9 @@ import { pipeline } from "node:stream/promises";
 // Keys are opaque: an area and 32 random hex characters, never a user-supplied name, so a stored file
 // cannot be guessed or addressed by its original name (D-063). Every path goes through resolveKey().
 
-export type StorageArea = "staging" | "templates" | "attachments";
-const KEY_PATTERN = /^(staging|templates|attachments)\/[a-f0-9]{32}$/;
+/** `images`: profile pictures and association logos. */
+export type StorageArea = "staging" | "templates" | "attachments" | "images";
+const KEY_PATTERN = /^(staging|templates|attachments|images)\/[a-f0-9]{32}$/;
 
 export class StorageError extends Error {
   constructor(

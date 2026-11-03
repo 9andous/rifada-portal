@@ -1,4 +1,5 @@
 import "server-only";
+import { imageUrl } from "@/lib/images";
 import type { Prisma, Role } from "@/generated/prisma/client";
 import { enumParam, pageWindow, parseListParams, type Page, type SearchParams } from "@/lib/list-params";
 import type { UserFormInput } from "@/lib/validation/admin";
@@ -26,7 +27,7 @@ type SnapshotSource = {
   mustChangePassword: boolean;
 };
 
-export function userSnapshot(user: SnapshotSource, programIds: readonly string[] = []) {
+export function userSnapshot(user: SnapshotSource, trackIds: readonly string[] = []) {
   return {
     username: user.username,
     name: user.name,
@@ -35,7 +36,7 @@ export function userSnapshot(user: SnapshotSource, programIds: readonly string[]
     role: user.role,
     isActive: user.isActive,
     associationId: user.associationId,
-    programIds: [...programIds].sort(),
+    trackIds: [...trackIds].sort(),
     mustChangePassword: user.mustChangePassword,
   };
 }
@@ -47,13 +48,18 @@ export function userSnapshot(user: SnapshotSource, programIds: readonly string[]
 export const USER_SORTS = ["name", "username", "role", "createdAt", "lastLoginAt"] as const;
 export type UserSort = (typeof USER_SORTS)[number];
 export const USER_STATUSES = ["active", "inactive"] as const;
+/** The users page's two tabs: the platform's own team, and the association officers. */
+export const USER_TABS = ["staff", "officers"] as const;
+export type UserTab = (typeof USER_TABS)[number];
+export const STAFF_ROLES = ROLES.filter((r) => r !== "ASSOCIATION_OFFICER");
 
 export function parseUserListParams(params: SearchParams) {
   return {
     ...parseListParams(params, USER_SORTS, { sort: "name", dir: "asc" }),
+    tab: enumParam(params, "tab", USER_TABS) ?? "staff",
     role: enumParam(params, "role", ROLES),
     status: enumParam(params, "status", USER_STATUSES),
-    program: typeof params.program === "string" && params.program ? params.program : undefined,
+    track: typeof params.track === "string" && params.track ? params.track : undefined,
   };
 }
 
@@ -71,16 +77,20 @@ export type UserRow = {
   lastLoginAt: Date | null;
   createdAt: Date;
   associationName: string | null;
-  programNumbers: number[];
+  trackNumbers: number[];
+  /** The user's picture, or for an officer without one, the association's logo. */
+  imageUrl: string | null;
 };
 
 export async function listUsers(actor: Actor, params: UserListParams): Promise<Page<UserRow>> {
   assertCan(actor, "users.manage");
   const where: Prisma.UserWhereInput = {};
   if (params.q) where.OR = containsAny(params.q, ["username", "name", "email", "phone"] as const);
-  if (params.role) where.role = params.role;
+  // Each tab lists its own kind of account; the role filter narrows the team tab only.
+  if (params.tab === "officers") where.role = "ASSOCIATION_OFFICER";
+  else where.role = params.role && params.role !== "ASSOCIATION_OFFICER" ? params.role : { not: "ASSOCIATION_OFFICER" };
   if (params.status) where.isActive = params.status === "active";
-  if (params.program) where.supervisedPrograms = { some: { programId: params.program } };
+  if (params.track) where.supervisedTracks = { some: { trackId: params.track } };
 
   const total = await db.user.count({ where });
   const win = pageWindow(total, params.page, PAGE_SIZE);
@@ -101,8 +111,10 @@ export async function listUsers(actor: Actor, params: UserListParams): Promise<P
       mustChangePassword: true,
       lastLoginAt: true,
       createdAt: true,
-      association: { select: { name: true } },
-      supervisedPrograms: { select: { program: { select: { number: true } } } },
+      avatarKey: true,
+      associationId: true,
+      association: { select: { name: true, logoKey: true } },
+      supervisedTracks: { select: { track: { select: { number: true } } } },
     },
   });
 
@@ -119,7 +131,8 @@ export async function listUsers(actor: Actor, params: UserListParams): Promise<P
       lastLoginAt: u.lastLoginAt,
       createdAt: u.createdAt,
       associationName: u.association?.name ?? null,
-      programNumbers: u.supervisedPrograms.map((p) => p.program.number).sort((a, b) => a - b),
+      trackNumbers: u.supervisedTracks.map((t) => t.track.number).sort((a, b) => a - b),
+      imageUrl: imageUrl("user", u.id, u.avatarKey) ?? (u.associationId ? imageUrl("association", u.associationId, u.association?.logoKey) : null),
     })),
     total,
     page: win.page,
@@ -137,22 +150,25 @@ export async function userFigures(actor: Actor) {
     total: count(() => true),
     active: count((g) => g.isActive),
     inactive: count((g) => !g.isActive),
+    /** All accounts per tab, active or not. */
+    staff: count((g) => g.role !== "ASSOCIATION_OFFICER"),
+    officers: count((g) => g.role === "ASSOCIATION_OFFICER"),
     byRole: Object.fromEntries(ROLES.map((r) => [r, count((g) => g.role === r && g.isActive)])) as Record<Role, number>,
   };
 }
 
-/** Programs and associations the user form offers. Associations with an officer are excluded, except `keepAssociationId`. */
+/** Tracks and associations the user form offers. Associations with an officer are excluded, except `keepAssociationId`. */
 export async function userFormOptions(actor: Actor, keepAssociationId?: string | null) {
   assertCan(actor, "users.manage");
-  const [programs, associations] = await Promise.all([
-    db.program.findMany({ where: { archivedAt: null }, orderBy: { number: "asc" }, select: { id: true, number: true, name: true } }),
+  const [tracks, associations] = await Promise.all([
+    db.track.findMany({ where: { archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true } }),
     db.association.findMany({
       where: { OR: [{ officer: null, isActive: true }, ...(keepAssociationId ? [{ id: keepAssociationId }] : [])] },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
   ]);
-  return { programs, associations };
+  return { tracks, associations };
 }
 
 export async function getUserDetail(actor: Actor, id: string) {
@@ -172,9 +188,10 @@ export async function getUserDetail(actor: Actor, id: string) {
       createdAt: true,
       updatedAt: true,
       isDemo: true,
+      avatarKey: true,
       associationId: true,
       association: { select: { id: true, name: true, isActive: true } },
-      supervisedPrograms: { select: { programId: true } },
+      supervisedTracks: { select: { trackId: true } },
       _count: { select: { sessions: true } },
     },
   });
@@ -188,7 +205,7 @@ export async function getUserDetail(actor: Actor, id: string) {
   return {
     ...user,
     email: isPlaceholderEmail(user.email) ? null : user.email,
-    programIds: user.supervisedPrograms.map((p) => p.programId),
+    trackIds: user.supervisedTracks.map((t) => t.trackId),
     activeSessions: user._count.sessions,
     history,
   };
@@ -206,7 +223,7 @@ const MSG = {
   associationMissing: "الجمعية المختارة غير موجودة.",
   associationInactive: "الجمعية المختارة معطلة؛ فعّلها أولًا.",
   associationTaken: "لهذه الجمعية حساب مسؤول بالفعل، ولكل جمعية حساب واحد فقط.",
-  programsInvalid: "أحد البرامج المختارة غير متاح.",
+  tracksInvalid: "أحد المسارات المختارة غير متاح.",
   notFound: "الحساب غير موجود.",
   selfRole: "لا يمكنك تغيير دور حسابك.",
   selfDeactivate: "لا يمكنك تعطيل حسابك.",
@@ -230,10 +247,10 @@ async function checkUnique(tx: Tx, input: { username: string; email: string | nu
   return { ok: true };
 }
 
-async function checkPrograms(tx: Tx, programIds: readonly string[]): Promise<Result> {
-  if (programIds.length === 0) return { ok: true };
-  const found = await tx.program.count({ where: { id: { in: [...programIds] }, archivedAt: null } });
-  return found === programIds.length ? { ok: true } : fieldRefusal("programIds", MSG.programsInvalid);
+async function checkTracks(tx: Tx, trackIds: readonly string[]): Promise<Result> {
+  if (trackIds.length === 0) return { ok: true };
+  const found = await tx.track.count({ where: { id: { in: [...trackIds] }, archivedAt: null } });
+  return found === trackIds.length ? { ok: true } : fieldRefusal("trackIds", MSG.tracksInvalid);
 }
 
 /** The association must exist, be active and have no officer other than `exceptUserId`. */
@@ -264,7 +281,7 @@ export async function createUser(actor: Actor, input: UserFormInput): Promise<Re
     await lockAdminWrites(tx);
     const check = firstRefusal(
       await checkUnique(tx, input),
-      await checkPrograms(tx, input.programIds),
+      await checkTracks(tx, input.trackIds),
       input.associationId ? await checkAssociationFree(tx, input.associationId) : { ok: true },
     );
     if (!check.ok) return check;
@@ -279,11 +296,11 @@ export async function createUser(actor: Actor, input: UserFormInput): Promise<Re
       password,
       mustChangePassword: true,
     });
-    if (input.programIds.length > 0) {
-      await tx.supervisorProgram.createMany({ data: input.programIds.map((programId) => ({ userId: user.id, programId })) });
+    if (input.trackIds.length > 0) {
+      await tx.supervisorTrack.createMany({ data: input.trackIds.map((trackId) => ({ userId: user.id, trackId })) });
     }
     await audit(
-      { actorId: actor.id, action: "user.created", entityType: "User", entityId: user.id, after: userSnapshot(user, input.programIds) },
+      { actorId: actor.id, action: "user.created", entityType: "User", entityId: user.id, after: userSnapshot(user, input.trackIds) },
       tx,
     );
     return { ok: true, userId: user.id, username: user.username ?? input.username, password };
@@ -295,9 +312,9 @@ export async function updateUser(actor: Actor, id: string, input: UserFormInput)
 
   return db.$transaction(async (tx) => {
     await lockAdminWrites(tx);
-    const current = await tx.user.findUnique({ where: { id }, include: { supervisedPrograms: { select: { programId: true } } } });
+    const current = await tx.user.findUnique({ where: { id }, include: { supervisedTracks: { select: { trackId: true } } } });
     if (!current) return refuse(MSG.notFound);
-    const currentPrograms = current.supervisedPrograms.map((p) => p.programId);
+    const currentTracks = current.supervisedTracks.map((t) => t.trackId);
 
     if (current.role !== input.role) {
       if (id === actor.id) return fieldRefusal("role", MSG.selfRole);
@@ -309,7 +326,7 @@ export async function updateUser(actor: Actor, id: string, input: UserFormInput)
 
     const check = firstRefusal(
       await checkUnique(tx, input, id),
-      await checkPrograms(tx, input.programIds),
+      await checkTracks(tx, input.trackIds),
       input.associationId && input.associationId !== current.associationId ? await checkAssociationFree(tx, input.associationId, id) : { ok: true },
     );
     if (!check.ok) return check;
@@ -325,12 +342,12 @@ export async function updateUser(actor: Actor, id: string, input: UserFormInput)
         associationId: input.associationId,
       },
     });
-    await tx.supervisorProgram.deleteMany({ where: { userId: id, programId: { notIn: input.programIds } } });
-    const toAdd = input.programIds.filter((p) => !currentPrograms.includes(p));
-    if (toAdd.length > 0) await tx.supervisorProgram.createMany({ data: toAdd.map((programId) => ({ userId: id, programId })) });
+    await tx.supervisorTrack.deleteMany({ where: { userId: id, trackId: { notIn: input.trackIds } } });
+    const toAdd = input.trackIds.filter((t) => !currentTracks.includes(t));
+    if (toAdd.length > 0) await tx.supervisorTrack.createMany({ data: toAdd.map((trackId) => ({ userId: id, trackId })) });
 
-    const before = userSnapshot(current, currentPrograms);
-    const after = userSnapshot(updated, input.programIds);
+    const before = userSnapshot(current, currentTracks);
+    const after = userSnapshot(updated, input.trackIds);
     if (JSON.stringify(before) !== JSON.stringify(after)) {
       await audit({ actorId: actor.id, action: "user.updated", entityType: "User", entityId: id, before, after }, tx);
     }

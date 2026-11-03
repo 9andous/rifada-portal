@@ -12,7 +12,7 @@ import { audit } from "@/server/services/audit";
 import { getSetting } from "@/server/settings/read";
 import { getStorage } from "@/server/storage/storage";
 import { consumeUpload, NOT_USABLE, peekUpload, type ConsumedUpload, type StagedMeta } from "@/server/uploads/stage";
-import { liveRequirements, requestRef, statusMap, type Client } from "./common";
+import { liveRequirements, requestInitiativeIds, requestRef, statusMap, type Client } from "./common";
 import { REQUEST_MSG } from "./drafts";
 
 // Request files (D-074, D-075, D-081). Officers attach files to a requirement of their own draft or
@@ -27,11 +27,15 @@ export const uploadContext = (requestId: string) => `request:${requestId}`;
 
 export type UploadPurpose = "request" | "comment";
 
+/** Files the association adds of its own beyond the initiative's requirements (D-115). */
+export const OWN_FILES_MAX = 10;
+
 const FILE_MSG = {
   notAllowed: "لا يمكن رفع ملفات إلى هذا الطلب.",
   requirementUnknown: "هذا المرفق ليس من متطلبات المبادرة.",
   attachmentUnknown: "الملف غير موجود في هذا الطلب.",
   sameFile: "الملف الجديد مطابق تمامًا للإصدار الحالي، فلم يُنشأ إصدار جديد.",
+  ownLimit: `يمكن إرفاق ${OWN_FILES_MAX} ملفات إضافية على الأكثر؛ استبدلوا ملفًا قائمًا بنسخة أحدث بدلًا من ذلك.`,
   draftOnlyRemoval: "لا تُحذف الملفات إلا من مسودة لم تُقدَّم قط؛ أضف إصدارًا جديدًا بدلًا من ذلك.",
 } as const;
 
@@ -68,9 +72,13 @@ export async function quotaRefusal(associationId: string, adding: number): Promi
   return `تجاوز هذا الملف حد التخزين المخصص للجمعية (المستخدم ${formatFileSize(used)} من ${formatFileSize(quotaMb * MB)}). تواصلوا مع إدارة المنصة.`;
 }
 
-/** Validates a staged file against a requirement's accepted types (before consuming it). */
+/**
+ * Validates a staged file against a requirement's accepted types (before consuming it). A file of
+ * the association's own (no attachment type, D-115) may be any type the settings allow.
+ */
 async function checkStagedType(meta: StagedMeta, requirement: Parameters<typeof acceptedGroups>[0]): Promise<string | null> {
-  const groups = acceptedGroups(requirement, await getSetting("uploads.allowedGroups"));
+  const allowed = await getSetting("uploads.allowedGroups");
+  const groups = requirement.attachmentType ? acceptedGroups(requirement, allowed) : allowed;
   if (groups.includes(FILE_TYPES[meta.ext].group)) return null;
   return `نوع الملف غير مقبول لهذا المرفق. الأنواع المقبولة: ${arabicList(groups.map((g) => UPLOAD_GROUP_LABELS[g]))}.`;
 }
@@ -101,7 +109,7 @@ export async function attachRequirementFile(actor: Actor, requestId: string, req
   if (!(await canUploadTo(actor, requestId, "request")) || !actor.associationId) return refuse(FILE_MSG.notAllowed);
   const associationId = actor.associationId;
   const request = await db.request.findUniqueOrThrow({ where: { id: requestId }, select: { initiativeId: true, statusId: true, referenceNo: true, title: true } });
-  const requirement = (await liveRequirements(db, request.initiativeId)).find((r) => r.kind === "ATTACHMENT" && r.key === requirementKey);
+  const requirement = (await liveRequirements(db, await requestInitiativeIds(db, requestId))).find((r) => r.kind === "ATTACHMENT" && r.key === requirementKey);
   if (!requirement?.attachmentType) return refuse(FILE_MSG.requirementUnknown);
   const meta = await peekUpload(actor.id, uploadId, uploadContext(requestId));
   if (!meta) return fieldRefusal("file", NOT_USABLE);
@@ -128,6 +136,45 @@ export async function attachRequirementFile(actor: Actor, requestId: string, req
           entityType: "Request",
           entityId: requestId,
           after: { ...requestRef(request), requirementKey, attachmentId: attachment.id, file: fileSnapshot(file, 1) },
+        },
+        tx,
+      );
+      return { ok: true, attachmentId: attachment.id };
+    }),
+  );
+}
+
+/**
+ * Adds a file of the association's own (no attachment type) to its editable request (D-115): any
+ * type the settings allow, counted in the storage quota, at most OWN_FILES_MAX per request.
+ */
+export async function attachOwnFile(actor: Actor, requestId: string, uploadId: string): Promise<Result<{ attachmentId: string }>> {
+  if (!(await canUploadTo(actor, requestId, "request")) || !actor.associationId) return refuse(FILE_MSG.notAllowed);
+  const associationId = actor.associationId;
+  const request = await db.request.findUniqueOrThrow({ where: { id: requestId }, select: { statusId: true, referenceNo: true, title: true } });
+  const meta = await peekUpload(actor.id, uploadId, uploadContext(requestId));
+  if (!meta) return fieldRefusal("file", NOT_USABLE);
+  const typeProblem = await checkStagedType(meta, { attachmentType: null });
+  if (typeProblem) return fieldRefusal("file", typeProblem);
+  const quota = await quotaRefusal(associationId, meta.size);
+  if (quota) return fieldRefusal("file", quota);
+
+  return withConsumed(actor, uploadId, requestId, (file) =>
+    db.$transaction(async (tx) => {
+      const still = await tx.request.findFirst({ where: { id: requestId, associationId, statusId: request.statusId }, select: { id: true } });
+      if (!still) return refuse(REQUEST_MSG.notEditable);
+      const own = await tx.attachment.count({ where: { requestId, ownerType: "REQUEST", attachmentTypeId: null } });
+      if (own >= OWN_FILES_MAX) return fieldRefusal("file", FILE_MSG.ownLimit);
+      const attachment = await tx.attachment.create({ data: { ownerType: "REQUEST", requestId, attachmentTypeId: null, title: file.fileName, uploadedById: actor.id } });
+      const version = await tx.attachmentVersion.create({ data: { attachmentId: attachment.id, versionNo: 1, ...file, uploadedById: actor.id } });
+      await tx.attachment.update({ where: { id: attachment.id }, data: { currentVersionId: version.id } });
+      await audit(
+        {
+          actorId: actor.id,
+          action: "request.file_added",
+          entityType: "Request",
+          entityId: requestId,
+          after: { ...requestRef(request), own: true, attachmentId: attachment.id, file: fileSnapshot(file, 1) },
         },
         tx,
       );

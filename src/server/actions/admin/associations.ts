@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { associationFormSchema, formObject, officerFormSchema } from "@/lib/validation/admin";
 import { fieldErrors, type FieldErrors } from "@/lib/validation/auth";
 import { createAssociation, createAssociationOfficer, setAssociationActive, updateAssociation } from "@/server/services/admin/associations";
+import { applyImageChange, checkImageChange, imageChangeFrom } from "@/server/services/images";
 import { asAdmin, fromRefusal } from "./guard";
 import { INVALID_MESSAGE, type AdminFormState } from "./state";
 
@@ -29,9 +30,14 @@ export async function createAssociationAction(_: AdminFormState, formData: FormD
       for (const [k, v] of Object.entries(fieldErrors(officer.error))) errors[`${OFFICER_PREFIX}${k}`] = v;
     }
     if (!association.success || (officer && !officer.success)) return { ok: false, message: INVALID_MESSAGE, errors };
+    const logo = imageChangeFrom(formData);
+    const logoCheck = await checkImageChange(user, logo);
+    if (!logoCheck.ok) return fromRefusal(logoCheck);
 
     const result = await createAssociation(user, association.data, officer?.success ? officer.data : null);
     if (!result.ok) return fromRefusal(result);
+    // The logo was checked above; storing it follows the association (the logo is optional).
+    await applyImageChange(user, "association", result.associationId, logo);
     revalidatePath("/admin/associations");
     return { ok: true, createdId: result.associationId, credentials: result.officer ?? undefined };
   });
@@ -59,8 +65,14 @@ export async function updateAssociationAction(id: string, _: AdminFormState, for
   return asAdmin(async (user) => {
     const parsed = associationFormSchema.safeParse(formObject(formData));
     if (!parsed.success) return { ok: false, message: INVALID_MESSAGE, errors: fieldErrors(parsed.error) };
+    const logo = imageChangeFrom(formData);
+    const logoCheck = await checkImageChange(user, logo);
+    if (!logoCheck.ok) return fromRefusal(logoCheck);
     const result = await updateAssociation(user, id, parsed.data);
     if (!result.ok) return fromRefusal(result);
+    const stored = await applyImageChange(user, "association", id, logo);
+    if (!stored.ok) return fromRefusal(stored);
+    revalidatePath("/", "layout");
     revalidatePath("/admin/associations");
     revalidatePath(`/admin/associations/${id}`);
     return { ok: true, message: "حُفظت التغييرات." };

@@ -6,7 +6,7 @@ import { ROLE_LABELS, ROLES } from "./roles";
 
 const SCOPE_LABEL: Record<Scope, string> = {
   all: "all",
-  programs: "own programs",
+  tracks: "own tracks",
   own: "own association",
 };
 
@@ -35,7 +35,7 @@ Every rule is enforced on the server. Three layers apply to each request:
 3. **Data access**: every query of scoped data uses the scopers in \`src/server/authz/scope.ts\`, and every
    server action and route handler checks \`can()\` before acting.
 
-Scopes: **all** = every record; **own programs** = records in programs assigned to the supervisor;
+Scopes: **all** = every record; **own tracks** = records in tracks assigned to the supervisor (D-123);
 **own association** = records of the officer's association; **—** = denied.
 
 ${header}

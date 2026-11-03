@@ -6,10 +6,13 @@ import { readFileSync } from "node:fs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../../src/generated/prisma/client";
 import { createUserWithPassword } from "../../src/server/auth/users";
+import { LEADERSHIP_QUOTES, PRESIDENT_WORD } from "../../src/config/initiative";
 import { SETTING_DEFAULTS } from "../../src/server/settings/defaults";
 import { seedAttachmentTypes } from "./attachment-types";
 import { seedStatuses } from "./statuses";
 import { seedTaxonomy } from "./taxonomy";
+import { seedTaxonomyDescriptions } from "./taxonomy-descriptions";
+import { seedTracks } from "./tracks";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
 
@@ -34,6 +37,17 @@ async function seedSiteContent() {
   }
   for (const o of content.objectives) {
     await db.strategicObjective.upsert({ where: { number: o.number }, create: o, update: {} });
+  }
+}
+
+/** The three statements of the strategy outline, only into an empty table so admin edits stay. */
+async function seedHomeQuotes() {
+  if (await db.homeQuote.count()) return;
+  const quotes = [...LEADERSHIP_QUOTES, PRESIDENT_WORD];
+  for (const [i, q] of quotes.entries()) {
+    await db.homeQuote.create({
+      data: { quote: q.quote, honorific: q.honorific, name: q.name, title: q.title, imagePath: q.image, sortOrder: i + 1 },
+    });
   }
 }
 
@@ -72,8 +86,13 @@ async function seedFirstAdmin() {
 async function main() {
   console.log("Seeding baseline data…");
   await seedSiteContent();
+  await seedHomeQuotes();
   const { createdInitiatives } = await seedTaxonomy(db);
   console.log(`  taxonomy: ${createdInitiatives} initiatives created`);
+  const { filled } = await seedTaxonomyDescriptions(db);
+  console.log(`  taxonomy descriptions: ${filled} filled`);
+  const { created: tracks } = await seedTracks(db);
+  console.log(`  tracks: ${tracks} created`);
   await seedStatuses(db);
   const { created: attachmentTypes } = await seedAttachmentTypes(db);
   console.log(`  attachment types: ${attachmentTypes} created`);

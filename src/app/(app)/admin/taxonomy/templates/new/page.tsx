@@ -25,7 +25,7 @@ export default async function NewTemplatePage() {
     <>
       <PageBand
         compact
-        eyebrow="النماذج"
+        eyebrow="الأدلة والنماذج"
         title="نموذج جديد"
         lead="ارفع الملف ثم أكمل بياناته. يُرفع الملف إلى منطقة مؤقتة ويُتحقق من نوعه ومحتواه قبل الحفظ."
         actions={
@@ -40,7 +40,7 @@ export default async function NewTemplatePage() {
           <TemplateForm
             mode="create"
             action={createTemplateAction}
-            defaults={{ title: "", description: "", programId: "", initiativeId: "", attachmentTypeId: "" }}
+            defaults={{ kind: "FORM", title: "", description: "", programId: "", initiativeId: "", attachmentTypeId: "" }}
             programs={options.programs}
             attachmentTypes={options.attachmentTypes}
             accept={acceptAttribute(groups)}

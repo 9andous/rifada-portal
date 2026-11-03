@@ -7,7 +7,7 @@ import { PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
 import { InitiativeForm } from "@/components/taxonomy/entity-forms";
 import { buttonClasses } from "@/components/ui/button";
-import { Alert, Panel } from "@/components/ui/surface";
+import { Panel } from "@/components/ui/surface";
 import { toArabicDigits } from "@/lib/format";
 import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/authz/permissions";
@@ -43,7 +43,7 @@ export default async function NewInitiativePage({ params }: PageProps<"/admin/ta
       <PageBody>
         <Panel className="max-w-3xl p-6">
           {program.archivedAt ? (
-            <Alert tone="warning">البرنامج مؤرشف؛ استعده أولًا لإضافة مبادرات إليه.</Alert>
+            <p className="text-sm text-ink-muted">البرنامج مؤرشف؛ استعده أولًا لإضافة مبادرات إليه.</p>
           ) : (
             <InitiativeForm
               mode="create"

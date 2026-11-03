@@ -2,10 +2,11 @@
 
 import { LoaderCircle, Paperclip, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/toaster";
 import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { formatFileSize, formatNumber } from "@/lib/format";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
 import { addCommentAction } from "@/server/actions/requests";
@@ -70,6 +71,7 @@ export function CommentComposer({
       setFiles([]);
       setInternal(false);
       onCancelReply();
+      toast("أُرسل التعليق");
       router.refresh();
     });
   }
@@ -81,7 +83,7 @@ export function CommentComposer({
           ردًا على {replyTo.author}
           {replyTo.internal ? " (ملاحظة داخلية)" : ""}
           <button type="button" onClick={onCancelReply} className="inline-flex items-center text-ink-subtle hover:text-ink" aria-label="إلغاء الرد">
-            <X aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
+            <X aria-hidden="true" strokeWidth={1.75} className="size-4" />
           </button>
         </p>
       ) : null}
@@ -101,19 +103,19 @@ export function CommentComposer({
         <ul className="mt-2 flex flex-wrap gap-2">
           {files.map((f) => (
             <li key={f.uploadId} className="t-caption inline-flex items-center gap-1.5 rounded-sm border border-line px-2 py-1">
-              <Paperclip aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
+              <Paperclip aria-hidden="true" strokeWidth={1.75} className="size-4" />
               <bdi>{f.fileName}</bdi> · {formatFileSize(f.size)}
               <button type="button" onClick={() => setFiles((all) => all.filter((x) => x.uploadId !== f.uploadId))} aria-label={`إزالة ${f.fileName}`} className="hover:text-ink">
-                <X aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
+                <X aria-hidden="true" strokeWidth={1.75} className="size-4" />
               </button>
             </li>
           ))}
         </ul>
       ) : null}
       {message ? (
-        <Alert tone="danger" className="mt-2">
+        <FormError className="mt-2">
           {message}
-        </Alert>
+        </FormError>
       ) : null}
       <div className="mt-2 flex flex-wrap items-center gap-3">
         {canWriteInternal ? (

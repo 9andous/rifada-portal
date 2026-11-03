@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Field, Input } from "@/components/ui/field";
 import { FormDialog } from "@/components/ui/form-dialog";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
 import { UPLOAD_GROUP_LABELS, UPLOAD_GROUPS } from "@/lib/validation/settings";
 import { createAttachmentTypeAction, setAttachmentTypeArchivedAction, updateAttachmentTypeAction } from "@/server/actions/admin/attachment-types";
 import type { AdminFormState } from "@/server/actions/admin/state";
@@ -111,7 +111,7 @@ export function AttachmentTypeRowActions({ id, typeKey, name, groups, archived }
           onConfirm={async () => setResult(await setAttachmentTypeArchivedAction(id, !archived))}
         />
       </div>
-      {result && !result.ok ? <Alert tone="danger">{result.message}</Alert> : null}
+      {result && !result.ok ? <FormError>{result.message}</FormError> : null}
     </div>
   );
 }

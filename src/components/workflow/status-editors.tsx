@@ -7,7 +7,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Field, Input } from "@/components/ui/field";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Select } from "@/components/ui/select";
-import { Alert, StatusText, type StatusTone } from "@/components/ui/surface";
+import { FormError, StatusText, type StatusTone } from "@/components/ui/surface";
 import { cn } from "@/lib/cn";
 import { toArabicDigits } from "@/lib/format";
 import { STATUS_TONE_LABELS, STATUS_TONES, TRANSITION_ROLES } from "@/lib/workflow";
@@ -32,7 +32,7 @@ const TONE_DOT: Record<StatusTone, string> = {
 /** The seven statuses: rename, recolour and reorder. Keys and the terminal flag are shown, never edited. */
 export function StatusesTable({ statuses, readOnly }: { statuses: StatusItem[]; readOnly: boolean }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="t-table w-full min-w-[40rem] border-collapse">
         <caption className="sr-only">حالات الطلب</caption>
         <thead className="bg-surface-muted">
@@ -158,12 +158,8 @@ export function TransitionsTable({ statuses, transitions, readOnly }: { statuses
   const [result, setResult] = useState<AdminFormState | null>(null);
   return (
     <div className="flex flex-col gap-4">
-      {result?.message ? (
-        <Alert tone={result.ok ? "success" : "danger"} className="mx-6">
-          {result.message}
-        </Alert>
-      ) : null}
-      <div className="overflow-x-auto">
+      {result?.message && !result.ok ? <FormError className="mx-6">{result.message}</FormError> : null}
+      <div className="relative overflow-x-auto">
         <table className="t-table w-full min-w-[44rem] border-collapse">
           <caption className="sr-only">انتقالات الطلب بين الحالات</caption>
           <thead className="bg-surface-muted">
@@ -223,7 +219,11 @@ export function TransitionsTable({ statuses, transitions, readOnly }: { statuses
                           }
                           confirmLabel="حذف الانتقال"
                           confirmVariant="danger"
-                          onConfirm={async () => setResult(await removeTransitionAction(t.id))}
+                          onConfirm={async () => {
+                            const r = await removeTransitionAction(t.id);
+                            setResult(r);
+                            return r;
+                          }}
                         />
                       </div>
                     </td>

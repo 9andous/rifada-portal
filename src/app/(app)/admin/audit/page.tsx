@@ -39,7 +39,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
         figures={
           <BandFigures
             items={[
-              { label: "العمليات المسجلة", value: formatNumber(total), emphasis: true },
+              { label: "العمليات المسجلة", value: formatNumber(total) },
               { label: "آخر ٢٤ ساعة", value: formatNumber(lastDay) },
               { label: "المنفّذون", value: formatNumber(actors), caption: "حسابات نفّذت عمليات" },
             ]}
@@ -136,7 +136,7 @@ async function AuditList({ user, searchParams }: { user: CurrentUser; searchPara
                 return (
                   <Tr key={r.id}>
                     <Td className="w-64">
-                      <DateDisplay date={r.createdAt} withTime />
+                      <DateDisplay date={r.createdAt} variant="hijri" />
                     </Td>
                     <Td>
                       {r.actorName ?? <span className="text-ink-subtle">النظام</span>}

@@ -6,9 +6,12 @@ import { useState, useTransition, type FormEvent } from "react";
 import { ChevronLeft, Fingerprint, LoaderCircle, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
-import { Alert } from "@/components/ui/surface";
+import { Alert, FormError } from "@/components/ui/surface";
 import { authClient } from "@/lib/auth-client";
 import { toArabicDigits } from "@/lib/format";
+
+// Nafath sign-in is hidden for now (owner's request); the flow below is kept for when it returns.
+const NAFATH_ENABLED = false;
 
 type AuthError = { status?: number; code?: string } | null | undefined;
 
@@ -66,50 +69,57 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-        {error ? <Alert tone="danger">{error}</Alert> : null}
+    <div className="flex flex-col gap-4 short:gap-3">
+      <form onSubmit={onSubmit} className="flex flex-col gap-3.5" noValidate>
+        {error ? <FormError>{error}</FormError> : null}
         <Field id="username" label="اسم المستخدم" required>
-          <Input id="username" name="username" autoComplete="username" dir="ltr" required autoFocus className="h-12" />
+          <Input id="username" name="username" autoComplete="username" dir="ltr" required autoFocus className="h-11" />
         </Field>
         <Field id="password" label="كلمة المرور" required>
-          <Input id="password" name="password" type="password" autoComplete="current-password" dir="ltr" required className="h-12" />
+          <Input id="password" name="password" type="password" autoComplete="current-password" dir="ltr" required className="h-11" />
         </Field>
-        <div className="flex justify-end">
-          <Link href="/forgot-password" className="text-sm text-primary underline-offset-4 hover:underline">
-            نسيت كلمة المرور؟
-          </Link>
-        </div>
-        <Button type="submit" variant="dark" size="lg" disabled={pending}>
+        <Button type="submit" variant="gold" size="lg" disabled={pending} className="mt-1">
           {pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <LogIn aria-hidden="true" />}
           {pending ? "جارٍ التحقق…" : "تسجيل الدخول"}
         </Button>
+        <Link href="/forgot-password" className="self-center text-sm text-primary underline-offset-4 hover:underline">
+          نسيت كلمة المرور؟
+        </Link>
       </form>
 
-      <div className="flex items-center gap-3 text-xs text-ink-subtle" aria-hidden="true">
+      {NAFATH_ENABLED ? <NafathEntry onOpen={() => setMode("nafath")} /> : null}
+    </div>
+  );
+}
+
+function NafathEntry({ onOpen }: { onOpen: () => void }) {
+  return (
+    <>
+      <div className="-my-1 flex items-center gap-3 text-xs text-ink-subtle" aria-hidden="true">
         <span className="h-px flex-1 bg-line" />
         أو
         <span className="h-px flex-1 bg-line" />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         <button
           type="button"
-          onClick={() => setMode("nafath")}
-          className="flex w-full items-center gap-3.5 rounded-lg border-[1.5px] border-primary bg-primary-soft/60 px-4 py-3.5 text-start transition-colors hover:bg-primary-soft"
+          onClick={onOpen}
+          className="flex w-full items-center gap-3.5 rounded-lg border-[1.5px] border-primary bg-primary-soft/60 px-4 py-2.5 text-start transition-colors hover:bg-primary-soft short:py-2"
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-ink">
-            <Fingerprint aria-hidden="true" className="size-6" />
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-ink">
+            <Fingerprint aria-hidden="true" strokeWidth={1.75} className="size-5" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block font-bold text-brand-ink">الدخول عبر النفاذ الوطني الموحد</span>
-            <span className="block text-[0.8125rem] text-ink-muted">باستخدام رقم الهوية الوطنية وتطبيق نفاذ</span>
+            <span className="block text-sm text-ink-muted">باستخدام رقم الهوية الوطنية وتطبيق نفاذ</span>
           </span>
           <ChevronLeft aria-hidden="true" className="size-5 shrink-0 text-ink-subtle" />
         </button>
-        <p className="t-caption text-center">الدخول عبر النفاذ الوطني في هذه البيئة محاكاة لأغراض التطوير.</p>
+        {/* On short screens the note is left to the Nafath step, which opens with the same warning. */}
+        <p className="t-caption text-center short:hidden">الدخول عبر النفاذ الوطني في هذه البيئة محاكاة لأغراض التطوير.</p>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -156,7 +166,7 @@ function NafathMockFlow({ onCancel }: { onCancel: () => void }) {
       <Alert tone="warning" title="بيئة محاكاة">
         هذا الدخول محاكاة لخدمة النفاذ الوطني الموحد لأغراض التطوير والعرض، ولا يتصل بالخدمة الفعلية.
       </Alert>
-      {error ? <Alert tone="danger">{error}</Alert> : null}
+      {error ? <FormError>{error}</FormError> : null}
 
       {challenge ? (
         <div className="flex flex-col items-center gap-4 rounded-lg border border-line bg-surface-muted px-6 py-8 text-center">

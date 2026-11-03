@@ -11,18 +11,22 @@ export const THEME_STORAGE_KEY = "rifada-theme";
  */
 export const themeInitScript = `try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");if(t==="dark")document.documentElement.dataset.theme="dark"}catch(e){}`;
 
+/** Applies and remembers a theme; shared by the toggle and the accessibility panel. */
+export function setTheme(next: "light" | "dark") {
+  const root = document.documentElement;
+  if (next === "dark") root.dataset.theme = "dark";
+  else delete root.dataset.theme;
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, next);
+  } catch {
+    // Storage may be unavailable (private mode); the theme still applies to this page view.
+  }
+}
+
 /** "band" for the green band, "surface" elsewhere. */
 export function ThemeToggle({ className, tone = "surface" }: { className?: string; tone?: "band" | "surface" }) {
   function toggle() {
-    const root = document.documentElement;
-    const next = root.dataset.theme === "dark" ? "light" : "dark";
-    if (next === "dark") root.dataset.theme = "dark";
-    else delete root.dataset.theme;
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, next);
-    } catch {
-      // Storage may be unavailable (private mode); the toggle still works for this page view.
-    }
+    setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
   }
 
   return (

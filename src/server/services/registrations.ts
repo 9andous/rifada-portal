@@ -1,4 +1,6 @@
 import "server-only";
+import { commitRegistrationLogo, registrationLogoUsable } from "@/server/services/images";
+import { NOT_USABLE } from "@/server/uploads/stage";
 import { randomInt } from "node:crypto";
 import type { Prisma, RegistrationStatus } from "@/generated/prisma/client";
 import { pageWindow, type Page } from "@/lib/list-params";
@@ -44,7 +46,6 @@ function registrationSnapshot(r: {
   classification: string;
   region: string;
   city: string;
-  programNumbers: number[];
   officerName: string;
   officerUsername: string;
 }) {
@@ -56,7 +57,6 @@ function registrationSnapshot(r: {
     classification: r.classification,
     region: r.region,
     city: r.city,
-    programNumbers: r.programNumbers,
     officerName: r.officerName,
     officerUsername: r.officerUsername,
   };
@@ -67,20 +67,24 @@ type Tx = Prisma.TransactionClient;
 /** The license, username, email and national ID must not belong to an association, account or open application. */
 async function checkFree(
   tx: Tx,
-  v: { licenseNumber: string; username: string; email: string | null; nationalId: string | null },
+  v: { licenseNumber?: string; username?: string; email?: string | null; nationalId?: string | null },
   exceptRegistrationId?: string,
 ): Promise<Result> {
   const notSelf = exceptRegistrationId ? { id: { not: exceptRegistrationId } } : {};
-  if (await tx.association.findFirst({ where: { licenseNumber: v.licenseNumber }, select: { id: true } })) {
-    return fieldRefusal("licenseNumber", MSG.licenseRegistered);
+  if (v.licenseNumber) {
+    if (await tx.association.findFirst({ where: { licenseNumber: v.licenseNumber }, select: { id: true } })) {
+      return fieldRefusal("licenseNumber", MSG.licenseRegistered);
+    }
+    if (await tx.associationRegistration.findFirst({ where: { licenseNumber: v.licenseNumber, status: "PENDING", ...notSelf }, select: { id: true } })) {
+      return fieldRefusal("licenseNumber", MSG.licensePending);
+    }
   }
-  if (await tx.associationRegistration.findFirst({ where: { licenseNumber: v.licenseNumber, status: "PENDING", ...notSelf }, select: { id: true } })) {
-    return fieldRefusal("licenseNumber", MSG.licensePending);
+  if (v.username) {
+    const usernameUsed =
+      (await tx.user.findUnique({ where: { username: v.username }, select: { id: true } })) ??
+      (await tx.associationRegistration.findFirst({ where: { officerUsername: v.username, status: "PENDING", ...notSelf }, select: { id: true } }));
+    if (usernameUsed) return fieldRefusal("username", MSG.usernameTaken);
   }
-  const usernameUsed =
-    (await tx.user.findUnique({ where: { username: v.username }, select: { id: true } })) ??
-    (await tx.associationRegistration.findFirst({ where: { officerUsername: v.username, status: "PENDING", ...notSelf }, select: { id: true } }));
-  if (usernameUsed) return fieldRefusal("username", MSG.usernameTaken);
   if (v.email && (await tx.user.findUnique({ where: { email: v.email }, select: { id: true } }))) return fieldRefusal("officerEmail", MSG.emailTaken);
   if (v.nationalId && (await tx.user.findUnique({ where: { nationalId: v.nationalId }, select: { id: true } }))) {
     return fieldRefusal("officerNationalId", MSG.nationalIdTaken);
@@ -88,13 +92,25 @@ async function checkFree(
   return { ok: true };
 }
 
+/**
+ * Public: the same availability checks as the submission, for the fields of one step, so the
+ * journey reports a registered license or a taken username on the step where it was entered.
+ * The submission still checks everything again.
+ */
+export async function checkRegistrationAvailability(v: { licenseNumber?: string; username?: string; email?: string | null; nationalId?: string | null }): Promise<Result> {
+  return checkFree(db, v);
+}
+
 /** Public: stores a new application. The password is hashed here and never stored in clear. */
-export async function submitRegistration(input: RegistrationInput, now: Date = new Date()): Promise<Result<{ referenceNo: string }>> {
+/**
+ * Records an application. `logoUploadId` is an optional logo staged through the public upload route
+ * (D-100); it is checked first and moved into storage once the application exists.
+ */
+export async function submitRegistration(input: RegistrationInput, now: Date = new Date(), logoUploadId?: string): Promise<Result<{ referenceNo: string }>> {
+  if (logoUploadId && !(await registrationLogoUsable(logoUploadId))) return fieldRefusal("image", NOT_USABLE);
   const passwordHash = await hashPassword(input.password);
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx): Promise<Result<{ referenceNo: string; id: string }>> => {
     await lockAdminWrites(tx);
-    const programs = await tx.program.findMany({ where: { number: { in: input.programNumbers }, archivedAt: null, isActive: true }, select: { number: true } });
-    if (programs.length !== input.programNumbers.length) return fieldRefusal("programNumbers", "اختاروا من برامج الرئاسة المتاحة.");
     const free = await checkFree(tx, { licenseNumber: input.licenseNumber, username: input.username, email: input.officerEmail, nationalId: input.officerNationalId });
     if (!free.ok) return free;
 
@@ -113,7 +129,6 @@ export async function submitRegistration(input: RegistrationInput, now: Date = n
         contactPhone: input.contactPhone,
         contactEmail: input.contactEmail,
         website: input.website,
-        programNumbers: input.programNumbers,
         officerName: input.officerName,
         officerUsername: input.username,
         officerEmail: input.officerEmail,
@@ -124,8 +139,14 @@ export async function submitRegistration(input: RegistrationInput, now: Date = n
       },
     });
     await audit({ actorId: null, action: "registration.submitted", entityType: "AssociationRegistration", entityId: created.id, after: registrationSnapshot(created) }, tx);
-    return { ok: true, referenceNo };
+    return { ok: true, referenceNo, id: created.id };
   });
+  if (!result.ok) return result;
+  if (logoUploadId) {
+    const logoKey = await commitRegistrationLogo(logoUploadId);
+    if (logoKey) await db.associationRegistration.update({ where: { id: result.id }, data: { logoKey } });
+  }
+  return { ok: true, referenceNo: result.referenceNo };
 }
 
 export type RegistrationLookup = {
@@ -199,9 +220,7 @@ export async function getRegistration(actor: Actor, id: string) {
     omit: { passwordHash: true },
     include: { reviewedBy: { select: { name: true } } },
   });
-  if (!r) return null;
-  const programs = await db.program.findMany({ where: { number: { in: r.programNumbers } }, orderBy: { number: "asc" }, select: { number: true, name: true } });
-  return { ...r, programs };
+  return r;
 }
 
 export type RegistrationDetail = NonNullable<Awaited<ReturnType<typeof getRegistration>>>;
@@ -229,9 +248,21 @@ export async function approveRegistration(actor: Actor, id: string, note: string
         contactName: r.officerName,
         contactEmail: r.contactEmail,
         contactPhone: r.contactPhone,
+        // The logo moves to the association (the application's key is cleared below), so a later
+        // change of the association's logo never leaves the application pointing at a removed file.
+        logoKey: r.logoKey,
       },
     });
-    await audit({ actorId: actor.id, action: "association.created", entityType: "Association", entityId: association.id, after: associationSnapshot(association) }, tx);
+    await audit(
+      {
+        actorId: actor.id,
+        action: "association.created",
+        entityType: "Association",
+        entityId: association.id,
+        after: associationSnapshot(association),
+      },
+      tx,
+    );
 
     const user = await createUserWithPasswordHash(tx, {
       username: r.officerUsername,
@@ -248,7 +279,7 @@ export async function approveRegistration(actor: Actor, id: string, note: string
 
     const updated = await tx.associationRegistration.update({
       where: { id },
-      data: { status: "APPROVED", associationId: association.id, reviewedById: actor.id, reviewedAt: now, decisionNote: note.trim() || null, passwordHash: null },
+      data: { status: "APPROVED", associationId: association.id, reviewedById: actor.id, reviewedAt: now, decisionNote: note.trim() || null, passwordHash: null, logoKey: null },
     });
     await audit(
       { actorId: actor.id, action: "registration.approved", entityType: "AssociationRegistration", entityId: id, before: registrationSnapshot(r), after: registrationSnapshot(updated) },

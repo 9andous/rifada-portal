@@ -45,6 +45,8 @@ npm run lint                # eslint + scripts/check-ui-rules.mjs (emoji, RTL ut
 npm test                    # vitest: unit + integration against rifada_test database
 npm run contrast            # WCAG AA check of design tokens
 npm run docs:permissions    # regenerate docs/PERMISSIONS.md after changing the matrix
+npm run seal:keygen         # print a new SEAL_PRIVATE_KEY for .env (electronic seals, D-122)
+npm run seal:backfill       # seal evaluations/approvals recorded before seals existed (one-off)
 npm run build
 ```
 

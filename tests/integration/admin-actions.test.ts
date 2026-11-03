@@ -40,6 +40,7 @@ function signInAs(role: Role) {
     email: user.email,
     mustChangePassword: false,
     associationName: null,
+    imageUrl: null,
   };
 }
 
@@ -136,7 +137,7 @@ describe("Phase 2a server actions", () => {
     signInAs("SUPER_ADMIN");
     const result = await createUserAction({}, form({ username: "x", name: "", role: "SUPERVISOR" }));
     expect(result.ok).toBe(false);
-    expect(Object.keys(result.errors ?? {}).sort()).toEqual(["name", "programIds", "username"]);
+    expect(Object.keys(result.errors ?? {}).sort()).toEqual(["name", "trackIds", "username"]);
     const officer = await createAssociationAction({}, (() => {
       const fd = associationForm("جمعية");
       fd.set("createOfficer", "on");

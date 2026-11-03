@@ -6,7 +6,8 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline" | "gold"
 type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-primary text-primary-ink hover:bg-primary-hover",
+  /** The main filled action: gold #8a6f2e across the platform (owner's request, D-109). */
+  primary: "bg-gold-action text-on-gold-action hover:bg-gold-action-hover",
   secondary: "bg-primary-soft text-primary-soft-ink hover:bg-surface-sunken",
   outline: "border border-line-strong bg-surface text-ink hover:border-primary hover:text-primary",
   ghost: "text-primary hover:bg-primary-soft",
@@ -21,7 +22,7 @@ const variants: Record<Variant, string> = {
 };
 
 const sizes: Record<Size, string> = {
-  sm: "h-[34px] gap-1.5 rounded-sm px-3 text-[0.8125rem]",
+  sm: "h-[34px] gap-1.5 rounded-sm px-3 text-sm",
   md: "h-[42px] gap-2 rounded-md px-[18px] text-sm",
   lg: "h-[50px] gap-2 rounded-md px-6 text-base",
 };
@@ -36,7 +37,7 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 export function buttonClasses(variant: Variant = "primary", size: Size = "md", className?: string) {
   return cn(
     "inline-flex shrink-0 items-center justify-center font-semibold whitespace-nowrap transition-colors active:translate-y-px",
-    "disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-[17px] [&_svg]:shrink-0",
+    "disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
     variants[variant],
     sizes[size],
     className,

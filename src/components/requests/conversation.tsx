@@ -69,7 +69,7 @@ export function Conversation({
                       onClick={() => setReplyTo({ id: c.id, author: c.author.name, internal: c.isInternal })}
                       className="t-caption inline-flex items-center gap-1 hover:text-ink"
                     >
-                      <CornerDownLeft aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
+                      <CornerDownLeft aria-hidden="true" strokeWidth={1.75} className="size-4" />
                       رد
                     </button>
                   ) : null}

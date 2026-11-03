@@ -2,6 +2,8 @@
 @import "../styles/tokens.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+/* Laptop screens with little height: the sign-in pages drop repeated lines to fit without scrolling. */
+@custom-variant short (@media (max-height: 720px) and (min-width: 64rem));
 
 /* Semantic tokens as Tailwind utilities (bg-surface, text-ink, border-line, bg-band, ...). */
 @theme inline {
@@ -74,6 +76,10 @@
   --shadow-2: var(--shadow-2);
   --shadow-3: var(--shadow-3);
 
+  /* Every transition-* utility uses the shared motion (tokens.css). */
+  --default-transition-duration: var(--motion-duration);
+  --default-transition-timing-function: var(--motion-ease);
+
   --font-sans: var(--font-cairo-digits), var(--font-cairo-arabic), var(--font-cairo-latin), system-ui, sans-serif;
   --font-display: var(--font-sans);
 }
@@ -90,10 +96,11 @@
   --radius-3xl: 24px;
   --radius-4xl: 32px;
 
-  /* Type scale (rem) with line heights suited to Cairo's tall Arabic forms */
-  --text-2xs: 0.75rem;
+  /* Type scale (rem) with line heights suited to Cairo's tall Arabic forms. No running text below
+     0.875rem: the platform's readers include older users (owner's review, D-125). */
+  --text-2xs: 0.875rem;
   --text-2xs--line-height: 1.6;
-  --text-xs: 0.8125rem;
+  --text-xs: 0.875rem;
   --text-xs--line-height: 1.6;
   --text-sm: 0.875rem;
   --text-sm--line-height: 1.7;
@@ -121,6 +128,8 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     font-variant-numeric: tabular-nums;
+    /* Glide to the home sections from the header links (reduced motion turns it off below). */
+    scroll-behavior: smooth;
   }
 
   body {
@@ -129,14 +138,52 @@
     min-height: 100dvh;
   }
 
+  /* Text size (D-102, D-125; components/layout/text-size.tsx). Every size in the interface is in
+     rem, so the root size scales it all. Every area opens at the standard 100%; the user's own
+     choice, stored on the device, can go larger. */
+  html,
+  html[data-text-size="normal"] {
+    font-size: 100%;
+  }
+  html[data-text-size="large"] {
+    font-size: 112.5%;
+  }
+  html[data-text-size="xlarge"] {
+    font-size: 125%;
+  }
+
   :focus-visible {
     outline: 3px solid var(--focus);
     outline-offset: 2px;
   }
 
+  /* One line weight for every Lucide icon (docs/DESIGN.md: Principles), whatever a component
+     passes; sizes follow the role: 16 in text and buttons, 18 in navigation and card headers,
+     20 in tiles and page states (14 only beside 12–13px captions). */
+  svg.lucide {
+    stroke-width: 1.75;
+  }
+
   ::selection {
     background: var(--accent-soft);
     color: var(--ink);
+  }
+
+  /* Reduced motion: no transitions, animations or hover lifts. Spinners keep turning, because
+     they are the only sign that something is still loading. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    *:not(.animate-spin),
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
   }
 }
 
@@ -146,6 +193,11 @@
   @page {
     size: A4 landscape;
     margin: 12mm;
+  }
+  /* Paper keeps the original scale; the larger screen default (D-125) is for reading on screen. */
+  html,
+  html[data-text-size] {
+    font-size: 100%;
   }
   html,
   body {
@@ -192,15 +244,41 @@
     mask-repeat: no-repeat;
   }
 
-  /* Content fades up on page entry (300ms), except for users who ask for reduced motion. */
+  /* The values photograph cut to the outer silhouette of the rosary frame (public/brand/masba7a.png). */
+  .masba7a-mask {
+    mask-image: url("/brand/masba7a-mask.png");
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+  }
+
+  /* Visible width of the registration page's vision wheel (registration/vision-wheel.tsx); the
+     form beside it is inset by the same amount. Used from xl only. */
+  .wheel-scope {
+    --wheel: 360px;
+  }
+  @media (min-width: 96rem) {
+    .wheel-scope {
+      --wheel: 400px;
+    }
+  }
+
+  /* Content fades up on page entry (300ms), staggered: head, then key figures (-1), then the
+     body (-2). Off for users who ask for reduced motion. */
   .fade-up {
-    animation: fade-up 0.3s ease both;
+    animation: fade-up 0.3s var(--motion-ease) both;
+  }
+  .fade-up-1 {
+    animation-delay: 70ms;
+  }
+  .fade-up-2 {
+    animation-delay: 140ms;
   }
   @media (prefers-reduced-motion: reduce) {
     .fade-up {
       animation: none;
     }
   }
+
 
   .t-page {
     font-size: 2rem;
@@ -215,7 +293,7 @@
     color: var(--ink);
   }
   .t-label {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.5;
     font-weight: 600;
     color: var(--ink-subtle);
@@ -239,9 +317,62 @@
     color: var(--ink);
   }
   .t-caption {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     line-height: 1.55;
     color: var(--ink-subtle);
+  }
+
+  /* Data tables (DataTable): a hairline between columns so each field reads as its own cell
+     (owner's review, 2026-11-01). Cells pad on the start side to clear the line. */
+  [data-table] th + th,
+  [data-table] td + td {
+    border-inline-start: 1px solid var(--line);
+    padding-inline-start: 1rem;
+  }
+}
+
+/*
+ * Card hover states sit outside the layers on purpose: unlayered rules win over Tailwind's
+ * utilities, so a card's own border-line or shadow-1 class cannot cancel the hover.
+ */
+/* Key-figure tiles (docs/DESIGN.md: Interactive cards): on hover the border turns green in
+   light and gold in dark, with no lift or shadow change unless the tile is also a .card-link.
+   Information cards do not react to hover. */
+.card-hover {
+  transition-property: border-color, box-shadow, background-color, translate;
+  transition-duration: var(--motion-duration);
+  transition-timing-function: var(--motion-ease);
+}
+.card-hover:hover {
+  border-color: var(--primary);
+}
+[data-theme="dark"] .card-hover:hover {
+  border-color: var(--accent);
+}
+
+/* Interactive card (docs/DESIGN.md: Cards and content): every card that is a link or a
+   selectable option. Hover: border green in light and gold in dark, raised shadow, 1px lift.
+   Keyboard focus draws the ring inside the card. */
+.card-link {
+  transition-property: border-color, box-shadow, background-color, translate;
+  transition-duration: var(--motion-duration);
+  transition-timing-function: var(--motion-ease);
+}
+.card-link:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-2);
+  translate: 0 -1px;
+}
+[data-theme="dark"] .card-link:hover {
+  border-color: var(--accent);
+}
+.card-link:focus-visible,
+.card-link :focus-visible {
+  outline-offset: -3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-link:hover {
+    translate: none;
   }
 }
 
@@ -253,5 +384,84 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Pop-up (docs/DESIGN.md: Pop-ups, D-124): the card scales in, its status badge bumps, the ring
+   draws itself, then the tick (or the mark) follows. Off under prefers-reduced-motion. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pop-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes mark-bump {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes mark-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes mark-dot {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+.pop-overlay {
+  animation: pop-fade 0.2s var(--motion-ease) both;
+}
+.pop-in {
+  animation: pop-in 0.2s var(--motion-ease) both;
+}
+.mark-pop {
+  animation: mark-bump 0.45s var(--motion-ease) both;
+}
+.mark-ring {
+  stroke-dasharray: 145;
+  stroke-dashoffset: 145;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  animation: mark-draw 0.5s 0.1s ease-out forwards;
+}
+.mark-stroke {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 32;
+  animation: mark-draw 0.35s 0.55s ease-out forwards;
+}
+.mark-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mark-dot 0.2s 0.85s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop-overlay,
+  .pop-in,
+  .mark-pop,
+  .mark-ring,
+  .mark-stroke,
+  .mark-dot {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { Field, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/form-bits";
-import { Alert, SectionTitle } from "@/components/ui/surface";
+import { FormError, SectionTitle } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import { SETTING_LABELS } from "@/lib/audit-labels";
 import { toArabicDigits } from "@/lib/format";
@@ -62,11 +62,7 @@ export function SettingsForm({
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col">
-      {state.message ? (
-        <Alert tone={state.ok ? "success" : "danger"} className="mb-6">
-          {state.message}
-        </Alert>
-      ) : null}
+      {state.message && !state.ok ? <FormError className="mb-6">{state.message}</FormError> : null}
 
       <Group title="مهلة المراجعة" description="تُحسب من تقديم الطلب بأيام العمل (الأحد إلى الخميس)، وتُستعمل في احتساب الطلبات المتأخرة.">
         {number("sla.workingDays", SETTING_LIMITS.sla, "بأيام العمل")}

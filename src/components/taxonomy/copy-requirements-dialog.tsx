@@ -6,7 +6,8 @@ import { useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
-import { Alert } from "@/components/ui/surface";
+import { FormError } from "@/components/ui/surface";
+import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/cn";
 import { formatNumber, toArabicDigits } from "@/lib/format";
 import { copyRequirementsAction, previewCopyAction, type CopyPreviewState } from "@/server/actions/admin/requirements";
@@ -78,21 +79,12 @@ export function CopyRequirementsDialog({ sourceId, programs, sourceCount }: { so
             لهذه المبادرة {formatNumber(sourceCount)} من المتطلبات. ستصبح متطلبات كل مبادرة مختارة مطابقة لها تمامًا، وتُحذف متطلباتها الحالية التي لا توجد هنا.
           </Dialog.Description>
 
-          {result?.ok ? (
-            <div className="mt-5 flex flex-col gap-4">
-              <Alert tone="success">{result.message}</Alert>
-              <div className="flex justify-end">
-                <Dialog.Close asChild>
-                  <Button variant="primary">تم</Button>
-                </Dialog.Close>
-              </div>
-            </div>
-          ) : preview?.ok && preview.items ? (
+          {preview?.ok && preview.items ? (
             <div className="mt-5 flex flex-col gap-4">
               {preview.items.length === 0 ? (
-                <Alert tone="warning">لا توجد مبادرات مستهدفة (المبادرات المؤرشفة والمبادرة الحالية مستثناة).</Alert>
+                <p className="text-sm text-ink-muted">لا توجد مبادرات مستهدفة (المبادرات المؤرشفة والمبادرة الحالية مستثناة).</p>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="relative overflow-x-auto">
                   <table className="t-table w-full min-w-[40rem] border-collapse text-sm">
                     <caption className="sr-only">معاينة النسخ</caption>
                     <thead className="bg-surface-muted">
@@ -129,7 +121,7 @@ export function CopyRequirementsDialog({ sourceId, programs, sourceCount }: { so
                   </table>
                 </div>
               )}
-              {result && !result.ok ? <Alert tone="danger">{result.message}</Alert> : null}
+              {result && !result.ok ? <FormError>{result.message}</FormError> : null}
               <div className="flex justify-between gap-3">
                 <Button variant="ghost" disabled={pending} onClick={() => setPreview(null)}>
                   رجوع إلى الاختيار
@@ -137,7 +129,16 @@ export function CopyRequirementsDialog({ sourceId, programs, sourceCount }: { so
                 <Button
                   variant="danger"
                   disabled={pending || preview.items.length === 0}
-                  onClick={() => start(async () => setResult(await copyRequirementsAction(sourceId, target)))}
+                  onClick={() =>
+                    start(async () => {
+                      const r = await copyRequirementsAction(sourceId, target);
+                      setResult(r);
+                      if (r.ok) {
+                        setOpen(false);
+                        if (r.message) toast(r.message);
+                      }
+                    })
+                  }
                 >
                   {pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : null}
                   تأكيد النسخ إلى {formatNumber(preview.items.length)}
@@ -203,7 +204,7 @@ export function CopyRequirementsDialog({ sourceId, programs, sourceCount }: { so
                   <p className="t-caption">المختارة: {formatNumber(selected.length)}</p>
                 </>
               )}
-              {preview && !preview.ok ? <Alert tone="danger">{preview.message}</Alert> : null}
+              {preview && !preview.ok ? <FormError>{preview.message}</FormError> : null}
               <div className="flex justify-end gap-3">
                 <Dialog.Close asChild>
                   <Button variant="ghost">إلغاء</Button>

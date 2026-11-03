@@ -86,19 +86,27 @@ describe("users: permissions", () => {
 
   it("lets the super admin list, filter, sort and page users", async () => {
     for (let i = 0; i < 22; i++) await makeUser("SUPERVISOR", { username: `bulk.sup.${String(i).padStart(2, "0")}` });
+    // The default tab lists the platform's team; the one association officer has its own tab.
     const all = await listUsers(admin, parseUserListParams({}));
-    expect(all.total).toBe(26);
+    expect(all.total).toBe(25);
     expect(all.items).toHaveLength(20);
+    expect(all.items.every((u) => u.role !== "ASSOCIATION_OFFICER")).toBe(true);
     expect(all.pageCount).toBe(2);
     const second = await listUsers(admin, parseUserListParams({ page: "2" }));
-    expect(second.items).toHaveLength(6);
+    expect(second.items).toHaveLength(5);
+
+    const officers = await listUsers(admin, parseUserListParams({ tab: "officers" }));
+    expect(officers.items.map((u) => u.role)).toEqual(["ASSOCIATION_OFFICER"]);
+    // The role filter cannot pull officers into the team tab, nor staff into the officers tab.
+    expect((await listUsers(admin, parseUserListParams({ role: "ASSOCIATION_OFFICER" }))).total).toBe(25);
+    expect((await listUsers(admin, parseUserListParams({ tab: "officers", role: "SUPERVISOR" }))).total).toBe(1);
 
     const sup = await listUsers(admin, parseUserListParams({ role: "SUPERVISOR", q: "bulk.sup.0", sort: "username", dir: "desc" }));
     expect(sup.items.map((u) => u.username)).toEqual(Array.from({ length: 10 }, (_, i) => `bulk.sup.0${9 - i}`));
 
-    const byProgram = await listUsers(admin, parseUserListParams({ program: ctx.programs[0].id }));
-    expect(byProgram.items.map((u) => u.id)).toEqual([ctx.users.supervisor.id]);
-    expect(byProgram.items[0].programNumbers).toEqual([1]);
+    const byTrack = await listUsers(admin, parseUserListParams({ track: ctx.tracks[0].id }));
+    expect(byTrack.items.map((u) => u.id)).toEqual([ctx.users.supervisor.id]);
+    expect(byTrack.items[0].trackNumbers).toEqual([1]);
   });
 });
 
@@ -119,14 +127,14 @@ describe("users: create", () => {
     await expectNoSecretsInAudit(result.password);
   });
 
-  it("assigns supervisors to one or more programs and refuses unknown programs", async () => {
-    const ok = await createUser(admin, userInput({ role: "SUPERVISOR", programIds: [ctx.programs[1].id, ctx.programs[3].id] }));
+  it("assigns supervisors to one or more tracks and refuses unknown tracks", async () => {
+    const ok = await createUser(admin, userInput({ role: "SUPERVISOR", trackIds: [ctx.tracks[1].id, ctx.tracks[3].id] }));
     if (!ok.ok) throw new Error("expected ok");
-    expect((await db.supervisorProgram.findMany({ where: { userId: ok.userId } })).map((p) => p.programId).sort()).toEqual(
-      [ctx.programs[1].id, ctx.programs[3].id].sort(),
+    expect((await db.supervisorTrack.findMany({ where: { userId: ok.userId } })).map((t) => t.trackId).sort()).toEqual(
+      [ctx.tracks[1].id, ctx.tracks[3].id].sort(),
     );
-    const bad = await createUser(admin, userInput({ role: "SUPERVISOR", programIds: ["missing"] }));
-    expect(bad).toMatchObject({ ok: false, errors: { programIds: expect.any(String) } });
+    const bad = await createUser(admin, userInput({ role: "SUPERVISOR", trackIds: ["missing"] }));
+    expect(bad).toMatchObject({ ok: false, errors: { trackIds: expect.any(String) } });
   });
 
   it("refuses duplicate usernames and emails", async () => {
@@ -161,7 +169,7 @@ describe("users: create", () => {
     const free = await makeAssociation("جمعية متاحة");
     const options = await userFormOptions(admin);
     expect(options.associations.map((a) => a.id)).toEqual([free.id]);
-    expect(options.programs).toHaveLength(7);
+    expect(options.tracks).toHaveLength(5);
     expect((await userFormOptions(admin, ctx.association.id)).associations.map((a) => a.id).sort()).toEqual([free.id, ctx.association.id].sort());
   });
 });
@@ -196,7 +204,7 @@ describe("users: update rules", () => {
 
   it("refuses converting an officer to staff and staff to an officer", async () => {
     const officer = ctx.users.officer;
-    expect(await updateUser(admin, officer.id, userInput({ username: officer.username, role: "SUPERVISOR", programIds: [ctx.programs[0].id] }))).toMatchObject({
+    expect(await updateUser(admin, officer.id, userInput({ username: officer.username, role: "SUPERVISOR", trackIds: [ctx.tracks[0].id] }))).toMatchObject({
       ok: false,
       errors: { role: expect.any(String) },
     });
@@ -206,20 +214,20 @@ describe("users: update rules", () => {
     ).toMatchObject({ ok: false, errors: { role: expect.any(String) } });
   });
 
-  it("changes staff roles, replaces supervisor programs and audits before and after", async () => {
+  it("changes staff roles, replaces supervisor tracks and audits before and after", async () => {
     const sup = ctx.users.supervisor;
-    const result = await updateUser(admin, sup.id, userInput({ username: sup.username, name: "اسم جديد", role: "SUPERVISOR", programIds: [ctx.programs[2].id] }));
+    const result = await updateUser(admin, sup.id, userInput({ username: sup.username, name: "اسم جديد", role: "SUPERVISOR", trackIds: [ctx.tracks[2].id] }));
     expect(result.ok).toBe(true);
-    expect((await db.supervisorProgram.findMany({ where: { userId: sup.id } })).map((p) => p.programId)).toEqual([ctx.programs[2].id]);
+    expect((await db.supervisorTrack.findMany({ where: { userId: sup.id } })).map((t) => t.trackId)).toEqual([ctx.tracks[2].id]);
 
     expect((await updateUser(admin, sup.id, userInput({ username: sup.username, name: "اسم جديد", role: "UNIT_MANAGER" }))).ok).toBe(true);
-    expect(await db.supervisorProgram.count({ where: { userId: sup.id } })).toBe(0);
+    expect(await db.supervisorTrack.count({ where: { userId: sup.id } })).toBe(0);
 
     const entries = await db.auditLog.findMany({ where: { action: "user.updated", entityId: sup.id }, orderBy: { createdAt: "asc" } });
     expect(entries).toHaveLength(2);
-    expect(entries[0].before).toMatchObject({ programIds: [ctx.programs[0].id] });
-    expect(entries[0].after).toMatchObject({ name: "اسم جديد", programIds: [ctx.programs[2].id] });
-    expect(entries[1].after).toMatchObject({ role: "UNIT_MANAGER", programIds: [] });
+    expect(entries[0].before).toMatchObject({ trackIds: [ctx.tracks[0].id] });
+    expect(entries[0].after).toMatchObject({ name: "اسم جديد", trackIds: [ctx.tracks[2].id] });
+    expect(entries[1].after).toMatchObject({ role: "UNIT_MANAGER", trackIds: [] });
     await expectNoSecretsInAudit();
   });
 });

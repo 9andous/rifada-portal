@@ -2,6 +2,7 @@ import * as z from "zod";
 import { isValidDateOnly } from "../completeness";
 import { toArabicDigits } from "../format";
 import { GENERAL_FIELD_LABELS } from "../requests";
+import { toWesternDigits } from "./admin";
 
 // Request form, decision, reassignment and comment inputs. Saving a draft only enforces lengths and
 // well-formed dates; what is required is decided by the completeness check at submission.
@@ -10,7 +11,13 @@ export const REQUEST_LIMITS = {
   title: 200,
   description: 5000,
   targetAudience: 300,
+  goals: 2000,
   location: 300,
+  kpis: 1000,
+  partners: 500,
+  beneficiaries: 2000,
+  /** An upper bound that catches a mistyped figure. */
+  budget: 100_000_000_000,
   customText: 500,
   customLong: 5000,
   reason: 2000,
@@ -28,33 +35,55 @@ const dateOnly = (label: string) =>
     .trim()
     .refine((v) => v === "" || isValidDateOnly(v), `${label} غير صالح.`);
 
+/** A whole number typed with Western or Arabic-Indic digits and optional thousands separators; empty is null. */
+const wholeNumber = (label: string, max: number) =>
+  z
+    .string()
+    .trim()
+    .transform((v, ctx) => {
+      if (v === "") return null;
+      const normalized = toWesternDigits(v).replace(/[٬,\s]/g, "");
+      if (!/^\d+$/.test(normalized) || Number(normalized) > max) {
+        ctx.addIssue({ code: "custom", message: `${label}: اكتبوا رقمًا صحيحًا فقط.` });
+        return z.NEVER;
+      }
+      return Number(normalized);
+    });
+
+/** An id from the form; empty keeps the request's current choice. */
+const choice = (message: string) => z.string().trim().max(40, message).default("");
+
 export const draftSchema = z.object({
+  trackId: choice("المسار المختار غير صالح."),
+  requestTypeId: choice("نوع الطلب المختار غير صالح."),
   title: text(GENERAL_FIELD_LABELS.title, REQUEST_LIMITS.title),
   description: text(GENERAL_FIELD_LABELS.description, REQUEST_LIMITS.description),
-  targetAudience: text(GENERAL_FIELD_LABELS.targetAudience, REQUEST_LIMITS.targetAudience),
-  location: text(GENERAL_FIELD_LABELS.location, REQUEST_LIMITS.location),
+  goals: text(GENERAL_FIELD_LABELS.goals, REQUEST_LIMITS.goals),
+  expectedBeneficiaries: text(GENERAL_FIELD_LABELS.expectedBeneficiaries, REQUEST_LIMITS.beneficiaries),
   startDate: dateOnly(GENERAL_FIELD_LABELS.startDate),
   endDate: dateOnly(GENERAL_FIELD_LABELS.endDate),
-  custom: z.record(z.string(), z.string().trim().max(REQUEST_LIMITS.customLong, tooLong("قيمة الحقل", REQUEST_LIMITS.customLong))),
+  estimatedBudget: wholeNumber(GENERAL_FIELD_LABELS.estimatedBudget, REQUEST_LIMITS.budget),
+  kpis: text(GENERAL_FIELD_LABELS.kpis, REQUEST_LIMITS.kpis),
+  partners: text(GENERAL_FIELD_LABELS.partners, REQUEST_LIMITS.partners),
 });
 
 export type DraftInput = z.infer<typeof draftSchema>;
 
-/** Reads the request form: general fields by name, initiative fields as `custom.<key>`. */
+/** Reads the request form, field by name. */
 export function draftFromForm(formData: FormData): Record<string, unknown> {
-  const custom: Record<string, string> = {};
-  for (const [name, value] of formData.entries()) {
-    if (name.startsWith("custom.") && typeof value === "string") custom[name.slice("custom.".length)] = value;
-  }
   const get = (name: string) => String(formData.get(name) ?? "");
   return {
+    trackId: get("trackId"),
+    requestTypeId: get("requestTypeId"),
     title: get("title"),
     description: get("description"),
-    targetAudience: get("targetAudience"),
-    location: get("location"),
+    goals: get("goals"),
+    expectedBeneficiaries: get("expectedBeneficiaries"),
     startDate: get("startDate"),
     endDate: get("endDate"),
-    custom,
+    estimatedBudget: get("estimatedBudget"),
+    kpis: get("kpis"),
+    partners: get("partners"),
   };
 }
 

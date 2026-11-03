@@ -35,7 +35,7 @@ export default async function AdminTemplatePage({ params }: PageProps<"/admin/ta
     <>
       <PageBand
         compact
-        eyebrow="النماذج"
+        eyebrow="الأدلة والنماذج"
         title={template.title}
         lead={template.description ?? undefined}
         actions={
@@ -61,6 +61,7 @@ export default async function AdminTemplatePage({ params }: PageProps<"/admin/ta
                   mode="edit"
                   action={updateTemplateAction.bind(null, template.id)}
                   defaults={{
+                    kind: template.kind,
                     title: template.title,
                     description: template.description ?? "",
                     programId: template.programId ?? "",
@@ -76,7 +77,7 @@ export default async function AdminTemplatePage({ params }: PageProps<"/admin/ta
             </Panel>
             <Panel>
               <PanelHeader title="سجل الإصدارات" description="كل ملف رُفع لهذا النموذج. الإصدارات السابقة لا تُحذف ولا يُنزّلها إلا مدير النظام." />
-              <div className="overflow-x-auto">
+              <div className="relative overflow-x-auto">
                 <table className="t-table w-full min-w-[40rem] border-collapse">
                   <caption className="sr-only">إصدارات الملف</caption>
                   <thead className="bg-surface-muted">
@@ -114,7 +115,7 @@ export default async function AdminTemplatePage({ params }: PageProps<"/admin/ta
                         <td className="py-3 pe-4 align-top text-sm">
                           {f.uploadedBy.name}
                           <span className="t-caption mt-0.5 block">
-                            <DateDisplay date={f.createdAt} withTime />
+                            <DateDisplay date={f.createdAt} variant="hijri" />
                           </span>
                         </td>
                         <td className="py-1.5 pe-6 align-top">

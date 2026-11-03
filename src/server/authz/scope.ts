@@ -9,8 +9,8 @@ export type Actor = {
   id: string;
   role: Role;
   associationId: string | null;
-  /** Program ids the supervisor is assigned to. Empty for other roles. */
-  programIds: readonly string[];
+  /** Track ids the supervisor covers (D-123). Empty for other roles. */
+  trackIds: readonly string[];
 };
 
 /** Matches nothing. Used when an action is denied so callers can still run a safe query. */
@@ -33,8 +33,8 @@ export function scopeRequests(actor: Actor, action: Action = "requests.read"): P
   switch (scopeFor(actor.role, action)) {
     case "all":
       return { ...SUBMITTED_ONLY };
-    case "programs":
-      return { ...SUBMITTED_ONLY, programId: { in: [...actor.programIds] } };
+    case "tracks":
+      return { ...SUBMITTED_ONLY, trackId: { in: [...actor.trackIds] } };
     case "own":
       return actor.associationId ? { associationId: actor.associationId } : NONE;
     default:
@@ -46,8 +46,8 @@ export function scopeAssociations(actor: Actor): Prisma.AssociationWhereInput {
   switch (scopeFor(actor.role, "associations.read")) {
     case "all":
       return {};
-    case "programs":
-      return { requests: { some: { ...SUBMITTED_ONLY, programId: { in: [...actor.programIds] } } } };
+    case "tracks":
+      return { requests: { some: { ...SUBMITTED_ONLY, trackId: { in: [...actor.trackIds] } } } };
     case "own":
       return actor.associationId ? { id: actor.associationId } : NONE;
     default:

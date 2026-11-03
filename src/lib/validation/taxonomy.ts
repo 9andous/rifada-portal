@@ -48,6 +48,20 @@ export const objectiveFormSchema = z.object({
 });
 export type ObjectiveFormInput = z.infer<typeof objectiveFormSchema>;
 
+/** A track of technical supervision (D-119): its number is given in order and never changes. */
+export const trackFormSchema = z.object({
+  name: text(3, 200, "أدخل اسم المسار.", "اسم المسار طويل جدًا."),
+  description: optionalLong(2000, "الوصف"),
+});
+export type TrackFormInput = z.infer<typeof trackFormSchema>;
+
+/** «نوع الطلب» (D-123). */
+export const requestTypeFormSchema = z.object({
+  name: text(3, 100, "أدخل اسم نوع الطلب.", "اسم نوع الطلب طويل جدًا."),
+  description: optionalLong(500, "الوصف"),
+});
+export type RequestTypeFormInput = z.infer<typeof requestTypeFormSchema>;
+
 /** Keys are Latin, lower case, start with a letter; they become stable identifiers and never change. */
 export const KEY_PATTERN = /^[a-z][a-z0-9_]{1,39}$/;
 const keySchema = z
@@ -73,9 +87,10 @@ export type AttachmentTypeUpdateInput = z.infer<typeof attachmentTypeUpdateSchem
 
 /** The general request fields every request has; they are fixed and cannot be redefined per initiative. */
 export const GENERAL_REQUEST_FIELDS = [
-  { key: "title", label: "عنوان الطلب" },
-  { key: "description", label: "الوصف" },
+  { key: "title", label: "اسم المشروع" },
+  { key: "description", label: "وصف المشروع" },
   { key: "targetAudience", label: "الفئة المستهدفة" },
+  { key: "goals", label: "أهداف البرنامج" },
   { key: "location", label: "مكان التنفيذ" },
   { key: "startDate", label: "تاريخ البداية" },
   { key: "endDate", label: "تاريخ النهاية" },

@@ -1,18 +1,17 @@
 import { ExternalLink } from "lucide-react";
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { Logo } from "@/components/brand/logo";
+import { Logo, PresidencyLogo } from "@/components/brand/logo";
 import { brand } from "@/config/brand";
+import { SectionLink } from "./section-link";
 
-const COLUMNS: { title: string; links: { label: string; href: string; external?: boolean }[] }[] = [
+const COLUMNS: { title: string; links: { label: string; href: string; external?: boolean }[]; after?: ReactNode }[] = [
   {
     title: "عن المنصة",
     links: [
-      { label: "مبادرة الإشراف الفني", href: "/#initiative" },
+      { label: "القيادة", href: "/#leadership" },
       { label: "الرؤية والرسالة", href: "/#vision" },
       { label: "القيم", href: "/#values" },
-      { label: "الأهداف الاستراتيجية", href: "/#objectives" },
-      { label: "برامج الرئاسة", href: "/#programs" },
+      { label: "مبادرة الإشراف الفني", href: "/#initiative" },
     ],
   },
   {
@@ -20,22 +19,24 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
     links: [
       { label: "تسجيل جمعية", href: "/register" },
       { label: "متابعة طلب التسجيل", href: "/register/status" },
+      { label: "التحقق من وثيقة", href: "/verify" },
       { label: "تسجيل الدخول", href: "/login" },
       { label: "استعادة كلمة المرور", href: "/forgot-password" },
-      { label: "كيف يعمل الإشراف", href: "/#how" },
     ],
   },
   {
     title: "الرئاسة",
     links: [{ label: "الموقع الرسمي للرئاسة", href: brand.presidencyUrl, external: true }],
+    after: <PresidencyLogo tone="onDark" height={72} className="mt-5" />,
   },
 ];
 
 /** Dark footer of the public pages (docs/DESIGN.md: Footer). */
 export function SiteFooter() {
   return (
-    <footer data-print="hide" className="mt-auto bg-band-deep text-sm text-band-ink-muted">
-      <div className="mx-auto max-w-[1360px] px-4 sm:px-8">
+    <footer data-print="hide" className="relative mt-auto overflow-hidden bg-band-deep text-sm text-band-ink-muted">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[url('/brand/bg-pattern.png')] bg-[length:120px_120px] bg-repeat opacity-[0.06]" />
+      <div className="relative mx-auto max-w-[1360px] px-4 sm:px-8">
         <div className="grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <Logo tone="onDark" height={64} />
@@ -56,13 +57,14 @@ export function SiteFooter() {
                         <span className="sr-only">(يفتح في نافذة جديدة)</span>
                       </a>
                     ) : (
-                      <Link href={l.href} className="hover:text-band-gold">
+                      <SectionLink href={l.href} className="hover:text-band-gold">
                         {l.label}
-                      </Link>
+                      </SectionLink>
                     )}
                   </li>
                 ))}
               </ul>
+              {col.after}
             </div>
           ))}
         </div>
@@ -75,8 +77,8 @@ export function SiteFooter() {
 /** Copyright bar; on its own it is the footer of the signed-in screens. */
 export function FooterBar({ children }: { children?: ReactNode }) {
   return (
-    <div className="border-t border-white/10">
-      <div className="mx-auto flex max-w-[1360px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-[0.8125rem] text-band-ink-muted sm:px-8">
+    <div className="relative border-t border-white/10">
+      <div className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 py-4 text-center text-sm text-band-ink-muted sm:px-8">
         <span>جميع الحقوق محفوظة — {brand.presidencyName}</span>
         {children}
       </div>
@@ -84,10 +86,16 @@ export function FooterBar({ children }: { children?: ReactNode }) {
   );
 }
 
-/** Footer of the signed-in screens: the copyright bar only, so data screens stay dense. */
+/**
+ * Footer of the signed-in and login screens: the Presidency's white logo above the copyright bar
+ * (owner's request, 2026-10-28), kept compact so data screens stay dense.
+ */
 export function AppFooter() {
   return (
     <footer data-print="hide" className="mt-auto bg-band-deep">
+      <div className="flex justify-center pb-1 pt-5">
+        <PresidencyLogo tone="onDark" height={56} />
+      </div>
       <FooterBar />
     </footer>
   );

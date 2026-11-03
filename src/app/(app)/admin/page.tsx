@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Building2, History, Layers, ScrollText, Settings, Target, UserPlus, Users } from "lucide-react";
-import { QuickActions } from "@/components/dashboard/quick-actions";
+import { History } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { BandDate } from "@/components/dashboard/band-date";
+import { ProgramsCard, TracksCard } from "@/components/dashboard/cards";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { buttonClasses } from "@/components/ui/button";
@@ -14,13 +14,14 @@ import { formatNumber, greeting } from "@/lib/format";
 import { requireUser } from "@/server/auth/session";
 import { ROLE_LABELS, ROLES } from "@/server/authz/roles";
 import { db } from "@/server/db";
+import { getByProgram, getByTrack } from "@/server/services/dashboard";
 
 export const metadata: Metadata = { title: "إدارة النظام" };
 
 export default async function AdminDashboard() {
   const user = await requireUser();
   const now = new Date();
-  const [usersByRole, associations, programs, initiatives, objectives, recentAudit] = await Promise.all([
+  const [usersByRole, associations, programs, initiatives, objectives, recentAudit, byProgram, byTrack] = await Promise.all([
     db.user.groupBy({ by: ["role"], where: { isActive: true }, _count: { _all: true } }),
     db.association.count({ where: { isActive: true } }),
     db.program.count({ where: { archivedAt: null } }),
@@ -31,6 +32,8 @@ export default async function AdminDashboard() {
       take: 8,
       select: { id: true, action: true, createdAt: true, actor: { select: { name: true } } },
     }),
+    getByProgram(user),
+    getByTrack(user),
   ]);
   const roleCount = (role: string) => usersByRole.find((r) => r.role === role)?._count._all ?? 0;
   const totalUsers = usersByRole.reduce((sum, r) => sum + r._count._all, 0);
@@ -46,27 +49,23 @@ export default async function AdminDashboard() {
         figures={
           <BandFigures
             items={[
-              { label: "المستخدمون النشطون", value: formatNumber(totalUsers), caption: "في جميع الأدوار", icon: <Users strokeWidth={1.75} />, href: "/admin/users" },
-              { label: "الجمعيات النشطة", value: formatNumber(associations), caption: "حساب واحد لكل جمعية", icon: <Building2 strokeWidth={1.75} />, href: "/admin/associations" },
-              { label: "البرامج", value: formatNumber(programs), caption: `المبادرات: ${formatNumber(initiatives)}`, icon: <Layers strokeWidth={1.75} />, tone: "gold", href: "/admin/taxonomy" },
-              { label: "الأهداف الإستراتيجية", value: formatNumber(objectives), caption: "من إستراتيجية الرئاسة", icon: <Target strokeWidth={1.75} />, tone: "gold", href: "/admin/taxonomy/objectives" },
+              { label: "المستخدمون النشطون", value: formatNumber(totalUsers), caption: "في جميع الأدوار", href: "/admin/users" },
+              { label: "الجمعيات النشطة", value: formatNumber(associations), caption: "حساب واحد لكل جمعية", href: "/admin/associations" },
+              { label: "البرامج", value: formatNumber(programs), caption: `المبادرات: ${formatNumber(initiatives)}`, href: "/admin/taxonomy" },
+              { label: "الأهداف الإستراتيجية", value: formatNumber(objectives), caption: "من إستراتيجية الرئاسة", href: "/admin/taxonomy/objectives" },
             ]}
           />
         }
       />
       <PageBody className="flex flex-col gap-5">
-        <QuickActions
-          items={[
-            { label: "إضافة مستخدم", hint: "حساب جديد بدور محدد", href: "/admin/users/new", icon: <UserPlus strokeWidth={1.75} /> },
-            { label: "إضافة جمعية", hint: "ملف الجمعية ومسؤولها", href: "/admin/associations/new", icon: <Building2 strokeWidth={1.75} /> },
-            { label: "البرامج والمبادرات", hint: "البرامج والمتطلبات", href: "/admin/taxonomy", icon: <Layers strokeWidth={1.75} />, tone: "gold" },
-            { label: "الإعدادات", hint: "المهل والحالات والقيود", href: "/admin/settings", icon: <Settings strokeWidth={1.75} />, tone: "gold" },
-            { label: "سجل التدقيق", hint: "كل العمليات المسجلة", href: "/admin/audit", icon: <ScrollText strokeWidth={1.75} />, tone: "gold" },
-          ]}
-        />
+        {/* The requests per programme and per track, as on the unit manager's home (owner's request). */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr]">
+          <ProgramsCard rows={byProgram} hrefBase="/admin/requests" />
+          <TracksCard data={byTrack} tracksHref="/admin/taxonomy/tracks" />
+        </div>
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.4fr]">
           <Panel>
-            <PanelHeader icon={<Users strokeWidth={1.75} />} title="المستخدمون حسب الدور" description="الحسابات النشطة" />
+            <PanelHeader title="المستخدمون حسب الدور" description="الحسابات النشطة" />
             <ul className="flex flex-col gap-4 px-6 pb-6">
               {ROLES.map((role) => (
                 <li key={role} className="grid grid-cols-[8rem_1fr_2.5rem] items-center gap-4 text-sm">
@@ -82,7 +81,6 @@ export default async function AdminDashboard() {
 
           <Panel>
             <PanelHeader
-              icon={<History strokeWidth={1.75} />}
               title="آخر العمليات المسجلة"
               description="من سجل التدقيق"
               actions={
@@ -98,7 +96,7 @@ export default async function AdminDashboard() {
                 </span>
                 <div>
                   <p className="text-sm font-bold">لا توجد عمليات مسجلة بعد</p>
-                  <p className="t-caption mt-0.5 text-[0.8125rem]">تُسجَّل هنا عمليات الدخول وتعديل البيانات فور حدوثها.</p>
+                  <p className="t-caption mt-0.5 text-sm">تُسجَّل هنا عمليات الدخول وتعديل البيانات فور حدوثها.</p>
                 </div>
               </div>
             ) : (

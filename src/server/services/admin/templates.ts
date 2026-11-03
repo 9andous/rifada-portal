@@ -1,6 +1,6 @@
 import "server-only";
 import type { Readable } from "node:stream";
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma, TemplateKind } from "@/generated/prisma/client";
 import { enumParam, pageWindow, parseListParams, type SearchParams } from "@/lib/list-params";
 import type { TemplateMetaInput } from "@/lib/validation/templates";
 import { can } from "@/server/authz/permissions";
@@ -38,6 +38,7 @@ export function parseTemplateListParams(params: SearchParams) {
 
 const listSelect = {
   id: true,
+  kind: true,
   title: true,
   description: true,
   fileName: true,
@@ -68,6 +69,64 @@ export async function listTemplates(actor: Actor, params: ReturnType<typeof pars
   const rows = await db.template.findMany({ where, orderBy: [{ [params.sort]: params.dir }, { id: "asc" }], skip: win.skip, take: win.take, select: listSelect });
   const items = rows.map(({ _count, ...t }) => ({ ...t, state: templateState(t), versions: _count.files }));
   return { items, total, page: win.page, pageSize: PAGE_SIZE, pageCount: win.pageCount };
+}
+
+/**
+ * Published templates for the association's «النماذج» page (D-102): every match at once (the list
+ * is short), by programme («general» for templates meant for every programme) and words.
+ */
+export async function readerTemplates(actor: Actor, filter: { kind?: TemplateKind; program?: string; q?: string }) {
+  assertCan(actor, "templates.read");
+  const and: Prisma.TemplateWhereInput[] = [visibleTemplateWhere];
+  if (filter.kind) and.push({ kind: filter.kind });
+  if (filter.program === "general") and.push({ programId: null });
+  else if (filter.program) and.push({ programId: filter.program });
+  if (filter.q) and.push({ OR: containsAny(filter.q, ["title", "description", "fileName"] as const) });
+  return db.template.findMany({
+    where: { AND: and },
+    orderBy: [{ title: "asc" }, { id: "asc" }],
+    take: 200,
+    select: {
+      id: true,
+      kind: true,
+      title: true,
+      description: true,
+      fileName: true,
+      size: true,
+      updatedAt: true,
+      program: { select: { id: true, number: true, name: true } },
+      initiative: { select: { number: true, name: true } },
+      attachmentType: { select: { name: true } },
+    },
+  });
+}
+
+export type ReaderTemplate = Awaited<ReturnType<typeof readerTemplates>>[number];
+
+/**
+ * The choices of that page: guides and forms with their counts, and the programmes that have
+ * published templates of the chosen kind, with theirs.
+ */
+export async function readerTemplateFilters(actor: Actor, kind?: TemplateKind) {
+  assertCan(actor, "templates.read");
+  const [kinds, grouped] = await Promise.all([
+    db.template.groupBy({ by: ["kind"], where: visibleTemplateWhere, _count: { _all: true } }),
+    db.template.groupBy({ by: ["programId"], where: { ...visibleTemplateWhere, ...(kind ? { kind } : {}) }, _count: { _all: true } }),
+  ]);
+  const kindCount = (k: TemplateKind) => kinds.find((g) => g.kind === k)?._count._all ?? 0;
+  const ids = grouped.map((g) => g.programId).filter((id): id is string => id !== null);
+  const programs = ids.length
+    ? await db.program.findMany({ where: { id: { in: ids } }, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true } })
+    : [];
+  const count = (id: string | null) => grouped.find((g) => g.programId === id)?._count._all ?? 0;
+  return {
+    all: kinds.reduce((n, g) => n + g._count._all, 0),
+    guides: kindCount("GUIDE"),
+    forms: kindCount("FORM"),
+    total: grouped.reduce((n, g) => n + g._count._all, 0),
+    general: count(null),
+    programs: programs.map((p) => ({ ...p, count: count(p.id) })),
+  };
 }
 
 export async function templateFigures(actor: Actor) {
@@ -154,7 +213,8 @@ const fileSnapshot = (f: { fileName: string; size: number; sha256: string | null
   ...(f.versionNo ? { version: f.versionNo } : {}),
 });
 
-const metaSnapshot = (t: { title: string; description: string | null; programId: string | null; initiativeId: string | null; attachmentTypeId: string | null; isPublished: boolean; archivedAt: Date | null }) => ({
+const metaSnapshot = (t: { kind: TemplateKind; title: string; description: string | null; programId: string | null; initiativeId: string | null; attachmentTypeId: string | null; isPublished: boolean; archivedAt: Date | null }) => ({
+  kind: t.kind,
   title: t.title,
   description: t.description,
   programId: t.programId,
@@ -189,6 +249,7 @@ export async function createTemplate(actor: Actor, meta: TemplateMetaInput, uplo
       if (!checked.ok) return checked;
       const template = await tx.template.create({
         data: {
+          kind: meta.kind,
           title: meta.title,
           description: meta.description,
           ...checked.data,
@@ -226,7 +287,7 @@ export async function updateTemplate(actor: Actor, id: string, meta: TemplateMet
     if (!current) return refuse(MSG.notFound);
     const links = await resolveLinks(tx, meta);
     if (!links.ok) return links;
-    const updated = await tx.template.update({ where: { id }, data: { title: meta.title, description: meta.description, ...links.data } });
+    const updated = await tx.template.update({ where: { id }, data: { kind: meta.kind, title: meta.title, description: meta.description, ...links.data } });
     const before = metaSnapshot(current);
     const after = metaSnapshot(updated);
     if (JSON.stringify(before) !== JSON.stringify(after)) {

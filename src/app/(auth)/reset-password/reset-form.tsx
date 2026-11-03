@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { Field, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/form-bits";
-import { Alert } from "@/components/ui/surface";
+import { Alert, FormError } from "@/components/ui/surface";
 import { resetPasswordAction, type FormState } from "@/server/actions/password";
 
 export function ResetForm({ token }: { token: string }) {
@@ -24,7 +24,7 @@ export function ResetForm({ token }: { token: string }) {
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       <input type="hidden" name="token" value={token} />
-      {state.message ? <Alert tone="danger">{state.message}</Alert> : null}
+      {state.message ? <FormError>{state.message}</FormError> : null}
       <Field id="newPassword" label="كلمة المرور الجديدة" hint="عشرة أحرف على الأقل، تتضمن حرفًا لاتينيًا ورقمًا." error={state.errors?.newPassword} required>
         <Input id="newPassword" name="newPassword" type="password" dir="ltr" autoComplete="new-password" required aria-invalid={Boolean(state.errors?.newPassword)} />
       </Field>

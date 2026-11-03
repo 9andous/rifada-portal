@@ -6,9 +6,10 @@ import { Button, buttonClasses } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/form-bits";
 import { OneTimeSecret } from "@/components/ui/one-time-secret";
-import { Alert, SectionTitle } from "@/components/ui/surface";
+import { FormError, SectionTitle } from "@/components/ui/surface";
 import { useActionForm } from "@/components/ui/use-action-form";
 import type { AdminFormState } from "@/server/actions/admin/state";
+import { ImageField } from "./image-field";
 import { OfficerFields } from "./officer-fields";
 
 export type AssociationFormDefaults = {
@@ -20,6 +21,8 @@ export type AssociationFormDefaults = {
   contactName: string;
   contactEmail: string;
   contactPhone: string;
+  /** The current logo's URL, if any. */
+  imageUrl?: string | null;
 };
 
 const EMPTY: AssociationFormDefaults = {
@@ -52,9 +55,7 @@ export function AssociationForm({
         {state.credentials ? (
           <OneTimeSecret title="سُجّلت الجمعية وأُنشئ حساب مسؤولها" username={state.credentials.username} password={state.credentials.password} />
         ) : (
-          <Alert tone="success" title="سُجّلت الجمعية">
-            لم يُنشأ حساب مسؤول لها بعد؛ يمكنك إنشاؤه لاحقًا من صفحة المستخدمين.
-          </Alert>
+          <p className="text-sm text-ink-muted">لم يُنشأ حساب مسؤول لها بعد؛ يمكنك إنشاؤه لاحقًا من صفحة المستخدمين.</p>
         )}
         <div className="flex flex-wrap gap-3">
           {state.createdId ? (
@@ -74,7 +75,7 @@ export function AssociationForm({
     );
   }
 
-  const text = (name: keyof AssociationFormDefaults, label: string, opts: { required?: boolean; hint?: string; ltr?: boolean; type?: string } = {}) => (
+  const text = (name: Exclude<keyof AssociationFormDefaults, "imageUrl">, label: string, opts: { required?: boolean; hint?: string; ltr?: boolean; type?: string } = {}) => (
     <Field id={name} label={label} hint={opts.hint} error={e[name]} required={opts.required}>
       <Input
         id={name}
@@ -91,12 +92,13 @@ export function AssociationForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-8" noValidate>
-      {state.message ? <Alert tone={state.ok ? "success" : "danger"}>{state.message}</Alert> : null}
+      {state.message && !state.ok ? <FormError>{state.message}</FormError> : null}
 
       <section className="flex flex-col gap-5">
         <SectionTitle as="h3" className="text-[0.9375rem]">
           بيانات الجمعية
         </SectionTitle>
+        <ImageField label="شعار الجمعية" shape="square" currentUrl={defaults.imageUrl} nameFieldId="name" defaultName={defaults.name} error={e.image} />
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="md:col-span-2">{text("name", "اسم الجمعية", { required: true })}</div>
           {text("licenseNumber", "رقم الترخيص", { hint: "اختياري، ولا يتكرر بين الجمعيات." })}
