@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Paperclip, Target, TextCursorInput } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -55,9 +55,9 @@ export default async function AdminInitiativePage({ params, searchParams }: Page
         figures={
           <BandFigures
             items={[
-              { label: "الأهداف المرتبطة", value: formatNumber(initiative.linkedObjectives.length), caption: "من سبعة أهداف" },
-              { label: "الحقول الخاصة", value: formatNumber(requirements.fields.length) },
-              { label: "المرفقات المطلوبة", value: formatNumber(requirements.attachments.length) },
+              { label: "الأهداف المرتبطة", icon: Target, value: formatNumber(initiative.linkedObjectives.length), caption: "من سبعة أهداف" },
+              { label: "الحقول الخاصة", icon: TextCursorInput, tone: "info", value: formatNumber(requirements.fields.length), caption: "يملؤها مقدّم الطلب" },
+              { label: "المرفقات المطلوبة", icon: Paperclip, tone: "review", value: formatNumber(requirements.attachments.length), caption: "تُرفق مع الطلب" },
             ]}
           />
         }

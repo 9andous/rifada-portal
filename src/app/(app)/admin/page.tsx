@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Building2, History, Layers, Target, Users } from "lucide-react";
+import { Building2, CircleCheck, Clock, History, Hourglass, Inbox, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { BandDate } from "@/components/dashboard/band-date";
 import { ProgramsCard, TracksCard } from "@/components/dashboard/cards";
@@ -16,19 +16,19 @@ import { formatNumber, greeting } from "@/lib/format";
 import { requireUser } from "@/server/auth/session";
 import { ROLE_LABELS, ROLES } from "@/server/authz/roles";
 import { db } from "@/server/db";
-import { getByProgram, getByTrack } from "@/server/services/dashboard";
+import { getByProgram, getByTrack, getOverview } from "@/server/services/dashboard";
 
 export const metadata: Metadata = { title: "إدارة النظام" };
+
+const REQUESTS = "/admin/requests";
 
 export default async function AdminDashboard() {
   const user = await requireUser();
   const now = new Date();
-  const [usersByRole, associations, programs, initiatives, objectives, recentAudit, byProgram, byTrack] = await Promise.all([
+  const [overview, usersByRole, associations, recentAudit, byProgram, byTrack] = await Promise.all([
+    getOverview(user, now),
     db.user.groupBy({ by: ["role"], where: { isActive: true }, _count: { _all: true } }),
     db.association.count({ where: { isActive: true } }),
-    db.program.count({ where: { archivedAt: null } }),
-    db.initiative.count({ where: { archivedAt: null } }),
-    db.strategicObjective.count({ where: { archivedAt: null } }),
     db.auditLog.findMany({
       orderBy: { createdAt: "desc" },
       take: 8,
@@ -45,15 +45,40 @@ export default async function AdminDashboard() {
       <PageBand
         eyebrow={`${greeting(now)}، ${user.name}`}
         title="إدارة النظام"
-        lead="حالة الحسابات والبيانات المرجعية وآخر العمليات المسجلة."
+        lead="مؤشرات المنصة كاملة: الطلبات في جميع البرامج، والجمعيات والحسابات، وآخر العمليات المسجلة."
         actions={<BandDate date={now} />}
         figures={
+          // Platform-wide figures (owner's review, D-132), not the reference-data counts.
           <KpiRow
             items={[
-              { label: "المستخدمون النشطون", icon: Users, featured: true, value: formatNumber(totalUsers), caption: "في جميع الأدوار", href: "/admin/users" },
-              { label: "الجمعيات النشطة", icon: Building2, value: formatNumber(associations), caption: "حساب واحد لكل جمعية", href: "/admin/associations" },
-              { label: "البرامج", icon: Layers, value: formatNumber(programs), caption: `المبادرات: ${formatNumber(initiatives)}`, href: "/admin/taxonomy" },
-              { label: "الأهداف الإستراتيجية", icon: Target, value: formatNumber(objectives), caption: "من إستراتيجية الرئاسة", href: "/admin/taxonomy/objectives" },
+              { label: "إجمالي الطلبات", icon: Inbox, featured: true, value: formatNumber(overview.total), caption: "في جميع البرامج", href: REQUESTS },
+              {
+                label: "قيد المراجعة",
+                icon: Hourglass,
+                tone: "review",
+                value: formatNumber(overview.underReview),
+                caption: `ومعادة للتعديل: ${formatNumber(overview.returned)}`,
+                href: `${REQUESTS}?status=UNDER_REVIEW`,
+              },
+              {
+                label: "متأخرة عن المهلة",
+                icon: Clock,
+                tone: "bad",
+                alert: overview.overdue > 0,
+                value: formatNumber(overview.overdue),
+                caption: "تجاوزت مهلة المراجعة",
+                href: `${REQUESTS}?overdue=1`,
+              },
+              {
+                label: "مقبولة",
+                icon: CircleCheck,
+                tone: "ok",
+                value: formatNumber(overview.approved),
+                caption: overview.rejected ? `وغير معتمدة: ${formatNumber(overview.rejected)}` : "طلبات صدر اعتمادها",
+                href: `${REQUESTS}?status=APPROVED`,
+              },
+              { label: "الجمعيات النشطة", icon: Building2, value: formatNumber(associations), caption: "المسجلة في المنصة", href: "/admin/associations" },
+              { label: "المستخدمون النشطون", icon: Users, value: formatNumber(totalUsers), caption: "في جميع الأدوار", href: "/admin/users" },
             ]}
           />
         }
@@ -61,7 +86,7 @@ export default async function AdminDashboard() {
       <PageBody className="flex flex-col gap-5">
         {/* The requests per programme and per track, as on the unit manager's home (owner's request). */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr]">
-          <ProgramsCard rows={byProgram} hrefBase="/admin/requests" />
+          <ProgramsCard rows={byProgram} hrefBase={REQUESTS} />
           <TracksCard data={byTrack} tracksHref="/admin/taxonomy/tracks" />
         </div>
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.4fr]">

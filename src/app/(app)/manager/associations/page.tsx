@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Building2, CircleCheck, CircleSlash, UserRoundCheck } from "lucide-react";
 import { Suspense } from "react";
 import { AssociationsList } from "@/components/admin/associations-list";
 import { PageBody } from "@/components/layout/app-shell";
@@ -26,10 +27,10 @@ export default async function ManagerAssociationsPage({ searchParams }: PageProp
         figures={
           <BandFigures
             items={[
-              { label: "الجمعيات", value: formatNumber(figures.total) },
-              { label: "النشطة", value: formatNumber(figures.active) },
-              { label: "المعطلة", value: formatNumber(figures.inactive) },
-              { label: "لها حساب مسؤول", value: formatNumber(figures.withOfficer) },
+              { label: "الجمعيات", icon: Building2, value: formatNumber(figures.total), caption: "المسجلة في المنصة" },
+              { label: "النشطة", icon: CircleCheck, tone: "ok", value: formatNumber(figures.active), caption: "تقدّم طلباتها", href: "/manager/associations?status=active" },
+              { label: "المعطلة", icon: CircleSlash, tone: "neutral", value: formatNumber(figures.inactive), caption: "موقوفة عن التقديم", href: "/manager/associations?status=inactive" },
+              { label: "لها حساب مسؤول", icon: UserRoundCheck, tone: "info", value: formatNumber(figures.withOfficer), caption: "حساب واحد لكل جمعية", href: "/manager/associations?officer=with" },
             ]}
           />
         }

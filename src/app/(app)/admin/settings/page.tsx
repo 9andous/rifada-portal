@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Clock, Eye, FileUp, ListChecks } from "lucide-react";
 import { SettingsForm, type SettingCaptions } from "@/components/admin/settings-form";
 import { SettingsTabs } from "@/components/admin/settings-tabs";
 import { PageBody } from "@/components/layout/app-shell";
@@ -48,10 +49,17 @@ export default async function SettingsPage() {
         figures={
           <BandFigures
             items={[
-              { label: "مهلة المراجعة", value: formatNumber(values["sla.workingDays"]), unit: countUnit(values["sla.workingDays"], DAY_UNIT) },
-              { label: "حجم الملف الأقصى", value: formatNumber(values["uploads.maxFileMb"]), unit: "ميغابايت" },
-              { label: "حد الإجراء الجماعي", value: formatNumber(values["bulk.maxItems"]), unit: countUnit(values["bulk.maxItems"], REQUEST_UNIT) },
-              { label: "المبادرات للزوار", value: values["public.showInitiatives"] ? "معروضة" : "مخفية" },
+              { label: "مهلة المراجعة", icon: Clock, value: formatNumber(values["sla.workingDays"]), unit: countUnit(values["sla.workingDays"], DAY_UNIT), caption: "أيام عمل" },
+              { label: "حجم الملف الأقصى", icon: FileUp, tone: "info", value: formatNumber(values["uploads.maxFileMb"]), unit: "ميغابايت", caption: "لكل ملف مرفوع" },
+              {
+                label: "حد الإجراء الجماعي",
+                icon: ListChecks,
+                tone: "review",
+                value: formatNumber(values["bulk.maxItems"]),
+                unit: countUnit(values["bulk.maxItems"], REQUEST_UNIT),
+                caption: "في الإجراء الواحد",
+              },
+              { label: "المبادرات للزوار", icon: Eye, tone: "gold", value: values["public.showInitiatives"] ? "معروضة" : "مخفية", caption: "في الصفحات العامة" },
             ]}
           />
         }

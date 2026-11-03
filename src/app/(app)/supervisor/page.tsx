@@ -85,7 +85,7 @@ export default async function SupervisorDashboard({ searchParams }: PageProps<"/
                 caption: "تجاوزت المهلة",
                 href: `${QUEUE}?overdue=1`,
               },
-              { label: "مقبولة", icon: CircleCheck, tone: "ok", value: formatNumber(overview.approved), caption: "في برامجي حتى الآن" },
+              { label: "مقبولة", icon: CircleCheck, tone: "ok", value: formatNumber(overview.approved), caption: "في برامجي حتى الآن", href: `${QUEUE}?status=APPROVED` },
             ]}
           />
         }

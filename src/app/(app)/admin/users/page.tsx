@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { UserRoundPlus } from "lucide-react";
+import { Building2, ShieldCheck, UserRoundCheck, UserRoundPlus, UserRoundX, Users } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -47,11 +47,25 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
         figures={
           <BandFigures
             items={[
-              { label: "الحسابات", value: formatNumber(figures.total), caption: "في جميع الأدوار" },
-              { label: "النشطة", value: formatNumber(figures.active) },
-              { label: "المعطلة", value: formatNumber(figures.inactive) },
-              { label: "المشرفون النشطون", value: formatNumber(figures.byRole.SUPERVISOR) },
-              { label: "مسؤولو الجمعيات النشطون", value: formatNumber(figures.byRole.ASSOCIATION_OFFICER) },
+              { label: "الحسابات", icon: Users, value: formatNumber(figures.total), caption: "في جميع الأدوار" },
+              { label: "النشطة", icon: UserRoundCheck, tone: "ok", value: formatNumber(figures.active), caption: "تستطيع الدخول" },
+              { label: "المعطلة", icon: UserRoundX, tone: "neutral", value: formatNumber(figures.inactive), caption: "موقوفة عن الدخول" },
+              {
+                label: "المشرفون النشطون",
+                icon: ShieldCheck,
+                tone: "review",
+                value: formatNumber(figures.byRole.SUPERVISOR),
+                caption: "يراجعون الطلبات",
+                href: `${PATH}?role=SUPERVISOR&status=active`,
+              },
+              {
+                label: "مسؤولو الجمعيات النشطون",
+                icon: Building2,
+                tone: "info",
+                value: formatNumber(figures.byRole.ASSOCIATION_OFFICER),
+                caption: "حساب لكل جمعية",
+                href: `${PATH}?tab=officers&status=active`,
+              },
             ]}
           />
         }

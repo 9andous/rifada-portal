@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { CircleCheck, PenLine, Plus } from "lucide-react";
+import { CircleCheck, Layers, Lightbulb, ListChecks, Paperclip, PenLine, Plus, Target } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -37,11 +37,18 @@ export default async function TaxonomyPage({ searchParams }: PageProps<"/admin/t
         figures={
           <BandFigures
             items={[
-              { label: "البرامج", value: formatNumber(figures.programs), caption: figures.paused ? `منها موقوف: ${formatNumber(figures.paused)}` : "غير المؤرشفة" },
-              { label: "المبادرات", value: formatNumber(figures.initiatives) },
-              { label: "روابط الأهداف", value: formatNumber(figures.links) },
-              { label: "أنواع المرفقات", value: formatNumber(figures.attachmentTypes) },
-              { label: "متطلبات المبادرات", value: formatNumber(figures.requirements), caption: "حقول ومرفقات" },
+              { label: "البرامج", icon: Layers, value: formatNumber(figures.programs), caption: figures.paused ? `منها موقوف: ${formatNumber(figures.paused)}` : "غير المؤرشفة" },
+              { label: "المبادرات", icon: Lightbulb, tone: "info", value: formatNumber(figures.initiatives), caption: "في جميع البرامج" },
+              { label: "روابط الأهداف", icon: Target, tone: "gold", value: formatNumber(figures.links), caption: "مبادرة بهدف إستراتيجي" },
+              {
+                label: "أنواع المرفقات",
+                icon: Paperclip,
+                tone: "review",
+                value: formatNumber(figures.attachmentTypes),
+                caption: "المستندات المطلوبة",
+                href: "/admin/taxonomy/attachment-types",
+              },
+              { label: "متطلبات المبادرات", icon: ListChecks, tone: "ok", value: formatNumber(figures.requirements), caption: "حقول ومرفقات" },
             ]}
           />
         }

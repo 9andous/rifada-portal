@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ClipboardList } from "lucide-react";
+import { CircleCheck, CircleX, ClipboardList, Hourglass } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -43,9 +43,9 @@ export default async function RegistrationsPage({ searchParams }: PageProps<"/ad
         figures={
           <BandFigures
             items={[
-              { label: "قيد المراجعة", value: formatNumber(counts.PENDING), attention: counts.PENDING > 0 && "warn", caption: "بانتظار القرار" },
-              { label: "المعتمدة", value: formatNumber(counts.APPROVED) },
-              { label: "المرفوضة", value: formatNumber(counts.REJECTED) },
+              { label: "قيد المراجعة", icon: Hourglass, value: formatNumber(counts.PENDING), attention: counts.PENDING > 0 && "warn", caption: "بانتظار القرار" },
+              { label: "المعتمدة", icon: CircleCheck, tone: "ok", value: formatNumber(counts.APPROVED), caption: "أُنشئت جمعياتها" },
+              { label: "المرفوضة", icon: CircleX, tone: "bad", value: formatNumber(counts.REJECTED), caption: "لم تُعتمد" },
             ]}
           />
         }

@@ -1400,3 +1400,15 @@ Components a page left behind keeps its state, so «تقديم طلب جديد»
 previous visit. The new-request form now starts afresh each time it is opened (`FreshOnReturn`). (3)
 The green first figure (D-130) showed white on white because the tile's white background came later
 in the stylesheet; figure colours are now chosen as one set (`FIGURE_TILE` or `FIGURE_LEAD`).
+
+**D-132 Owner's review of 2026-11-03, second follow-up: platform figures for the admin, centred
+donut, red «جديد».** (1) The supervisor's «مقبولة» figure opens the request list filtered to approved
+requests, like every other figure. (2) The super admin's home band shows the platform's own figures
+instead of reference-data counts: all requests, under review (with returned), overdue, approved (with
+not approved), active associations and active users. Programme, initiative and objective counts stay
+on the taxonomy pages. (3) «المستخدمون حسب الدور»: the ring is centred and its legend sits under it.
+(4) The «جديد» row badge is red (`st-bad`) so it stands out from the green status of approved rows.
+(5) The figures of list and detail pages (users, associations, taxonomy, settings, audit, ...) now
+look like the dashboards' figures: `<BandFigures>` draws through `<KpiRow>`, so every figure has an
+icon tile (required), a tone and a caption, and links to its filtered list where one exists (active,
+inactive and officer-less associations; active supervisors and officers). `KpiTone` gains `neutral`.

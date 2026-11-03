@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Clock, History, Users } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuditChanges } from "@/components/admin/audit-changes";
@@ -38,9 +39,9 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
         figures={
           <BandFigures
             items={[
-              { label: "العمليات المسجلة", value: formatNumber(total) },
-              { label: "آخر ٢٤ ساعة", value: formatNumber(lastDay) },
-              { label: "المنفّذون", value: formatNumber(actors), caption: "حسابات نفّذت عمليات" },
+              { label: "العمليات المسجلة", icon: History, value: formatNumber(total), caption: "منذ تشغيل المنصة" },
+              { label: "آخر ٢٤ ساعة", icon: Clock, tone: "info", value: formatNumber(lastDay), caption: "عمليات اليوم" },
+              { label: "المنفّذون", icon: Users, tone: "review", value: formatNumber(actors), caption: "حسابات نفّذت عمليات" },
             ]}
           />
         }

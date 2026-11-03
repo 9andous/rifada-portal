@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Lightbulb, Target } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -46,8 +46,8 @@ export default async function ManagerProgramPage({ params, searchParams }: PageP
         figures={
           <BandFigures
             items={[
-              { label: "المبادرات", value: formatNumber(program.activeInitiatives) },
-              { label: "الأهداف", value: formatNumber(program.goals.length) },
+              { label: "المبادرات", icon: Lightbulb, value: formatNumber(program.activeInitiatives), caption: "في هذا البرنامج" },
+              { label: "الأهداف", icon: Target, tone: "gold", value: formatNumber(program.goals.length), caption: "أهداف البرنامج" },
             ]}
           />
         }

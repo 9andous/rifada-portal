@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Plus } from "lucide-react";
+import { Building2, CircleCheck, CircleSlash, Plus, UserRoundX } from "lucide-react";
 import { AssociationsList } from "@/components/admin/associations-list";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
@@ -14,6 +14,8 @@ import { can } from "@/server/authz/permissions";
 import { associationFigures } from "@/server/services/admin/associations";
 
 export const metadata: Metadata = { title: "الجمعيات" };
+
+const PATH = "/admin/associations";
 
 export default async function AdminAssociationsPage({ searchParams }: PageProps<"/admin/associations">) {
   const user = await requireUser();
@@ -35,17 +37,24 @@ export default async function AdminAssociationsPage({ searchParams }: PageProps<
         figures={
           <BandFigures
             items={[
-              { label: "الجمعيات", value: formatNumber(figures.total) },
-              { label: "النشطة", value: formatNumber(figures.active) },
-              { label: "المعطلة", value: formatNumber(figures.inactive) },
-              { label: "بلا حساب مسؤول", value: formatNumber(figures.withoutOfficer), caption: "حساب واحد لكل جمعية" },
+              { label: "الجمعيات", icon: Building2, value: formatNumber(figures.total), caption: "المسجلة في المنصة" },
+              { label: "النشطة", icon: CircleCheck, tone: "ok", value: formatNumber(figures.active), caption: "تقدّم طلباتها", href: `${PATH}?status=active` },
+              { label: "المعطلة", icon: CircleSlash, tone: "neutral", value: formatNumber(figures.inactive), caption: "موقوفة عن التقديم", href: `${PATH}?status=inactive` },
+              {
+                label: "بلا حساب مسؤول",
+                icon: UserRoundX,
+                attention: figures.withoutOfficer > 0 && "warn",
+                value: formatNumber(figures.withoutOfficer),
+                caption: "حساب واحد لكل جمعية",
+                href: `${PATH}?officer=without`,
+              },
             ]}
           />
         }
       />
       <PageBody>
         <Suspense fallback={<ListSkeleton />}>
-          <AssociationsList actor={user} searchParams={searchParams} basePath="/admin/associations" readOnly={false} />
+          <AssociationsList actor={user} searchParams={searchParams} basePath={PATH} readOnly={false} />
         </Suspense>
       </PageBody>
     </>

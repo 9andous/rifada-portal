@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Layers, Lightbulb, ListChecks, Target } from "lucide-react";
 import { Suspense } from "react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
@@ -27,10 +28,10 @@ export default async function ManagerTaxonomyPage({ searchParams }: PageProps<"/
         figures={
           <BandFigures
             items={[
-              { label: "البرامج", value: formatNumber(figures.programs) },
-              { label: "المبادرات", value: formatNumber(figures.initiatives) },
-              { label: "روابط الأهداف", value: formatNumber(figures.links) },
-              { label: "متطلبات المبادرات", value: formatNumber(figures.requirements) },
+              { label: "البرامج", icon: Layers, value: formatNumber(figures.programs), caption: "غير المؤرشفة" },
+              { label: "المبادرات", icon: Lightbulb, tone: "info", value: formatNumber(figures.initiatives), caption: "في جميع البرامج" },
+              { label: "روابط الأهداف", icon: Target, tone: "gold", value: formatNumber(figures.links), caption: "مبادرة بهدف إستراتيجي" },
+              { label: "متطلبات المبادرات", icon: ListChecks, tone: "ok", value: formatNumber(figures.requirements), caption: "حقول ومرفقات" },
             ]}
           />
         }

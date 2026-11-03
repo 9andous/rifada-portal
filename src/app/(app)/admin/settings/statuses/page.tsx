@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ArrowLeftRight, CircleDot, Zap } from "lucide-react";
 import { SettingsTabs } from "@/components/admin/settings-tabs";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
@@ -26,9 +27,9 @@ export default async function StatusesPage() {
         figures={
           <BandFigures
             items={[
-              { label: "الحالات", value: formatNumber(lifecycle.statuses.length), caption: "ثابتة" },
-              { label: "الانتقالات", value: formatNumber(lifecycle.transitions.length) },
-              { label: "التلقائية", value: formatNumber(automatic), caption: "ينفذها النظام" },
+              { label: "الحالات", icon: CircleDot, value: formatNumber(lifecycle.statuses.length), caption: "ثابتة" },
+              { label: "الانتقالات", icon: ArrowLeftRight, tone: "info", value: formatNumber(lifecycle.transitions.length), caption: "بين الحالات" },
+              { label: "التلقائية", icon: Zap, tone: "gold", value: formatNumber(automatic), caption: "ينفذها النظام" },
             ]}
           />
         }

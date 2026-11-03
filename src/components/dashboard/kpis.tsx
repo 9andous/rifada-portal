@@ -5,12 +5,14 @@ import { ArchOutline } from "@/components/brand/arch";
 import { cn } from "@/lib/cn";
 
 // Dashboard key figures and shortcut tiles as in the design handoff (`.kpi`, `.qa`), restored on
-// the three role dashboards at the owner's request (D-097). Other pages keep <BandFigures>.
+// the three role dashboards at the owner's request (D-097). <BandFigures> draws other pages'
+// figures through this row as well (D-132).
 
-export type KpiTone = "primary" | "info" | "review" | "warn" | "bad" | "ok" | "gold";
+export type KpiTone = "primary" | "info" | "review" | "warn" | "bad" | "ok" | "gold" | "neutral";
 
 const TONE_TILE: Record<KpiTone, string> = {
   primary: "bg-primary-soft text-primary",
+  neutral: "bg-st-neutral-soft text-st-neutral",
   info: "bg-st-info-soft text-st-info",
   review: "bg-st-review-soft text-st-review",
   warn: "bg-st-warn-soft text-st-warn",

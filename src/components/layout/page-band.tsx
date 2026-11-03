@@ -1,7 +1,7 @@
-import { ChevronLeft } from "lucide-react";
-import Link from "next/link";
+import { ChevronLeft, type LucideIcon } from "lucide-react";
 import { Suspense, type ReactNode } from "react";
 import { ArchOutline, Diamond } from "@/components/brand/arch";
+import { KpiRow, type KpiTone } from "@/components/dashboard/kpis";
 import { cn } from "@/lib/cn";
 import { Breadcrumbs } from "./breadcrumbs";
 
@@ -63,6 +63,9 @@ export function PageBand({
 
 export type BandFigure = {
   label: string;
+  icon: LucideIcon;
+  /** Colour of the icon tile; defaults to the attention tone, else primary. */
+  tone?: KpiTone;
   /** Pre-formatted value (Arabic-Indic digits); a dash when there is no data. */
   value: ReactNode;
   unit?: string;
@@ -83,8 +86,6 @@ export const FIGURE_VALUE = "t-figure text-[2rem] leading-none";
 /** The green lead or chosen figure (D-130), as the first KPI card. Use instead of `FIGURE_TILE`. */
 export const FIGURE_LEAD = `${FIGURE_SHAPE} band-scope border-band bg-band text-band-ink`;
 export const ATTENTION_TEXT: Record<FigureAttention, string> = { warn: "text-st-warn", bad: "text-st-bad" };
-const ATTENTION_DOT: Record<FigureAttention, string> = { warn: "bg-st-warn", bad: "bg-st-bad" };
-
 /** Arrow of a linked tile: hidden at rest, shown on hover and keyboard focus. */
 export function FigureChevron() {
   return (
@@ -97,38 +98,25 @@ export function FigureChevron() {
 }
 
 /**
- * Key figures as cards: label, the figure, a caption. The first tile is green (D-130); otherwise
- * colour appears only when a figure needs attention. Tiles with an href link to the matching list.
+ * Key figures of list and detail pages, drawn as the dashboards' cards (<KpiRow>: icon tile, label,
+ * figure, caption) so every page shows figures one way (owner's review, D-132). The first tile is
+ * green (D-130); a figure needing attention takes its status colour. Tiles with an href link to the
+ * matching list.
  */
 export function BandFigures({ items }: { items: BandFigure[] }) {
-  const cols =
-    items.length >= 6 ? "xl:grid-cols-6" : items.length === 5 ? "xl:grid-cols-5" : items.length === 3 ? "sm:grid-cols-3" : "xl:grid-cols-4";
   return (
-    <dl className={cn("grid grid-cols-2 gap-3.5", items.length === 3 ? cols : cn("sm:grid-cols-3", cols))}>
-      {items.map((f, i) => (
-        // The first figure is green, like «الطلبات المرسلة» (owner's review, D-130).
-        <div key={f.label} className={cn(i === 0 ? FIGURE_LEAD : FIGURE_TILE, f.href && "card-link")}>
-          <dt className="flex items-center gap-2">
-            <span className={cn("min-w-0 truncate text-[0.9375rem] font-bold", i === 0 ? "text-band-ink" : "text-ink")}>{f.label}</span>
-            {f.href ? <FigureChevron /> : null}
-          </dt>
-          <dd className="flex items-baseline gap-1">
-            <span className={cn(FIGURE_VALUE, i === 0 ? "text-band-ink" : f.attention ? ATTENTION_TEXT[f.attention] : "text-ink")}>{f.value}</span>
-            {f.unit ? <span className={cn("text-sm font-medium", i === 0 ? "text-band-ink-muted" : "text-ink-subtle")}>{f.unit}</span> : null}
-          </dd>
-          {f.caption ? (
-            <dd className={cn("flex items-center gap-1.5 text-xs", i === 0 ? "text-band-ink-muted" : "text-ink-subtle")}>
-              {f.attention ? <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", ATTENTION_DOT[f.attention])} /> : null}
-              {f.caption}
-            </dd>
-          ) : null}
-          {f.href ? (
-            <Link href={f.href} className="absolute inset-0 z-10 rounded-xl">
-              <span className="sr-only">عرض {f.label}</span>
-            </Link>
-          ) : null}
-        </div>
-      ))}
-    </dl>
+    <KpiRow
+      items={items.map((f, i) => ({
+        label: f.label,
+        icon: f.icon,
+        tone: f.attention || f.tone,
+        alert: Boolean(f.attention),
+        value: f.value,
+        unit: f.unit,
+        caption: f.caption,
+        href: f.href,
+        featured: i === 0,
+      }))}
+    />
   );
 }

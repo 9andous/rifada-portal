@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Plus } from "lucide-react";
+import { Archive, EyeOff, FileCheck, Plus } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -36,9 +36,9 @@ export default async function AdminTemplatesPage({ searchParams }: PageProps<"/a
         figures={
           <BandFigures
             items={[
-              { label: "المنشورة", value: formatNumber(figures.published), caption: "تظهر لكل من يسجل الدخول" },
-              { label: "غير المنشورة", value: formatNumber(figures.unpublished) },
-              { label: "المؤرشفة", value: formatNumber(figures.archived) },
+              { label: "المنشورة", icon: FileCheck, value: formatNumber(figures.published), caption: "تظهر لكل من يسجل الدخول" },
+              { label: "غير المنشورة", icon: EyeOff, tone: "warn", value: formatNumber(figures.unpublished), caption: "لا تظهر إلا للإدارة" },
+              { label: "المؤرشفة", icon: Archive, tone: "neutral", value: formatNumber(figures.archived), caption: "محفوظة دون عرض" },
             ]}
           />
         }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CircleCheck } from "lucide-react";
+import { CircleCheck, CircleHelp, Lightbulb, ScanText, Target } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { EmptyState, ForbiddenState } from "@/components/states/states";
@@ -50,10 +50,16 @@ export default async function TaxonomyReviewPage() {
         figures={
           <BandFigures
             items={[
-              { label: "المبادرات", value: formatNumber(initiativeCount), caption: `المتوقع ${formatNumber(143)}` },
-              { label: "روابط الأهداف", value: formatNumber(review.linkCount), caption: "علامات الاختيار في الجداول" },
-              { label: "الخلايا المقروءة", value: formatNumber(review.cellsRead), caption: "قراءتان لكل خلية" },
-              { label: "خلايا غير مؤكدة", value: formatNumber(uncertainCells.length), attention: uncertainCells.length > 0 && "warn", caption: "تحتاج تحققًا من المصدر" },
+              { label: "المبادرات", icon: Lightbulb, value: formatNumber(initiativeCount), caption: `المتوقع ${formatNumber(143)}` },
+              { label: "روابط الأهداف", icon: Target, tone: "gold", value: formatNumber(review.linkCount), caption: "علامات الاختيار في الجداول" },
+              { label: "الخلايا المقروءة", icon: ScanText, tone: "info", value: formatNumber(review.cellsRead), caption: "قراءتان لكل خلية" },
+              {
+                label: "خلايا غير مؤكدة",
+                icon: CircleHelp,
+                value: formatNumber(uncertainCells.length),
+                attention: uncertainCells.length > 0 && "warn",
+                caption: "تحتاج تحققًا من المصدر",
+              },
             ]}
           />
         }
