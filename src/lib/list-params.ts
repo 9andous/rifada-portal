@@ -60,6 +60,23 @@ export function pageWindow(total: number, page: number, pageSize: number) {
   return { pageCount, page: current, skip: (current - 1) * pageSize, take: pageSize };
 }
 
+/**
+ * Which figure of a row is the current filter: the one whose link's query is all present in `params`,
+ * the most specific if several match. The first figure (the unfiltered total) when none does.
+ */
+export function selectedFigureIndex(items: readonly { href?: string }[], params: SearchParams): number {
+  let selected = 0;
+  let best = 0;
+  items.forEach((item, index) => {
+    const pairs = [...new URLSearchParams(item.href?.split("?")[1] ?? "")];
+    if (pairs.length > best && pairs.every(([key, value]) => firstParam(params, key) === value)) {
+      selected = index;
+      best = pairs.length;
+    }
+  });
+  return selected;
+}
+
 /** Builds a list URL from the current params with some keys replaced (undefined or "" removes a key). */
 export function listHref(path: string, params: SearchParams, changes: Record<string, string | number | undefined>): string {
   const sp = new URLSearchParams();

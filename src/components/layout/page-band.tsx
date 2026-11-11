@@ -3,12 +3,13 @@ import { Suspense, type ReactNode } from "react";
 import { ArchOutline, Diamond } from "@/components/brand/arch";
 import { KpiRow, type KpiTone } from "@/components/dashboard/kpis";
 import { cn } from "@/lib/cn";
+import { selectedFigureIndex, type SearchParams } from "@/lib/list-params";
 import { Breadcrumbs } from "./breadcrumbs";
 
 /**
  * Page head (docs/DESIGN.md: Page head): white, under the green navigation bar. Breadcrumbs, an
  * eyebrow with a gold diamond, the page title in brand green, optional lead text and actions, and a
- * faint ogee arch at the end. The head spans the full width like the header (D-095); key figures
+ * faint ogee arch at the end (D-134). The head spans the full width like the header (D-095); key figures
  * follow below it on the page canvas, centred at 1360px with the page body.
  *
  * The component keeps its historical name; content written for the green band (on-band colours)
@@ -101,9 +102,11 @@ export function FigureChevron() {
  * Key figures of list and detail pages, drawn as the dashboards' cards (<KpiRow>: icon tile, label,
  * figure, caption) so every page shows figures one way (owner's review, D-132). The first tile is
  * green (D-130); a figure needing attention takes its status colour. Tiles with an href link to the
- * matching list.
+ * matching list. On a page whose tiles filter its own table, pass the page's `params`: the tile of
+ * the current filter turns green instead of the first (D-134).
  */
-export function BandFigures({ items }: { items: BandFigure[] }) {
+export function BandFigures({ items, params }: { items: BandFigure[]; params?: SearchParams }) {
+  const selected = params ? selectedFigureIndex(items, params) : 0;
   return (
     <KpiRow
       items={items.map((f, i) => ({
@@ -115,7 +118,7 @@ export function BandFigures({ items }: { items: BandFigure[] }) {
         unit: f.unit,
         caption: f.caption,
         href: f.href,
-        featured: i === 0,
+        featured: i === selected,
       }))}
     />
   );

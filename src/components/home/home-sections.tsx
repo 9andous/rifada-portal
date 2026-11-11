@@ -59,7 +59,7 @@ export function HomeHero({ figures, quotes }: { figures?: ReactNode; quotes: Rea
           </h1>
           <p className="mt-4 text-xl font-semibold text-band-gold">{STRATEGY_MOTTO}</p>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-[1.9] text-band-ink-muted">
-            {brand.systemName} هي المنصة الرقمية للإشراف الفني على الجمعيات الخيرية والتطوعية التي تخدم قاصدي الحرمين الشريفين: تُقدَّم
+            المنصة الرقمية للإشراف الفني على الجمعيات الخيرية والتطوعية التي تخدم قاصدي الحرمين الشريفين: تُقدَّم
             فيها البرامج والمشروعات ضمن برامج الرئاسة، وتُراجع وتُتابع بإجراءات واضحة وموثّقة.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">

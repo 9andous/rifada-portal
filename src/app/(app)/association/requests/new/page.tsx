@@ -24,7 +24,7 @@ export const metadata: Metadata = { title: "تقديم طلب جديد" };
 export default async function NewRequestPage() {
   const user = await requireUser();
   if (!can(user.role, "requests.create")) return <ForbiddenPage />;
-  const [{ tracks, requestTypes, associationActive }, maxMb, allowedGroups] = await Promise.all([newRequestOptions(user), getSetting("uploads.maxFileMb"), getSetting("uploads.allowedGroups")]);
+  const [{ tracks, programs, requestTypes, associationActive }, maxMb, allowedGroups] = await Promise.all([newRequestOptions(user), getSetting("uploads.maxFileMb"), getSetting("uploads.allowedGroups")]);
 
   return (
     <>
@@ -50,8 +50,9 @@ export default async function NewRequestPage() {
             canDiscard
             requestTitle=""
             tracks={tracks}
+            programs={programs}
             requestTypes={requestTypes}
-            defaults={{ trackId: "", requestTypeId: "", title: "", description: "", goals: "", expectedBeneficiaries: "", startDate: "", endDate: "", estimatedBudget: "", kpis: "", partners: "" }}
+            defaults={{ trackId: "", requestTypeId: "", requestTypeDetail: "", programId: "", initiativeIds: [], title: "", description: "", goals: "", expectedBeneficiaries: "", startDate: "", endDate: "", estimatedBudget: "", kpis: "", partners: "" }}
             ownFiles={{
               requestId: "",
               requirementKey: "own",

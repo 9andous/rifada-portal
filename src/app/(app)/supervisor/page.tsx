@@ -21,12 +21,13 @@ const DETAIL = "/supervisor/requests";
 const QUEUE = "/supervisor/requests";
 
 /**
- * Tabs of the queue card (owner's request, D-127): the latest requests, newest submission first, and
- * those needing attention (returned to the association, or past the review deadline), nearest deadline first.
+ * Tabs of the requests card (owner's requests, D-127, D-143): the latest requests of the supervisor's
+ * tracks, as on «قائمة الطلبات», newest submission first; and those of their own needing attention
+ * (returned to the association, or past the review deadline), nearest deadline first.
  */
-const TABS: { key: string; label: string; description: string; icon: ReactNode; params: Record<string, string> }[] = [
-  { key: "recent", label: "الطلبات الأخيرة", description: "الأحدث تقديمًا أولًا", icon: <Clock strokeWidth={1.75} />, params: { sort: "submittedAt", dir: "desc" } },
-  { key: "priority", label: "ذات أولوية", description: "المعادة للتعديل والمتأخرة، الأقرب مهلة أولًا", icon: <Flag strokeWidth={1.75} />, params: { priority: "1", sort: "slaDueAt", dir: "asc" } },
+const TABS: { key: string; label: string; description: string; icon: ReactNode; view: "scope" | "queue"; params: Record<string, string> }[] = [
+  { key: "recent", label: "الطلبات الأخيرة", description: "الأحدث تقديمًا في برامجك", icon: <Clock strokeWidth={1.75} />, view: "scope", params: { sort: "submittedAt", dir: "desc" } },
+  { key: "priority", label: "ذات أولوية", description: "المعادة للتعديل والمتأخرة في قائمتك، الأقرب مهلة أولًا", icon: <Flag strokeWidth={1.75} />, view: "queue", params: { priority: "1", sort: "slaDueAt", dir: "asc" } },
 ];
 
 /** «طلب جديد»، «طلبان جديدان»، «٣ طلبات جديدة»، «١١ طلبًا جديدًا». */
@@ -42,18 +43,18 @@ export default async function SupervisorDashboard({ searchParams }: PageProps<"/
   const now = new Date();
   const askedTab = (await searchParams).tab;
   const tab = TABS.find((t) => t.key === askedTab) ?? TABS[0];
-  const listParams = (extra: Record<string, string>) => parseRequestListParams({ sort: "slaDueAt", dir: "asc", ...extra }, "queue");
+  const listOf = (t: (typeof TABS)[number]) => listRequests(user, parseRequestListParams(t.params, t.view), t.view, now);
 
-  const [overview, queue, all, priority, unopened, tracks] = await Promise.all([
+  const [overview, recent, priority, unopened, tracks] = await Promise.all([
     getOverview(user, now),
-    listRequests(user, listParams(tab.params), "queue", now),
-    listRequests(user, listParams({}), "queue", now),
-    listRequests(user, listParams(TABS[1].params), "queue", now),
-    listRequests(user, listParams({ unopened: "1", sort: "submittedAt", dir: "asc" }), "queue", now),
+    listOf(TABS[0]),
+    listOf(TABS[1]),
+    listRequests(user, parseRequestListParams({ unopened: "1", sort: "submittedAt", dir: "asc" }, "queue"), "queue", now),
     getByTrack(user),
   ]);
+  const shown = tab.key === "priority" ? priority : recent;
   const hasPrograms = user.trackIds.length > 0;
-  const tabCount = (t: (typeof TABS)[number]) => (t.key === "priority" ? priority.total : all.total);
+  const tabCount = (t: (typeof TABS)[number]) => (t.key === "priority" ? priority.total : recent.total);
   // One new request opens directly; several open the queue filtered to them.
   const unopenedHref = unopened.total === 1 ? `${DETAIL}/${unopened.items[0].id}` : `${QUEUE}?unopened=1`;
 
@@ -62,7 +63,7 @@ export default async function SupervisorDashboard({ searchParams }: PageProps<"/
       <PageBand
         eyebrow={`${greeting(now)}، ${user.name}`}
         title="لوحة المشرف"
-        lead="الطلبات المسندة إليك والطلبات الواردة في المسارات التي تشرف عليها."
+        lead="الطلبات الواردة في المسارات التي تشرف عليها."
         actions={<BandDate date={now} />}
         figures={
           <KpiRow
@@ -111,19 +112,20 @@ export default async function SupervisorDashboard({ searchParams }: PageProps<"/
         ) : null}
 
         <RequestsTableCard
-          title="طلبات قائمتي"
+          title="طلبات برامجي"
           description={tab.description}
           icon={<ListChecks strokeWidth={1.75} />}
-          rows={queue.items.slice(0, 8)}
-          total={queue.total}
+          rows={shown.items.slice(0, 8)}
+          total={shown.total}
           columns={["association", "program", "submitted", "status", "sla"]}
           hrefBase={DETAIL}
           listHref={QUEUE}
           now={now}
-          actionLabel="مراجعة"
+          // Any supervisor of the track reviews a request until it goes to the unit manager (D-144).
+          actionLabel={(r) => (r.status.key === "UNDER_REVIEW" && !r.withManager ? "مراجعة" : "عرض")}
           tabs={
             <CardTabs
-              label="تصفية قائمتي"
+              label="تصفية الطلبات"
               items={TABS.map((t) => ({
                 key: t.key,
                 label: t.label,
@@ -151,7 +153,7 @@ function EmptyQueue({ filtered }: { filtered: boolean }) {
   return (
     <CardEmpty
       icon={<Inbox strokeWidth={1.75} />}
-      title={filtered ? "لا توجد طلبات ذات أولوية" : "لا توجد طلبات في قائمتك"}
+      title={filtered ? "لا توجد طلبات ذات أولوية" : "لا توجد طلبات في برامجك"}
       action={
         filtered ? (
           <Link href="/supervisor" className={buttonClasses("outline", "sm")}>
@@ -160,7 +162,7 @@ function EmptyQueue({ filtered }: { filtered: boolean }) {
         ) : null
       }
     >
-      {filtered ? "لا توجد في قائمتك طلبات معادة للتعديل أو متأخرة عن المهلة." : "عند تقديم الجمعيات طلبات ضمن برامجك ستُسند إليك تلقائيًا وتظهر هنا مع مهلة مراجعة كل طلب."}
+      {filtered ? "لا توجد في قائمتك طلبات معادة للتعديل أو متأخرة عن المهلة." : "عند تقديم الجمعيات طلبات ضمن برامجك تظهر هنا مع مهلة مراجعة كل طلب."}
     </CardEmpty>
   );
 }

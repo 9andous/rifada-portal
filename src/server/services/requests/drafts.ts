@@ -10,9 +10,9 @@ import { riyadhDateString } from "@/lib/working-days";
 import { requestRef, statusMap } from "./common";
 
 // Drafts (Phase 3): an officer creates a draft by choosing the track and the request type (D-123),
-// saves and resumes it, and may delete it while it has never been submitted (D-073). The programme
-// and initiatives are no longer the association's choice; the supervisor may set them in review.
-// Returned requests are edited through the same save.
+// saves and resumes it, and may delete it while it has never been submitted (D-073). The association
+// chooses the programme of its track and one or more of its initiatives again (D-151); the supervisor
+// may still change them in review. Returned requests are edited through the same save.
 
 export const REQUEST_MSG = {
   notFound: "الطلب غير موجود.",
@@ -22,6 +22,9 @@ export const REQUEST_MSG = {
   trackUnavailable: "المسار المختار غير متاح حاليًا.",
   requestTypeMissing: "اختاروا نوع الطلب.",
   requestTypeUnavailable: "نوع الطلب المختار غير متاح حاليًا.",
+  programUnavailable: "البرنامج المختار غير متاح حاليًا.",
+  programOutsideTrack: "البرنامج المختار ليس من برامج المسار المستهدف.",
+  initiativesUnavailable: "بعض المبادرات المختارة غير متاحة أو ليست من البرنامج المختار.",
   notDiscardable: "لا تُحذف إلا المسودات التي لم تُقدَّم قط.",
 } as const;
 
@@ -33,16 +36,63 @@ async function activeAssociation(actor: Actor): Promise<boolean> {
 
 const availableTrackWhere = { archivedAt: null };
 const availableRequestTypeWhere = { archivedAt: null, isActive: true };
+const availableProgramWhere = { archivedAt: null, isActive: true };
+const availableInitiativeWhere = { archivedAt: null, isActive: true };
 
-/** The tracks and request types offered for a request (D-123). */
+/**
+ * What a request is placed under (D-123, D-151): the tracks with the programmes each covers, the
+ * programmes with their goals (from «ملامح الاستراتيجية») and initiatives, and the request types.
+ */
 export async function newRequestOptions(actor: Actor) {
   assertCan(actor, "requests.create");
-  const [tracks, requestTypes, associationActive] = await Promise.all([
-    db.track.findMany({ where: availableTrackWhere, orderBy: [{ sortOrder: "asc" }, { number: "asc" }], select: { id: true, number: true, name: true, description: true } }),
-    db.requestType.findMany({ where: availableRequestTypeWhere, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, description: true } }),
+  const [tracks, programs, requestTypes, associationActive] = await Promise.all([
+    db.track.findMany({
+      where: availableTrackWhere,
+      orderBy: [{ sortOrder: "asc" }, { number: "asc" }],
+      select: { id: true, number: true, name: true, description: true, programs: { select: { programId: true } } },
+    }),
+    db.program.findMany({
+      where: { ...availableProgramWhere, initiatives: { some: availableInitiativeWhere } },
+      orderBy: [{ sortOrder: "asc" }, { number: "asc" }],
+      select: {
+        id: true,
+        number: true,
+        name: true,
+        description: true,
+        goals: { where: { archivedAt: null }, orderBy: { number: "asc" }, select: { id: true, number: true, text: true } },
+        initiatives: { where: availableInitiativeWhere, orderBy: { number: "asc" }, select: { id: true, number: true, name: true } },
+      },
+    }),
+    db.requestType.findMany({ where: availableRequestTypeWhere, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, description: true, requiresDetail: true } }),
     activeAssociation(actor),
   ]);
-  return { tracks, requestTypes, associationActive };
+  return {
+    tracks: tracks.map(({ programs: links, ...t }) => ({ ...t, programIds: links.map((l) => l.programId) })),
+    programs,
+    requestTypes,
+    associationActive,
+  };
+}
+
+/**
+ * Checks the programme and initiatives against the track (D-151); null when they fit. Initiatives
+ * already on the request may stay when archived since; new ones must be available.
+ */
+async function checkScope(trackId: string, programId: string, initiativeIds: string[], kept: string[]) {
+  const program = await db.program.findFirst({
+    where: { id: programId, ...availableProgramWhere },
+    select: { id: true, tracks: { where: { trackId }, select: { trackId: true } } },
+  });
+  if (!program) return fieldRefusal("programId", REQUEST_MSG.programUnavailable);
+  if (trackId && program.tracks.length === 0) return fieldRefusal("programId", REQUEST_MSG.programOutsideTrack);
+  const fresh = initiativeIds.filter((i) => !kept.includes(i));
+  const old = initiativeIds.filter((i) => kept.includes(i));
+  const [freshFound, oldFound] = await Promise.all([
+    fresh.length ? db.initiative.count({ where: { id: { in: fresh }, programId, ...availableInitiativeWhere } }) : 0,
+    old.length ? db.initiative.count({ where: { id: { in: old }, programId } }) : 0,
+  ]);
+  if (freshFound !== fresh.length || oldFound !== old.length) return fieldRefusal("initiativeIds", REQUEST_MSG.initiativesUnavailable);
+  return null;
 }
 
 /** Checks a track and request type choice; null when both are available. */
@@ -84,13 +134,23 @@ export async function editableRequest(actor: Actor, id: string) {
   const statuses = await statusMap();
   return db.request.findFirst({
     where: { id, associationId: actor.associationId, statusId: { in: [statuses.DRAFT.id, statuses.RETURNED.id] } },
-    select: { id: true, referenceNo: true, title: true, statusId: true, trackId: true, requestTypeId: true, assignedSupervisorId: true },
+    select: {
+      id: true,
+      referenceNo: true,
+      title: true,
+      statusId: true,
+      trackId: true,
+      requestTypeId: true,
+      programId: true,
+      assignedSupervisorId: true,
+      initiatives: { orderBy: [{ sortOrder: "asc" }, { initiativeId: "asc" }], select: { initiativeId: true } },
+    },
   });
 }
 
 const toDate = (value: string) => (value ? new Date(`${value}T00:00:00Z`) : null);
 
-/** Saves the form (D-123): the track, the request type and the general fields. */
+/** Saves the form (D-123, D-151): the track, the request type, the programme and initiatives and the general fields. */
 export async function saveDraft(actor: Actor, id: string, raw: unknown): Promise<Result> {
   assertCan(actor, "requests.editDraft");
   const parsed = draftSchema.safeParse(raw);
@@ -105,6 +165,15 @@ export async function saveDraft(actor: Actor, id: string, raw: unknown): Promise
   const requestTypeId = input.requestTypeId || request.requestTypeId || "";
   if (trackId !== request.trackId || requestTypeId !== request.requestTypeId) {
     const refused = await checkChoice({ trackId, requestTypeId });
+    if (refused) return refused;
+  }
+  // The programme and initiatives (D-151): left out keeps them, an empty programme clears them.
+  const keptIds = request.initiatives.map((l) => l.initiativeId);
+  const programId = input.programId === undefined ? request.programId : input.programId || null;
+  const initiativeIds = input.programId === undefined ? keptIds : programId ? input.initiativeIds : [];
+  const scopeChanged = programId !== request.programId || initiativeIds.join() !== keptIds.join();
+  if (programId && (scopeChanged || trackId !== request.trackId)) {
+    const refused = await checkScope(trackId, programId, initiativeIds, programId === request.programId ? keptIds : []);
     if (refused) return refused;
   }
 
@@ -123,6 +192,9 @@ export async function saveDraft(actor: Actor, id: string, raw: unknown): Promise
     const data = {
       trackId: trackId || null,
       requestTypeId: requestTypeId || null,
+      requestTypeDetail: input.requestTypeDetail || null,
+      programId,
+      initiativeId: initiativeIds[0] ?? null,
       title: input.title,
       description: input.description || null,
       goals: input.goals || null,
@@ -134,8 +206,13 @@ export async function saveDraft(actor: Actor, id: string, raw: unknown): Promise
       partners: input.partners || null,
     };
     await tx.request.update({ where: { id }, data });
+    if (scopeChanged) {
+      await tx.requestInitiative.deleteMany({ where: { requestId: id } });
+      if (initiativeIds.length) await tx.requestInitiative.createMany({ data: initiativeIds.map((initiativeId, sortOrder) => ({ requestId: id, initiativeId, sortOrder })) });
+    }
     const changed = [
-      ...(["trackId", "requestTypeId", "title", "description", "goals", "kpis", "partners", "expectedBeneficiaries", "estimatedBudget"] as const).filter((k) => (before[k] ?? "") !== (data[k] ?? "")),
+      ...(scopeChanged ? (["programId", "initiativeIds"] as const) : []),
+      ...(["trackId", "requestTypeId", "requestTypeDetail", "title", "description", "goals", "kpis", "partners", "expectedBeneficiaries", "estimatedBudget"] as const).filter((k) => (before[k] ?? "") !== (data[k] ?? "")),
       ...(["startDate", "endDate"] as const).filter((k) => (before[k]?.getTime() ?? null) !== (data[k]?.getTime() ?? null)),
     ];
     if (changed.length) {

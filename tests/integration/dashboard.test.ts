@@ -70,7 +70,7 @@ async function fixtures() {
         assignedSupervisorId: data.supervisor,
         createdById: data.createdBy,
         title: data.title,
-        referenceNo: data.submittedAt ? `RF-1448-${data.title}` : null,
+        referenceNo: data.submittedAt ? `PRH-1448-${data.title}` : null,
       },
     });
 

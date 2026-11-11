@@ -43,7 +43,8 @@ export default async function AssociationHome() {
         actions={
           <>
             <BandDate date={now} />
-            <Link href={`${LIST}/new`} className={buttonClasses("gold", "lg")}>
+            {/* The navigation bar carries this button from lg up (D-136). */}
+            <Link href={`${LIST}/new`} className={buttonClasses("gold", "lg", "lg:hidden")}>
               <FilePlus2 aria-hidden="true" strokeWidth={1.75} />
               تقديم طلب جديد
             </Link>

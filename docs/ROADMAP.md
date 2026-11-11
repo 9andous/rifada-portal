@@ -28,6 +28,7 @@ Never start a phase that has not been approved.
 | Review workflow change, phase 4 — «المسارات» above the programmes | **Built** on 2026-10-30, awaiting the owner's review | D-119. |
 | Owner's review of 2026-11-02 — home, login, dashboards, tracks at registration, «الإسناد» removed | **Built** on 2026-11-02, awaiting the owner's review | D-126. |
 | Owner's review of 2026-11-02, second round — four-step registration, statuses hidden, supervisor tabs and banner | **Built** on 2026-11-02, awaiting the owner's review | D-127 (drops D-126's track limit). |
+| Association registration by invitation | **Built** on 2026-11-05, awaiting the owner's review | D-149. Emails not sent yet: the super admin passes on the link and the temporary password. |
 | Phase 6 — Reports, print and PDF | Not started | |
 | Phase 7 — Demo mode, hardening, docs | Not started | |
 
@@ -69,7 +70,7 @@ Never start a phase that has not been approved.
    Initiative lists appear only after login, behind one settings flag (`public.showInitiatives`,
    default off) that can later make them public. Enforced in the data loader and tested.
 10. **Association `licenseNumber`, `classification` and `region` are optional.**
-11. **Reference numbers use the current Hijri year**, computed at submission (`RF-<hijriYear>-<seq>`),
+11. **Reference numbers use the current Hijri year**, computed at submission (`PRH-<hijriYear>-<seq>`; `RF` before D-150),
     never hard-coded.
 12. **`nationalId` is optional and used only by the mock Nafath provider**; never required on any
     account, including association accounts.

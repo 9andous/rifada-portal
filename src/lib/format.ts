@@ -1,5 +1,5 @@
 // Display formatting. Values are stored as plain numbers and UTC dates; everything shown
-// to users goes through these helpers so digits are Arabic-Indic and dates are Hijri-first.
+// to users goes through these helpers so digits are Arabic-Indic and dates are Hijri (D-134).
 // A fixed time zone keeps server and browser output identical (no hydration mismatch).
 
 export const DISPLAY_TIME_ZONE = "Asia/Riyadh";
@@ -47,13 +47,6 @@ const hijriDateShort = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-a
   year: "numeric",
 });
 
-const gregorianDate = new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-arab", {
-  timeZone: DISPLAY_TIME_ZONE,
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
-
 const time = new Intl.DateTimeFormat("ar-SA-u-nu-arab", {
   timeZone: DISPLAY_TIME_ZONE,
   hour: "numeric",
@@ -68,11 +61,6 @@ const hijriYearParts = new Intl.DateTimeFormat("en-US-u-ca-islamic-umalqura", {
 /** Hijri (Umm al-Qura) date, e.g. «٢٩ ربيع الآخر ١٤٤٨ هـ». */
 export function formatHijri(date: Date, style: "long" | "short" = "long"): string {
   return (style === "long" ? hijriDate : hijriDateShort).format(date);
-}
-
-/** Gregorian date in Arabic, e.g. «٢٢ أكتوبر ٢٠٢٦». */
-export function formatGregorian(date: Date): string {
-  return gregorianDate.format(date) + " م";
 }
 
 export function formatTime(date: Date): string {
@@ -112,6 +100,76 @@ export function hijriMonth(date: Date): { key: string; name: string } {
   const year = Number.parseInt(parts.find((p) => p.type === "year")?.value ?? "0", 10);
   const month = Number.parseInt(parts.find((p) => p.type === "month")?.value ?? "0", 10);
   return { key: `${year}-${String(month).padStart(2, "0")}`, name: hijriMonthName.format(date) };
+}
+
+export const HIJRI_MONTH_NAMES = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"] as const;
+
+const hijriDayParts = new Intl.DateTimeFormat("en-US-u-ca-islamic-umalqura-nu-latn", {
+  timeZone: DISPLAY_TIME_ZONE,
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+});
+
+export type HijriParts = { year: number; month: number; day: number };
+
+function hijriPartsOf(date: Date): HijriParts {
+  const parts = hijriDayParts.formatToParts(date);
+  const read = (type: "year" | "month" | "day") => Number.parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
+  return { year: read("year"), month: read("month"), day: read("day") };
+}
+
+/** The Hijri (Umm al-Qura) date of a stored YYYY-MM-DD value, or null when malformed. */
+export function hijriPartsFromIso(iso: string): HijriParts | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+  const date = new Date(`${iso}T12:00:00Z`);
+  return Number.isNaN(date.getTime()) ? null : hijriPartsOf(date);
+}
+
+const DAY_MS = 86_400_000;
+const HIJRI_EPOCH = Date.UTC(622, 6, 19, 12);
+
+/**
+ * The YYYY-MM-DD value of a Hijri (Umm al-Qura) date, or null when it does not exist (the 30th of a
+ * 29-day month). The tables have no inverse, so this estimates the day from the mean calendar and
+ * looks around it.
+ */
+export function isoFromHijri({ year, month, day }: HijriParts): string | null {
+  const estimate = HIJRI_EPOCH + Math.round((year - 1) * 354.36667 + (month - 1) * 29.5306 + (day - 1)) * DAY_MS;
+  for (let offset = -5; offset <= 5; offset++) {
+    const date = new Date(estimate + offset * DAY_MS);
+    const found = hijriPartsOf(date);
+    if (found.year === year && found.month === month && found.day === day) return date.toISOString().slice(0, 10);
+  }
+  return null;
+}
+
+/** Today's Hijri (Umm al-Qura) date in the Riyadh time zone. */
+export function hijriToday(): HijriParts {
+  return hijriPartsOf(new Date());
+}
+
+export type HijriMonth = Pick<HijriParts, "year" | "month">;
+
+/** A month's days for a calendar, and how many empty cells come before the first one (the week starts on Sunday). */
+export function hijriMonthDays({ year, month }: HijriMonth): { days: { day: number; iso: string }[]; leading: number } {
+  const days: { day: number; iso: string }[] = [];
+  for (let day = 1; day <= 30; day++) {
+    const iso = isoFromHijri({ year, month, day });
+    if (iso) days.push({ day, iso });
+  }
+  return { days, leading: days.length ? new Date(`${days[0].iso}T12:00:00Z`).getUTCDay() : 0 };
+}
+
+/** The month `delta` months away. */
+export function shiftHijriMonth({ year, month }: HijriMonth, delta: number): HijriMonth {
+  const index = year * 12 + (month - 1) + delta;
+  return { year: Math.floor(index / 12), month: (index % 12) + 1 };
+}
+
+/** The YYYY-MM-DD value `days` days away. */
+export function isoPlusDays(iso: string, days: number): string {
+  return new Date(Date.parse(`${iso}T12:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }
 
 /** The last `count` Hijri months up to and including the month of `now`, oldest first. */

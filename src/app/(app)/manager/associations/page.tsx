@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "الجمعيات" };
 export default async function ManagerAssociationsPage({ searchParams }: PageProps<"/manager/associations">) {
   const user = await requireUser();
   if (scopeFor(user.role, "associations.read") !== "all") return <ForbiddenPage />;
-  const figures = await associationFigures(user);
+  const [figures, params] = await Promise.all([associationFigures(user), searchParams]);
 
   return (
     <>
@@ -26,8 +26,9 @@ export default async function ManagerAssociationsPage({ searchParams }: PageProp
         lead="سجل الجمعيات المشرف عليها، للاطلاع. يتولى مدير النظام التسجيل والتعديل."
         figures={
           <BandFigures
+            params={params}
             items={[
-              { label: "الجمعيات", icon: Building2, value: formatNumber(figures.total), caption: "المسجلة في المنصة" },
+              { label: "الجمعيات", icon: Building2, value: formatNumber(figures.total), caption: "المسجلة في المنصة", href: "/manager/associations" },
               { label: "النشطة", icon: CircleCheck, tone: "ok", value: formatNumber(figures.active), caption: "تقدّم طلباتها", href: "/manager/associations?status=active" },
               { label: "المعطلة", icon: CircleSlash, tone: "neutral", value: formatNumber(figures.inactive), caption: "موقوفة عن التقديم", href: "/manager/associations?status=inactive" },
               { label: "لها حساب مسؤول", icon: UserRoundCheck, tone: "info", value: formatNumber(figures.withOfficer), caption: "حساب واحد لكل جمعية", href: "/manager/associations?officer=with" },

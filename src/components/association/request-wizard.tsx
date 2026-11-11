@@ -13,14 +13,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DiscardDraftButton } from "@/components/requests/request-actions";
 import { Button } from "@/components/ui/button";
-import { RefNumber } from "@/components/ui/ref-number";
-import { hijriCaption } from "@/components/ui/hijri-date-input";
+import { ReferenceCard } from "@/components/requests/reference-card";
+import { HijriDateInput } from "@/components/ui/hijri-date-input";
 import { Alert } from "@/components/ui/surface";
-import type { MissingItem } from "@/lib/completeness";
+import { MAX_SPAN_DAYS, type MissingItem } from "@/lib/completeness";
 import { cn } from "@/lib/cn";
 import { toast } from "@/components/ui/toaster";
-import { formatHijriDateTime, formatNumber, formatTime } from "@/lib/format";
-import { GENERAL_FIELD_LABELS, REQUIRED_GENERAL_FIELDS } from "@/lib/requests";
+import { formatHijri, formatHijriDateTime, formatNumber, formatTime, isoPlusDays, toArabicDigits } from "@/lib/format";
+import { formatGoals, formatTargetGroups, GENERAL_FIELD_LABELS, parseGoals, parseTargetGroups, REQUIRED_GENERAL_FIELDS, type RequestGoal, type TargetGroup } from "@/lib/requests";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
 import { riyadhDateString } from "@/lib/working-days";
 import {
@@ -30,10 +30,27 @@ import {
 } from "@/server/actions/requests";
 import { AttachmentCard, type AttachmentCardProps } from "./attachment-card";
 import { FIELD_INPUT, FormField, StepCard, StepsAside } from "./fields";
+import {
+  CheckList,
+  GoalsField,
+  SelectField,
+  TargetGroupsField,
+  type WizardChoice,
+  type WizardProgram,
+  type WizardRequestType,
+  type WizardTrack,
+} from "./request-scope-fields";
+
+export type { WizardChoice, WizardProgram, WizardRequestType, WizardTrack };
 
 export type WizardDefaults = {
   trackId: string;
   requestTypeId: string;
+  /** What the association wrote for a type that asks for it, such as «أخرى» (D-151). */
+  requestTypeDetail: string;
+  /** The programme of the track and its chosen initiatives (D-151). */
+  programId: string;
+  initiativeIds: string[];
   title: string;
   description: string;
   goals: string;
@@ -45,12 +62,6 @@ export type WizardDefaults = {
   partners: string;
 };
 
-export type WizardChoice = {
-  id: string;
-  name: string;
-  description: string | null;
-};
-
 type StepKey = "about" | "details" | "files" | "review";
 type Step = { key: StepKey; title: string; hint: string; short: string };
 
@@ -58,13 +69,13 @@ const STEPS: Step[] = [
   {
     key: "about",
     title: "عن المشروع",
-    hint: "الاسم والمسار ونوع الطلب، ووصف لما تريدون تنفيذه.",
-    short: "الاسم والوصف",
+    hint: "اسم البرنامج المقترح والمسار والبرنامج والمبادرات.",
+    short: "الاسم والبرنامج",
   },
   {
     key: "details",
     title: "التفاصيل والموعد",
-    hint: "المستفيدون والفترة والميزانية ومؤشرات القياس والشركاء.",
+    hint: "نوع الطلب، والوصف والأهداف ومؤشراتها، والمستفيدون والفترة والميزانية والشركاء.",
     short: "الأرقام والموعد",
   },
   {
@@ -83,16 +94,19 @@ const STEPS: Step[] = [
 
 const FIELD_STEP: Record<string, StepKey> = {
   trackId: "about",
-  requestTypeId: "about",
+    programId: "about",
+  initiativeIds: "about",
   title: "about",
-  description: "about",
-  goals: "about",
+  description: "details",
+  goals: "details",
   expectedBeneficiaries: "details",
   startDate: "details",
   endDate: "details",
   estimatedBudget: "details",
   kpis: "details",
   partners: "details",
+  requestTypeId: "details",
+  requestTypeDetail: "details",
 };
 
 /** The step that holds a field of the save or the completeness check. */
@@ -103,99 +117,7 @@ function stepOf(field: string): StepKey {
 
 /** «١٢ رجب ١٤٤٨ هـ» for a YYYY-MM-DD value. */
 const hijri = (value: string | undefined) =>
-  hijriCaption(value ?? "")?.replace("الموافق ", "") ?? value ?? "";
-
-/**
- * A date picker (the browser's calendar) with the Hijri date written under it as the officer picks.
- * `min` greys out the days before it in the calendar; the server checks the same rule.
- */
-function DateField({
-  id,
-  name,
-  value,
-  onChange,
-  min,
-  invalid,
-}: {
-  id: string;
-  name: string;
-  value: string;
-  onChange: (value: string) => void;
-  min?: string;
-  invalid?: boolean;
-}) {
-  const caption = hijriCaption(value);
-  return (
-    <div className="flex flex-col gap-1">
-      <input
-        id={id}
-        name={name}
-        type="date"
-        dir="ltr"
-        value={value}
-        min={min}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={invalid}
-        className={cn(FIELD_INPUT, "h-11 max-w-60")}
-      />
-      <span
-        className={cn(
-          "text-sm",
-          caption ? "font-semibold text-primary" : "text-ink-muted",
-        )}
-        aria-live="polite"
-      >
-        {caption ?? "اختاروا التاريخ من التقويم، ويظهر هنا بالهجري."}
-      </span>
-    </div>
-  );
-}
-
-/** A native select of tracks or request types, with the chosen one's description under it. */
-function ChoiceField({
-  id,
-  name,
-  label,
-  hint,
-  options,
-  defaultValue,
-  error,
-}: {
-  id: string;
-  name: string;
-  label: string;
-  hint: string;
-  options: WizardChoice[];
-  defaultValue: string;
-  error?: string;
-}) {
-  const [value, setValue] = useState(defaultValue);
-  const chosen = options.find((o) => o.id === value);
-  return (
-    <FormField id={id} label={label} hint={hint} error={error}>
-      <select
-        id={id}
-        name={name}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        aria-invalid={Boolean(error)}
-        className={cn(FIELD_INPUT, "h-11")}
-      >
-        <option value="">اختاروا من القائمة</option>
-        {options.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.name}
-          </option>
-        ))}
-      </select>
-      {chosen?.description ? (
-        <p className="text-sm leading-relaxed text-ink-muted">
-          {chosen.description}
-        </p>
-      ) : null}
-    </FormField>
-  );
-}
+  value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? formatHijri(new Date(`${value}T12:00:00Z`)) : "";
 
 function ReviewBlock({
   title,
@@ -267,6 +189,7 @@ export function RequestWizard({
   returnedAt,
   defaults,
   tracks,
+  programs,
   requestTypes,
   ownFiles,
   canDiscard,
@@ -281,8 +204,10 @@ export function RequestWizard({
   returnNote: string | null;
   returnedAt: Date | null;
   defaults: WizardDefaults;
-  tracks: WizardChoice[];
-  requestTypes: WizardChoice[];
+  tracks: WizardTrack[];
+  /** The programmes with their goals and initiatives; each track offers those it covers (D-151). */
+  programs: WizardProgram[];
+  requestTypes: WizardRequestType[];
   /** The association's files: the plan, the budget, partnership letters (D-123). */
   ownFiles: Omit<AttachmentCardProps, "error">;
   canDiscard: boolean;
@@ -296,10 +221,60 @@ export function RequestWizard({
 
   const steps = STEPS;
   const [id, setId] = useState(requestId);
+
+  // What the association picks (D-151): the track, then a programme it covers and one or more of the
+  // programme's initiatives. The goals it writes itself, each with its measure.
+  const [trackId, setTrackId] = useState(defaults.trackId);
+  const [programId, setProgramId] = useState(defaults.programId);
+  const [initiativeIds, setInitiativeIds] = useState(defaults.initiativeIds);
+  const [requestTypeId, setRequestTypeId] = useState(defaults.requestTypeId);
+  const [goals, setGoals] = useState<RequestGoal[]>(() => parseGoals(defaults.goals));
+  const [groups, setGroups] = useState<TargetGroup[]>(() => parseTargetGroups(defaults.expectedBeneficiaries));
+  const track = tracks.find((t) => t.id === trackId);
+  const trackPrograms = track ? programs.filter((p) => track.programIds.includes(p.id)) : [];
+  const program = trackPrograms.find((p) => p.id === programId);
+  const requestType = requestTypes.find((t) => t.id === requestTypeId);
+  const goalsText = formatGoals(goals);
+  const groupsText = formatTargetGroups(groups);
+
+  function touch(...fields: string[]) {
+    dirty.current = true;
+    clearFieldErrors(...fields);
+  }
+
+  function changeTrack(next: string) {
+    touch("trackId", "programId", "initiativeIds");
+    setTrackId(next);
+    const covered = tracks.find((t) => t.id === next)?.programIds ?? [];
+    if (programId && !covered.includes(programId)) changeProgram("");
+  }
+
+  function changeProgram(next: string) {
+    touch("programId", "initiativeIds");
+    setProgramId(next);
+    setInitiativeIds([]);
+  }
   const [startDate, setStartDate] = useState(defaults.startDate);
   const [endDate, setEndDate] = useState(defaults.endDate);
   // The start may not be before today (D-123); computed once, in Riyadh time like the server.
   const [today] = useState(() => riyadhDateString(new Date()));
+  // The end follows the start (D-141): a start that leaves the end outside the allowed period clears it.
+  const latestEnd = startDate ? isoPlusDays(startDate, MAX_SPAN_DAYS) : undefined;
+  function changeStartDate(next: string) {
+    dirty.current = true;
+    clearFieldErrors("startDate", "endDate");
+    setStartDate(next);
+    if (next && endDate && (endDate < next || endDate > isoPlusDays(next, MAX_SPAN_DAYS))) {
+      setEndDate("");
+      toast("اختاروا تاريخ النهاية من جديد", { description: "لم يعد يناسب تاريخ البداية الجديد." });
+    }
+  }
+
+  function changeEndDate(next: string) {
+    dirty.current = true;
+    clearFieldErrors("endDate");
+    setEndDate(next);
+  }
 
   const [step, setStep] = useState(() => Math.min(Math.max(0, initialStep), STEPS.length - 1));
   const created = useRef<string | null>(null);
@@ -319,6 +294,16 @@ export function RequestWizard({
     );
   const err = (name: string) =>
     errors[name] ?? missing.find((m) => m.field === name)?.message;
+
+  /** A field the officer changes drops its message; the server checks it again at the next save or send. */
+  function clearFieldErrors(...names: string[]) {
+    setErrors((all) => (names.some((n) => all[n]) ? Object.fromEntries(Object.entries(all).filter(([k]) => !names.includes(k))) : all));
+    const left = missing.filter((m) => !names.includes(m.field));
+    if (left.length === missing.length) return;
+    setMissing(left);
+    // Nothing left of a refused send: its banner goes too.
+    if (left.length === 0) setFailure(null);
+  }
 
   useEffect(
     () => () => {
@@ -439,15 +424,10 @@ export function RequestWizard({
     setFailure(null);
     const r = await submitRequestAction(id, {}, new FormData(formRef.current));
     if (r.ok) {
-      // The reference number goes in the pop-up; the request page no longer repeats it in a notice (D-124).
+      // The reference number goes in the pop-up, which stays until «حسنًا» so it is not missed (D-124, D-150).
       toast(returned ? "أُعيد إرسال الطلب" : "تم إرسال طلبكم بنجاح", {
-        description: r.referenceNo ? (
-          <>
-            رقم الطلب <RefNumber value={r.referenceNo} className="font-bold text-ink" />. احتفظوا به للرجوع إليه.
-          </>
-        ) : (
-          "وصل إلى الوحدة الإشرافية."
-        ),
+        description: r.referenceNo ? <ReferenceCard value={r.referenceNo} /> : "وصل إلى الوحدة الإشرافية.",
+        persist: Boolean(r.referenceNo),
       });
       router.push(`/association/requests/${id}`);
       return;
@@ -477,8 +457,18 @@ export function RequestWizard({
   if (current.key === "review") {
     if (!values.trackId)
       needs.push({ label: "المسار المستهدف: لم يُختر بعد", field: "trackId" });
+    if (!values.programId)
+      needs.push({ label: "البرنامج: لم يُختر بعد", field: "programId" });
+    else if (initiativeIds.length === 0)
+      needs.push({ label: "المبادرات: لم تُختر مبادرة بعد", field: "initiativeIds" });
     if (!values.requestTypeId)
       needs.push({ label: "نوع الطلب: لم يُختر بعد", field: "requestTypeId" });
+    else if (requestType?.requiresDetail && !values.requestTypeDetail?.trim())
+      needs.push({ label: `نوع الطلب: اكتبوا ما تطلبونه في «${requestType.name}»`, field: "requestTypeDetail" });
+    for (const g of goals.filter((x) => x.goal.trim() && !x.measure.trim()))
+      needs.push({ label: `الأهداف: اكتبوا مؤشر القياس للهدف «${g.goal.trim()}»`, field: "goals" });
+    for (const g of groups.filter((x) => x.name.trim() && !x.count))
+      needs.push({ label: `الفئات المستهدفة: اكتبوا العدد المستهدف لفئة «${g.name.trim()}»`, field: "expectedBeneficiaries" });
     for (const name of [
       ...REQUIRED_GENERAL_FIELDS,
       "estimatedBudget",
@@ -677,8 +667,10 @@ export function RequestWizard({
             ref={formRef}
             noValidate
             onSubmit={(e) => e.preventDefault()}
-            onInput={() => {
+            onInput={(e) => {
               dirty.current = true;
+              const name = (e.target as HTMLInputElement).name;
+              if (name) clearFieldErrors(name);
             }}
             onBlur={onFieldLeft}
           >
@@ -709,26 +701,80 @@ export function RequestWizard({
                   className={cn(FIELD_INPUT, "h-11")}
                 />
               </FormField>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <ChoiceField
-                  id="f-trackId"
-                  name="trackId"
-                  label="المسار المستهدف *"
-                  hint="المجال الذي يخدمه مشروعكم."
-                  options={tracks}
-                  defaultValue={defaults.trackId}
-                  error={err("trackId")}
+              <SelectField
+                id="f-trackId"
+                name="trackId"
+                label="المسار المستهدف *"
+                hint="المجال الذي يخدمه مشروعكم، من تصنيف المستوى (ب) للوحدة الإشرافية."
+                options={tracks}
+                value={trackId}
+                onChange={changeTrack}
+                error={err("trackId")}
+              />
+              <SelectField
+                id="f-programId"
+                name="programId"
+                label="البرنامج *"
+                hint={track ? "برنامج رئاسة الشؤون الدينية الذي يندرج تحته مشروعكم." : "يُرجى اختيار المسار المستهدف أولًا."}
+                options={trackPrograms.map((p) => ({ id: p.id, name: p.name, description: p.description }))}
+                value={program ? programId : ""}
+                onChange={changeProgram}
+                disabled={!track}
+                placeholder={track ? "يُرجى اختيار البرنامج" : "يُرجى اختيار المسار المستهدف أولًا"}
+                error={err("programId")}
+              />
+              {program ? (
+                <CheckList
+                  id="f-initiativeIds"
+                  name="initiativeIds"
+                  label="المبادرات *"
+                  hint="اختاروا مبادرة واحدة أو أكثر من مبادرات البرنامج يخدمها مشروعكم."
+                  options={program.initiatives.map((i) => ({ value: i.id, label: i.name, number: i.number }))}
+                  values={initiativeIds}
+                  onChange={(next) => {
+                    touch("initiativeIds");
+                    setInitiativeIds(next);
+                  }}
+                  error={err("initiativeIds")}
+                  empty="لا توجد مبادرات متاحة في هذا البرنامج."
                 />
-                <ChoiceField
-                  id="f-requestTypeId"
-                  name="requestTypeId"
-                  label="نوع الطلب *"
-                  hint="ماذا تطلبون من الوحدة الإشرافية؟"
-                  options={requestTypes}
-                  defaultValue={defaults.requestTypeId}
-                  error={err("requestTypeId")}
-                />
-              </div>
+              ) : null}
+            </section>
+
+            <section
+              hidden={current.key !== "details"}
+              className="flex flex-col gap-6"
+            >
+              <SelectField
+                id="f-requestTypeId"
+                name="requestTypeId"
+                label="نوع الطلب *"
+                hint="ماذا تطلبون من الوحدة الإشرافية؟"
+                options={requestTypes}
+                value={requestTypeId}
+                onChange={(next) => {
+                  touch("requestTypeId", "requestTypeDetail");
+                  setRequestTypeId(next);
+                }}
+                error={err("requestTypeId")}
+              />
+              {requestType?.requiresDetail ? (
+                <FormField
+                  id="f-requestTypeDetail"
+                  label="اكتبوا نوع الطلب الذي تريدونه *"
+                  hint="بإيجاز. مثال: طلب تمديد فترة تنفيذ مشروع قائم."
+                  error={err("requestTypeDetail")}
+                >
+                  <input
+                    id="f-requestTypeDetail"
+                    name="requestTypeDetail"
+                    defaultValue={defaults.requestTypeDetail}
+                    maxLength={REQUEST_LIMITS.requestTypeDetail}
+                    aria-invalid={Boolean(err("requestTypeDetail"))}
+                    className={cn(FIELD_INPUT, "h-11")}
+                  />
+                </FormField>
+              ) : null}
               <FormField
                 id="f-description"
                 label={`${GENERAL_FIELD_LABELS.description} *`}
@@ -745,44 +791,28 @@ export function RequestWizard({
                   className={cn(FIELD_INPUT, "py-2.5 leading-relaxed")}
                 />
               </FormField>
-              <FormField
+              <GoalsField
                 id="f-goals"
                 label={`${GENERAL_FIELD_LABELS.goals} *`}
-                hint="ماذا تريدون أن تحققوا؟ مثال: تحفيظ جزأين لكل مستفيد مواظب، وتأهيل ٤٠ معلمًا متطوعًا."
+                goals={goals}
+                onChange={(next) => {
+                  touch("goals");
+                  setGoals(next);
+                }}
                 error={err("goals")}
-              >
-                <textarea
-                  id="f-goals"
-                  name="goals"
-                  rows={4}
-                  defaultValue={defaults.goals}
-                  maxLength={REQUEST_LIMITS.goals}
-                  aria-invalid={Boolean(err("goals"))}
-                  className={cn(FIELD_INPUT, "py-2.5 leading-relaxed")}
-                />
-              </FormField>
-            </section>
-
-            <section
-              hidden={current.key !== "details"}
-              className="flex flex-col gap-6"
-            >
-              <FormField
+              />
+              <input type="hidden" name="goals" value={goalsText} />
+              <TargetGroupsField
                 id="f-expectedBeneficiaries"
                 label={`${GENERAL_FIELD_LABELS.expectedBeneficiaries} *`}
-                hint="من يستفيد من المشروع؟ اكتبوا كل فئة في سطر. مثال: العاملون والعاملات في قطاع الحج والعمرة."
+                groups={groups}
+                onChange={(next) => {
+                  touch("expectedBeneficiaries");
+                  setGroups(next);
+                }}
                 error={err("expectedBeneficiaries")}
-              >
-                <textarea
-                  id="f-expectedBeneficiaries"
-                  name="expectedBeneficiaries"
-                  rows={4}
-                  defaultValue={defaults.expectedBeneficiaries}
-                  maxLength={REQUEST_LIMITS.beneficiaries}
-                  aria-invalid={Boolean(err("expectedBeneficiaries"))}
-                  className={cn(FIELD_INPUT, "py-2.5 leading-relaxed")}
-                />
-              </FormField>
+              />
+              <input type="hidden" name="expectedBeneficiaries" value={groupsText} />
               <div className="max-w-md">
                 <FormField
                   id="f-estimatedBudget"
@@ -808,11 +838,11 @@ export function RequestWizard({
                   hint="متى يبدأ التنفيذ؟ اليوم أو بعده."
                   error={err("startDate")}
                 >
-                  <DateField
+                  <HijriDateInput
                     id="f-startDate"
                     name="startDate"
                     value={startDate}
-                    onChange={setStartDate}
+                    onChange={changeStartDate}
                     min={today}
                     invalid={Boolean(err("startDate"))}
                   />
@@ -820,15 +850,18 @@ export function RequestWizard({
                 <FormField
                   id="f-endDate"
                   label={`${GENERAL_FIELD_LABELS.endDate} *`}
-                  hint="متى ينتهي؟ لا يسبق تاريخ البداية."
+                  hint="متى ينتهي؟ يُختار بعد تاريخ البداية، ولا يسبقه."
                   error={err("endDate")}
                 >
-                  <DateField
+                  <HijriDateInput
                     id="f-endDate"
                     name="endDate"
                     value={endDate}
-                    onChange={setEndDate}
+                    onChange={changeEndDate}
                     min={startDate || today}
+                    max={latestEnd}
+                    disabled={!startDate}
+                    placeholder={startDate ? undefined : "يُرجى اختيار تاريخ البداية أولًا"}
                     invalid={Boolean(err("endDate"))}
                   />
                 </FormField>
@@ -937,8 +970,30 @@ export function RequestWizard({
                 <ReviewRow label="المسار المستهدف" missing={!values.trackId}>
                   {nameOf(tracks, values.trackId)}
                 </ReviewRow>
+                <ReviewRow label="البرنامج" missing={!program}>
+                  {program?.name}
+                </ReviewRow>
+                <ReviewRow label="المبادرات" missing={initiativeIds.length === 0}>
+                  <ul className="flex flex-col gap-1">
+                    {(program?.initiatives ?? [])
+                      .filter((i) => initiativeIds.includes(i.id))
+                      .map((i) => (
+                        <li key={i.id}>
+                          {toArabicDigits(i.number)}. {i.name}
+                        </li>
+                      ))}
+                  </ul>
+                </ReviewRow>
+              </ReviewBlock>
+
+              <ReviewBlock
+                title="التفاصيل والموعد"
+                onEdit={() => void goTo(indexOf("details"))}
+                disabled={Boolean(busy)}
+              >
                 <ReviewRow label="نوع الطلب" missing={!values.requestTypeId}>
                   {nameOf(requestTypes, values.requestTypeId)}
+                  {requestType?.requiresDetail && values.requestTypeDetail?.trim() ? `: ${values.requestTypeDetail.trim()}` : ""}
                 </ReviewRow>
                 <ReviewRow
                   label={GENERAL_FIELD_LABELS.description}
@@ -952,22 +1007,31 @@ export function RequestWizard({
                   label={GENERAL_FIELD_LABELS.goals}
                   missing={!values.goals?.trim()}
                 >
-                  <span className="whitespace-pre-line">{values.goals}</span>
+                  <ul className="flex flex-col gap-1">
+                    {goals.filter((g) => g.goal.trim()).map((g, i) => (
+                      <li key={i} className="flex flex-wrap gap-x-2">
+                        <span>{g.goal}</span>
+                        <span className={g.measure.trim() ? "text-ink-muted" : "text-st-warn"}>
+                          {g.measure.trim() ? `مؤشر القياس: ${g.measure}` : "مؤشر القياس لم يُكتب"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </ReviewRow>
-              </ReviewBlock>
-
-              <ReviewBlock
-                title="التفاصيل والموعد"
-                onEdit={() => void goTo(indexOf("details"))}
-                disabled={Boolean(busy)}
-              >
                 <ReviewRow
                   label={GENERAL_FIELD_LABELS.expectedBeneficiaries}
                   missing={!values.expectedBeneficiaries?.trim()}
                 >
-                  <span className="whitespace-pre-line">
-                    {values.expectedBeneficiaries}
-                  </span>
+                  <ul className="flex flex-col gap-1">
+                    {parseTargetGroups(groupsText).map((g, i) => (
+                      <li key={i} className="flex flex-wrap gap-x-2">
+                        <span>{g.name}</span>
+                        <span className={cn("t-figure font-semibold", g.count ? "text-ink" : "text-st-warn")}>
+                          {g.count ? `${formatNumber(Number(g.count))} مستفيد` : "العدد لم يُكتب"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </ReviewRow>
                 <ReviewRow
                   label={GENERAL_FIELD_LABELS.estimatedBudget}

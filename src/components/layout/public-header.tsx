@@ -23,8 +23,8 @@ export function PublicHeader() {
       <SiteHeader
         middle={
           // Grouped at the start, from 1280px; the start padding lines the first link up with the
-          // end of «كيف تتحقق» in the gov banner above, and the shift down sits them on the line of
-          // the identity's unit name (owner's request). Hairlines between links.
+          // end of «كيف تتحقق» in the gov banner above, and the shift down matches the unit name's
+          // in SiteHeader, keeping both on one line (owner's request). Hairlines between links.
           <nav aria-label="أقسام الصفحة" className="translate-y-3 ps-36">
             <ul className="flex items-center gap-1">
               {SECTIONS.map((s, i) => (

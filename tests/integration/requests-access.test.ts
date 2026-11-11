@@ -96,9 +96,10 @@ describe("request lists and counts", () => {
     expect(ids(await listRequests(w.actors.supervisorP2, params("scope"), "scope"))).toEqual([c.id]);
     expect(ids(await listRequests(w.actors.officer, params("mine"), "mine"))).toEqual([a.id, b.id].sort());
     expect(ids(await listRequests(w.actors.officer2, params("mine"), "mine"))).toEqual([c.id]);
-    // Row actions only where the viewer may decide.
+    // A supervisor of the track may return or reject directly; the manager waits for the recommendation (D-139, D-145).
     const sup = await listRequests(w.actors.supervisor, params("scope"), "scope");
-    expect(Object.fromEntries(sup.items.map((r) => [r.id, r.decidable]))).toEqual({ [a.id]: true, [b.id]: false });
+    expect(sup.items.every((r) => r.decidable)).toBe(true);
+    expect((await listRequests(w.actors.manager, params("scope"), "scope")).items.every((r) => !r.decidable)).toBe(true);
     expect((await listRequests(w.actors.admin, params("scope"), "scope")).items.every((r) => !r.decidable)).toBe(true);
     // Filters and search.
     expect(ids(await listRequests(w.actors.manager, params("scope", { track: w.t2.id }), "scope"))).toEqual([c.id]);

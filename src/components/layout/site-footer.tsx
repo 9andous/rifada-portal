@@ -17,6 +17,7 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
   {
     title: "الخدمات",
     links: [
+      { label: "متابعة طلب التسجيل", href: "/register/status" },
       { label: "التحقق من وثيقة", href: "/verify" },
       { label: "تسجيل الدخول", href: "/login" },
       { label: "استعادة كلمة المرور", href: "/forgot-password" },

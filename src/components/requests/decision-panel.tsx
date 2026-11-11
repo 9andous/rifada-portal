@@ -1,42 +1,51 @@
 "use client";
 
-import { Check, Hourglass, PenLine, RotateCcw, X } from "lucide-react";
+import { Check, PenLine, RotateCcw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
-import { HeaderDiamond } from "@/components/ui/surface";
-import type { Decision } from "@/lib/requests";
+import { HeaderDiamond, StatusText } from "@/components/ui/surface";
+import { RECOMMENDATION_LABELS, RECOMMENDATION_TONES, type Decision } from "@/lib/requests";
 import { REQUEST_LIMITS } from "@/lib/validation/requests";
 import { DecisionDialog, type DialogRequest } from "./decision-dialog";
 import { EvaluationDialog } from "./evaluation-dialog";
 
-type Choice = { decision: Decision; label: string; icon: ReactNode; variant: "primary" | "warning" | "danger" };
+type Variant = "primary" | "warning" | "danger";
+type Choice = { decision: Decision; label: string; confirmLabel: string; icon: ReactNode; variant: Variant };
 
-const RETURN: Choice = { decision: "return", label: "إعادة للتعديل", icon: <RotateCcw aria-hidden="true" strokeWidth={1.75} />, variant: "warning" };
-const REJECT: Choice = { decision: "reject", label: "رفض", icon: <X aria-hidden="true" strokeWidth={1.75} />, variant: "danger" };
-const APPROVE: Choice = { decision: "approve", label: "اعتماد نهائي", icon: <Check aria-hidden="true" strokeWidth={1.75} />, variant: "primary" };
+const RETURN: Choice = { decision: "return", label: "إعادة للتعديل", confirmLabel: "تأكيد الإعادة للتعديل", icon: <RotateCcw aria-hidden="true" strokeWidth={1.75} />, variant: "warning" };
+const REJECT: Choice = { decision: "reject", label: "رفض", confirmLabel: "تأكيد الرفض", icon: <X aria-hidden="true" strokeWidth={1.75} />, variant: "danger" };
+const APPROVE: Choice = { decision: "approve", label: "اعتماد نهائي", confirmLabel: "اعتماد نهائي", icon: <Check aria-hidden="true" strokeWidth={1.75} />, variant: "primary" };
 
 /**
- * «القرار» (change 16, D-116): a side panel (at the top of the sticky side column); at tablet width
- * a fixed bottom bar. The supervisor evaluates and signs («تقييم واعتماد», sent to the unit manager),
- * or returns or rejects; the unit manager approves after that evaluation, or returns or rejects at
- * any time. Every decision opens the centred confirmation; the server re-checks everything.
+ * «القرار» (change 16, D-139, D-145): a side panel (at the top of the sticky side column); at tablet width
+ * a fixed bottom bar. The supervisor evaluates, signs and recommends («تقييم واعتماد»), which sends the
+ * request to the unit manager, who confirms or overrules it; or returns or rejects it directly when its
+ * data is wrong. Every decision opens the centred confirmation; the server re-checks everything.
  */
-export function DecisionPanel({ request, canEvaluate, canApprove, canDecide }: { request: DialogRequest; canEvaluate: boolean; canApprove: boolean; canDecide: boolean }) {
+export function DecisionPanel({
+  request,
+  canEvaluate,
+  canApprove,
+  canDecide,
+  recommendation,
+}: {
+  request: DialogRequest;
+  canEvaluate: boolean;
+  canApprove: boolean;
+  canDecide: boolean;
+  /** What the supervisor recommended, when the request is with the unit manager. */
+  recommendation?: { decision: Decision; reason: string | null } | null;
+}) {
   const router = useRouter();
-  const [reason, setReason] = useState("");
+  // The supervisor's reason is offered to the manager, who may change it before it reaches the association.
+  const offered = recommendation?.reason ?? "";
+  const [reason, setReason] = useState(offered);
   const [dialog, setDialog] = useState<{ decision: Decision; round: number } | null>(null);
   const open = (decision: Decision) => setDialog((d) => ({ decision, round: (d?.round ?? 0) + 1 }));
   const choices = [...(canApprove ? [APPROVE] : []), ...(canDecide ? [RETURN, REJECT] : [])];
-  // The unit manager before the supervisor's evaluation: return or reject only.
-  const waiting = !canEvaluate && !canApprove;
-  const evaluate = (
-    <>
-      <PenLine aria-hidden="true" strokeWidth={1.75} />
-      تقييم واعتماد
-    </>
-  );
+  const labelOf = (c: Choice) => (c.decision === recommendation?.decision ? c.confirmLabel : c.label);
 
   return (
     <>
@@ -48,28 +57,28 @@ export function DecisionPanel({ request, canEvaluate, canApprove, canDecide }: {
               القرار
             </h2>
             <p className="text-xs text-ink-subtle">
-              {canEvaluate ? "بعد التقييم والتوقيع يُرسل الطلب إلى مدير الوحدة." : canApprove ? "قيّم المشرف الطلب ووقّعه؛ القرار النهائي لكم." : "يُبلَّغ مسؤول الجمعية بالقرار وسببه."}
+              {canEvaluate ? "بعد التقييم والتوقيع يُرسل الطلب إلى مدير الوحدة، والقرار النهائي له." : canApprove ? "رفع المشرف توصيته؛ القرار النهائي لكم." : "لا يوجد مشرف نشط لتقييم الطلب؛ يتعذر اعتماده قبل تقييمه."}
             </p>
           </div>
         </div>
         <div className="p-5">
-          {waiting ? (
-            <p className="mb-4 flex items-start gap-2 rounded-md bg-surface-muted px-3 py-2.5 text-sm text-ink-muted">
-              <Hourglass aria-hidden="true" strokeWidth={1.75} className="mt-0.5 size-4 shrink-0" />
-              بانتظار تقييم المشرف وتوقيعه؛ يُتاح الاعتماد النهائي بعدهما.
-            </p>
+          {canEvaluate ? (
+            <EvaluationDialog requestId={request.id} className="w-full">
+              <PenLine aria-hidden="true" strokeWidth={1.75} />
+              تقييم واعتماد
+            </EvaluationDialog>
           ) : null}
-          {canEvaluate ? <EvaluationDialog requestId={request.id} title={request.title} trigger={evaluate} /> : null}
+          {recommendation ? <RecommendationBox recommendation={recommendation} /> : null}
           {choices.length ? (
             <>
-              <Field id="panel-reason" label="السبب" hint="مطلوب عند الإعادة للتعديل والرفض." className={canEvaluate ? "mt-5 border-t border-line pt-4" : undefined}>
+              <Field id="panel-reason" label="السبب" hint={canEvaluate ? "مطلوب عند الإعادة للتعديل والرفض. يصل القرار إلى الجمعية مباشرة." : "يُرسل إلى الجمعية عند الإعادة للتعديل أو الرفض."} className={canEvaluate ? "mt-5 border-t border-line pt-4" : recommendation ? "mt-4" : undefined}>
                 <Textarea id="panel-reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={REQUEST_LIMITS.reason} />
               </Field>
               <div className="mt-4 flex flex-col gap-2">
                 {choices.map((c) => (
                   <Button key={c.decision} variant={c.variant} onClick={() => open(c.decision)} className="w-full">
                     {c.icon}
-                    {c.label}
+                    {labelOf(c)}
                   </Button>
                 ))}
               </div>
@@ -83,15 +92,17 @@ export function DecisionPanel({ request, canEvaluate, canApprove, canDecide }: {
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface px-4 py-3 shadow-3 lg:hidden" role="region" aria-label="القرار">
         <div className="mx-auto flex max-w-[1360px] flex-wrap items-center gap-2">
           <span className="t-label me-auto">القرار</span>
+          {recommendation ? <StatusText tone={RECOMMENDATION_TONES[recommendation.decision]}>{`توصية المشرف: ${RECOMMENDATION_LABELS[recommendation.decision]}`}</StatusText> : null}
           {canEvaluate ? (
-            <div className="w-auto [&>button]:w-auto">
-              <EvaluationDialog requestId={request.id} title={request.title} trigger={evaluate} />
-            </div>
+            <EvaluationDialog requestId={request.id} size="sm">
+              <PenLine aria-hidden="true" strokeWidth={1.75} />
+              تقييم واعتماد
+            </EvaluationDialog>
           ) : null}
           {choices.map((c) => (
             <Button key={c.decision} size="sm" variant={c.variant} onClick={() => open(c.decision)}>
               {c.icon}
-              {c.label}
+              {labelOf(c)}
             </Button>
           ))}
         </div>
@@ -104,10 +115,24 @@ export function DecisionPanel({ request, canEvaluate, canApprove, canDecide }: {
           onOpenChange={(v) => !v && setDialog(null)}
           decision={dialog.decision}
           requests={[request]}
-          initialReason={reason}
+          // An approval's note may reach the association: never the supervisor's reason for returning or rejecting.
+          initialReason={dialog.decision === "approve" && reason === offered ? "" : reason}
           onDone={() => router.refresh()}
         />
       ) : null}
     </>
+  );
+}
+
+/** What the supervisor recommended and why, above the unit manager's decision (D-139). */
+function RecommendationBox({ recommendation }: { recommendation: { decision: Decision; reason: string | null } }) {
+  return (
+    <div className="rounded-md border border-line bg-surface-muted px-3.5 py-3">
+      <p className="text-xs font-semibold text-ink-muted">توصية المشرف</p>
+      <p className="mt-1.5">
+        <StatusText tone={RECOMMENDATION_TONES[recommendation.decision]}>{RECOMMENDATION_LABELS[recommendation.decision]}</StatusText>
+      </p>
+      {recommendation.reason ? <p className="mt-2 whitespace-pre-line text-sm text-ink">{recommendation.reason}</p> : null}
+    </div>
   );
 }

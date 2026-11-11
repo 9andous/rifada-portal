@@ -15,7 +15,7 @@ import { ALREADY_SUBMITTED, submitRequest } from "@/server/services/requests/sub
 import { makeUser } from "../support/admin";
 import { db, resetDatabase } from "../support/db";
 import { FIXTURES } from "../support/files";
-import { attachPlan, evaluateAndApprove, evaluationInput, managerSignature, makeRequestWorld, MIME, newDraft, stageFor, submittedRequest, validDraft, type RequestWorld } from "../support/requests";
+import { attachPlan, decideThroughManager, evaluateAndApprove, evaluationInput, managerSignature, makeRequestWorld, MIME, newDraft, stageFor, submittedRequest, validDraft, type RequestWorld } from "../support/requests";
 
 const storageRoot = mkdtempSync(join(tmpdir(), "rifada-requests-test-"));
 const previousStorage = process.env.STORAGE_DIR;
@@ -56,9 +56,11 @@ describe("drafts", () => {
 
   it("store the design's fields, with numbers in Arabic digits, and a new track or type (D-123)", async () => {
     const id = await newDraft(w);
-    expect(await saveDraft(w.actors.officer, id, validDraft({ trackId: w.t2.id, requestTypeId: w.requestTypes[2].id, partners: "مجمع الملك فهد" }))).toEqual({ ok: true });
+    // A programme the new track does not cover is refused (D-151); clearing it is allowed.
+    expect(await saveDraft(w.actors.officer, id, validDraft({ trackId: w.t2.id }))).toMatchObject({ ok: false, errors: { programId: expect.any(String) } });
+    expect(await saveDraft(w.actors.officer, id, validDraft({ trackId: w.t2.id, programId: "", requestTypeId: w.requestTypes[2].id, partners: "مجمع الملك فهد" }))).toEqual({ ok: true });
     const row = await db.request.findUniqueOrThrow({ where: { id } });
-    expect(row).toMatchObject({ trackId: w.t2.id, requestTypeId: w.requestTypes[2].id, expectedBeneficiaries: "المؤذنون الجدد\nطلاب العلم", estimatedBudget: 480000, partners: "مجمع الملك فهد", programId: null, initiativeId: null });
+    expect(row).toMatchObject({ trackId: w.t2.id, requestTypeId: w.requestTypes[2].id, expectedBeneficiaries: "المؤذنون الجدد — ٤٠\nطلاب العلم — ١٢٠", estimatedBudget: 480000, partners: "مجمع الملك فهد", programId: null, initiativeId: null });
     // Empty keeps the choice; a figure that is not a whole number is refused.
     expect(await saveDraft(w.actors.officer, id, validDraft({ trackId: "", requestTypeId: "" }))).toEqual({ ok: true });
     expect((await db.request.findUniqueOrThrow({ where: { id } })).trackId).toBe(w.t2.id);
@@ -97,6 +99,38 @@ describe("drafts", () => {
   });
 });
 
+describe("programme, initiatives and «أخرى» chosen by the association (D-151)", () => {
+  it("stores the programme and its initiatives in order, refusing initiatives of another programme", async () => {
+    const id = await newDraft(w);
+    expect(await saveDraft(w.actors.officer, id, validDraft({ programId: w.p1.id, initiativeIds: [w.iP2.id] }))).toMatchObject({ ok: false, errors: { initiativeIds: expect.any(String) } });
+    expect(await saveDraft(w.actors.officer, id, validDraft({ programId: w.p1.id, initiativeIds: [w.i2.id, w.i1.id] }))).toEqual({ ok: true });
+    const row = await db.request.findUniqueOrThrow({ where: { id }, include: { initiatives: { orderBy: { sortOrder: "asc" } } } });
+    expect(row.programId).toBe(w.p1.id);
+    expect(row.initiativeId).toBe(w.i2.id);
+    expect(row.initiatives.map((l) => l.initiativeId)).toEqual([w.i2.id, w.i1.id]);
+    // Left out, the choice stays.
+    expect(await saveDraft(w.actors.officer, id, validDraft())).toEqual({ ok: true });
+    expect(await db.requestInitiative.count({ where: { requestId: id } })).toBe(2);
+  });
+
+  it("blocks submission without a programme, an initiative, a group's number or the words of «أخرى»", async () => {
+    const id = await newDraft(w);
+    await saveDraft(w.actors.officer, id, validDraft({ programId: "" }));
+    expect(await submitRequest(w.actors.officer, id)).toMatchObject({ ok: false, missing: [expect.objectContaining({ code: "program_missing" })] });
+    await saveDraft(w.actors.officer, id, validDraft({ programId: w.p1.id, initiativeIds: [] }));
+    expect(await submitRequest(w.actors.officer, id)).toMatchObject({ ok: false, missing: [expect.objectContaining({ code: "initiatives_missing" })] });
+    await saveDraft(w.actors.officer, id, validDraft({ programId: w.p1.id, initiativeIds: [w.i1.id], expectedBeneficiaries: "الحجاج — ١٠\nالزوار" }));
+    expect(await submitRequest(w.actors.officer, id)).toMatchObject({ ok: false, missing: [expect.objectContaining({ code: "target_group_count_missing" })] });
+    const other = await db.requestType.create({ data: { name: "نوع آخر للاختبار", sortOrder: 99, requiresDetail: true } });
+    await saveDraft(w.actors.officer, id, validDraft({ requestTypeId: other.id }));
+    expect(await submitRequest(w.actors.officer, id)).toMatchObject({ ok: false, missing: [expect.objectContaining({ code: "request_type_detail_missing", field: "requestTypeDetail" })] });
+    expect(await saveDraft(w.actors.officer, id, validDraft({ requestTypeId: other.id, requestTypeDetail: "تمديد مشروع قائم" }))).toEqual({ ok: true });
+    const sent = await submitRequest(w.actors.officer, id);
+    expect(sent.ok).toBe(true);
+    expect((await getRequestDetail(w.actors.officer, id))?.requestTypeDetail).toBe("تمديد مشروع قائم");
+  });
+});
+
 describe("track and request type at submission (D-123)", () => {
   it("asks for measures but not partners (D-128); an archived track blocks by name", async () => {
     const id = await newDraft(w);
@@ -111,9 +145,9 @@ describe("track and request type at submission (D-123)", () => {
     const sent = await submitRequest(w.actors.officer, id);
     expect(sent.ok).toBe(true);
     const row = await db.request.findUniqueOrThrow({ where: { id } });
-    // Assigned to a supervisor of the track, with no programme until the supervisor sets one.
+    // Assigned to a supervisor of the track, under the programme the association chose (D-151).
     expect([w.users.supervisor.id, w.users.supervisor2.id]).toContain(row.assignedSupervisorId);
-    expect(row.programId).toBeNull();
+    expect(row.programId).toBe(w.p1.id);
   });
 
   it("show the staff the programmes of the track, and supervisors only their tracks' requests", async () => {
@@ -121,7 +155,7 @@ describe("track and request type at submission (D-123)", () => {
     const detail = await getRequestDetail(w.actors.supervisor, id);
     expect(detail?.track?.id).toBe(w.t1.id);
     expect(detail?.trackPrograms.map((p) => p.id)).toEqual([w.p1.id]);
-    expect(detail?.program).toBeNull();
+    expect(detail?.program?.id).toBe(w.p1.id);
     expect((await getRequestDetail(w.actors.officer, id))?.trackPrograms).toEqual([]);
     expect(await getRequestDetail(w.actors.supervisorP2, id)).toBeNull();
   });
@@ -204,7 +238,7 @@ describe("submission", () => {
   it("assigns the reference number, history, SLA, snapshot and supervisor in one step", async () => {
     const before = new Date();
     const { id, referenceNo } = await submittedRequest(w);
-    expect(referenceNo).toBe(`RF-${hijriYear()}-00001`);
+    expect(referenceNo).toBe(`PRH-${hijriYear()}-00001`);
     const row = await db.request.findUniqueOrThrow({ where: { id }, include: { status: true } });
     expect(row.status.key).toBe("UNDER_REVIEW");
     expect(row.submittedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
@@ -253,10 +287,11 @@ describe("double-click safety", () => {
     expect(await db.referenceCounter.findFirst()).toMatchObject({ lastSeq: 1 });
   });
 
-  it("decides once when a decision is sent twice in parallel, even by two deciders", async () => {
+  it("decides once when two different decisions are sent in parallel", async () => {
     const { id } = await submittedRequest(w);
+    await evaluateRequest(w.actors.supervisor, id, evaluationInput());
     const [a, b] = await Promise.all([
-      decideRequests(w.actors.supervisor, [id], "return", "أرفقوا الخطة المحدثة"),
+      decideRequests(w.actors.manager, [id], "return", "أرفقوا الخطة المحدثة"),
       decideRequests(w.actors.manager, [id], "reject", "لا يتوافق مع شروط المبادرة"),
     ]);
     const done = [a, b].flatMap((r) => (r.ok ? r.outcome.done : []));
@@ -270,8 +305,9 @@ describe("double-click safety", () => {
 describe("full lifecycle with return and resubmission", () => {
   it("returns, edits, resubmits to the same supervisor with a new SLA, then approves", async () => {
     const { id, referenceNo } = await submittedRequest(w);
-    expect((await decideRequests(w.actors.supervisor, [id], "return", "")).ok).toBe(false); // reason required
-    const returned = await decideRequests(w.actors.supervisor, [id], "return", "أرفقوا خطة البرنامج المحدثة");
+    await evaluateRequest(w.actors.supervisor, id, evaluationInput({ recommendation: "return", reason: "أرفقوا خطة البرنامج المحدثة" }));
+    expect((await decideRequests(w.actors.manager, [id], "return", "")).ok).toBe(false); // reason required
+    const returned = await decideRequests(w.actors.manager, [id], "return", "أرفقوا خطة البرنامج المحدثة");
     expect(returned.ok && returned.outcome.done.map((d) => d.id)).toEqual([id]);
     expect(await statusKey(id)).toBe("RETURNED");
     expect(await db.notification.count({ where: { userId: w.users.officer.id, type: "request.returned" } })).toBe(1);
@@ -311,7 +347,7 @@ describe("full lifecycle with return and resubmission", () => {
 
   it("gives a resubmitted request to another supervisor when the first is no longer active", async () => {
     const { id } = await submittedRequest(w);
-    await decideRequests(w.actors.supervisor, [id], "return", "يرجى التعديل");
+    await decideThroughManager(w, id, "return", "يرجى التعديل");
     await db.user.update({ where: { id: w.users.supervisor.id }, data: { isActive: false } });
     expect((await submitRequest(w.actors.officer, id)).ok).toBe(true);
     expect((await db.request.findUniqueOrThrow({ where: { id } })).assignedSupervisorId).toBe(w.users.supervisor2.id);
@@ -331,7 +367,7 @@ describe("automatic assignment", () => {
     const c = await submittedRequest(w);
     expect((await db.request.findUniqueOrThrow({ where: { id: c.id } })).assignedSupervisorId).toBe(w.users.supervisor.id);
     // Decided requests no longer count as open: supervisor 0, supervisor2 1.
-    await decideRequests(w.actors.supervisor, [a.id, c.id], "reject", "لا يستوفي الشروط");
+    await decideThroughManager(w, [a.id, c.id], "reject", "لا يستوفي الشروط");
     const d = await submittedRequest(w);
     expect((await db.request.findUniqueOrThrow({ where: { id: d.id } })).assignedSupervisorId).toBe(w.users.supervisor.id);
   });
@@ -366,11 +402,7 @@ describe("reassignment", () => {
     expect(await db.notification.count({ where: { userId: w.users.supervisor2.id, type: "request.assigned" } })).toBe(1);
     expect(await db.notification.count({ where: { userId: w.users.supervisor.id, type: "request.reassigned_away" } })).toBe(1);
 
-    // The previous supervisor can no longer decide; the new one can.
-    const old = await decideRequests(w.actors.supervisor, [id], "return", "أرفقوا الخطة");
-    expect(old.ok && old.outcome.skipped).toHaveLength(1);
-    const now = await decideRequests(w.actors.supervisor2, [id], "reject", "لا يستوفي الشروط");
-    expect(now.ok && now.outcome.done).toHaveLength(1);
+    await decideThroughManager(w, id, "reject", "لا يستوفي الشروط", w.actors.supervisor2);
 
     // Decided requests are not reassigned; drafts are not visible at all.
     const done = await reassignRequests(w.actors.manager, [id], w.users.supervisor.id, "إعادة");
@@ -390,17 +422,19 @@ describe("bulk decisions", () => {
     const draft = await newDraft(w);
     await evaluateAndApprove(w, mine2.id); // no longer under review
 
-    const r = await decideRequests(w.actors.supervisor, [mine.id, theirs.id, mine2.id, otherProgram.id, draft, "missing-id", mine.id], "reject", "لا يستوفي الشروط");
+    // A supervisor decides directly in their tracks, before evaluating (D-145).
+    const r = await decideRequests(w.actors.supervisor, [mine.id, mine2.id, otherProgram.id, draft, "missing-id", mine.id], "reject", "لا يستوفي الشروط");
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.outcome.done.map((d) => d.id)).toEqual([mine.id]);
     const skipped = Object.fromEntries(r.outcome.skipped.map((s) => [s.id, s]));
-    expect(Object.keys(skipped).sort()).toEqual([theirs.id, mine2.id, otherProgram.id, draft, "missing-id"].sort());
-    expect(skipped[theirs.id].reason).toMatch(/غير مسند إليك/);
+    expect(Object.keys(skipped).sort()).toEqual([mine2.id, otherProgram.id, draft, "missing-id"].sort());
     expect(skipped[mine2.id].reason).toMatch(/ليس قيد المراجعة/);
     for (const hidden of [otherProgram.id, draft, "missing-id"]) expect(skipped[hidden]).toMatchObject({ title: null, referenceNo: null });
 
-    // The unit manager decides the rest in bulk; each request gets its own history and audit entry.
+    // The unit manager decides in bulk; each request gets its own history and audit entry.
+    await evaluateRequest(w.actors.supervisor2, theirs.id, evaluationInput());
+    await evaluateRequest(w.actors.supervisorP2, otherProgram.id, evaluationInput());
     const m = await decideRequests(w.actors.manager, [theirs.id, otherProgram.id], "return", "يرجى استكمال البيانات");
     expect(m.ok && m.outcome.done.map((d) => d.id).sort()).toEqual([theirs.id, otherProgram.id].sort());
     for (const id of [theirs.id, otherProgram.id]) {

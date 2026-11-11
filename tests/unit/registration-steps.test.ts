@@ -7,60 +7,36 @@ const errorsOf = (step: number, raw: Record<string, unknown>) => {
   return parsed.success ? {} : fieldErrors(parsed.error);
 };
 
-describe("registration steps", () => {
-  it("gives every field to exactly one step", () => {
-    const all = [1, 2, 3].flatMap(registrationStepFields);
-    expect(all.sort()).toEqual(Object.keys(REGISTRATION_FIELD_STEP).sort());
+describe("registration steps (D-149)", () => {
+  it("gives every schema field to one step", () => {
+    const all = [1, 2, 3, 4].flatMap(registrationStepFields);
+    // The letter and the logo are files, checked by the submission, not by the schema.
+    const fileFields = ["letter", "image"];
+    expect(all.sort()).toEqual(Object.keys(REGISTRATION_FIELD_STEP).filter((k) => !fileFields.includes(k)).sort());
   });
 
   it("checks only the fields of the step", () => {
-    const errors = errorsOf(1, { name: "جم", licenseNumber: "abc", city: "", contactPhone: "123", foundedYear: "", contactEmail: "", website: "" });
-    expect(Object.keys(errors).sort()).toEqual(["city", "classification", "contactEmail", "contactPhone", "licenseNumber", "name", "region"]);
-    expect(errors.username).toBeUndefined();
+    const errors = errorsOf(1, { contactPhone: "123", foundedYear: "", website: "" });
+    expect(Object.keys(errors).sort()).toEqual(["classification", "contactPhone"]);
   });
 
-  it("takes only a city of the chosen region", () => {
-    const step1 = {
-      name: "جمعية سقيا الحرم",
-      licenseNumber: "1234",
-      classification: "منظمات خدمة ضيوف الرحمن",
-      region: "منطقة المدينة المنورة",
-      contactPhone: "0551234567",
-      foundedYear: "",
-      contactEmail: "info@example.org",
-      website: "",
-    };
-    expect(errorsOf(1, { ...step1, city: "ينبع" })).toEqual({});
-    expect(errorsOf(1, { ...step1, city: "جدة" }).city).toBe("اختر مدينة من مدن المنطقة المختارة.");
-    expect(errorsOf(1, { ...step1, city: "" }).city).toBe("اختر المدينة.");
+  it("asks for the association's own classification when «أخرى» is chosen", () => {
+    const base = { contactPhone: "0551234567", foundedYear: "", website: "" };
+    expect(errorsOf(1, { ...base, classification: "أخرى", classificationOther: "" })).toEqual({ classificationOther: "اكتبوا تصنيف الجمعية." });
+    expect(errorsOf(1, { ...base, classification: "أخرى", classificationOther: "رعاية كبار السن" })).toEqual({});
+    expect(errorsOf(1, { ...base, classification: "منظمات خدمة ضيوف الرحمن" })).toEqual({});
   });
 
-  it("passes a complete step", () => {
-    const step1 = {
-      name: "جمعية سقيا الحرم",
-      licenseNumber: "١٢٣٤",
-      classification: "منظمات خدمة ضيوف الرحمن",
-      region: "منطقة مكة المكرمة",
-      city: "مكة المكرمة",
-      foundedYear: "",
-      contactPhone: "0551234567",
-      contactEmail: "info@example.org",
-      website: "",
-    };
-    expect(errorsOf(1, step1)).toEqual({});
+  it("requires a site and at least one of its places", () => {
+    expect(errorsOf(2, { servicePlaces: [] }).serviceSite).toBeTruthy();
+    expect(errorsOf(2, { serviceSite: "MADINAH", servicePlaces: [] }).servicePlaces).toBe("اختر مكانًا واحدًا على الأقل من أماكن تقديم الخدمة.");
+    expect(errorsOf(2, { serviceSite: "MADINAH", servicePlaces: ["mataf"] }).servicePlaces).toBe("اختر الأماكن من أماكن الموقع المختار.");
+    expect(errorsOf(2, { serviceSite: "MADINAH", servicePlaces: ["rawdah", "women"] })).toEqual({});
   });
 
-  it("reports mismatched passwords on step 2", () => {
-    const step3 = {
-      officerName: "فهد بن سعد",
-      officerNationalId: "",
-      officerPhone: "0551234567",
-      officerEmail: "officer@example.org",
-      username: "saqya.1",
-      password: "Jamiya-2026-pass",
-      confirmPassword: "Jamiya-2026-other",
-    };
-    expect(errorsOf(2, step3)).toEqual({ confirmPassword: "كلمتا المرور غير متطابقتين." });
-    expect(errorsOf(2, { ...step3, confirmPassword: step3.password })).toEqual({});
+  it("requires the first officer's phone only", () => {
+    expect(errorsOf(3, { officerPhone: "", secondOfficerPhone: "" })).toEqual({ officerPhone: expect.any(String) });
+    expect(errorsOf(3, { officerPhone: "0551234567", secondOfficerPhone: "12" })).toEqual({ secondOfficerPhone: expect.any(String) });
+    expect(errorsOf(3, { officerPhone: "0551234567", secondOfficerPhone: "" })).toEqual({});
   });
 });

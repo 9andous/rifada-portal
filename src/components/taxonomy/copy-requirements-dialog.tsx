@@ -167,7 +167,7 @@ export function CopyRequirementsDialog({ sourceId, programs, sourceCount }: { so
                     id="copy-program"
                     value={programId}
                     onChange={(e) => setProgramId(e.target.value)}
-                    placeholder="اختر البرنامج"
+                    placeholder="يُرجى اختيار البرنامج"
                     options={programs.map((p) => ({ value: p.id, label: `${toArabicDigits(p.number)}. ${p.name}` }))}
                   />
                 </div>

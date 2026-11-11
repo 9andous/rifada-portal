@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 
-/** Ogee arch of the Rifada logo (viewBox 0 0 200 250): outer and inner outline. */
+/** Ogee arch motif (viewBox 0 0 200 250): outer and inner outline. */
 export const ARCH_PATH = "M4 250 V118 C4 72 50 52 100 6 C150 52 196 72 196 118 V250";
 export const ARCH_INNER_PATH = "M30 250 V128 C30 92 66 78 100 40 C134 78 170 92 170 128 V250";
 

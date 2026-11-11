@@ -47,6 +47,8 @@ ${rows.join("\n")}
 - Association officers never see internal notes (\`comments.isInternal\`). They are filtered in
   \`scopeComments()\`, which every comment reader uses, including lists, exports, print views and PDFs.
 - A supervisor with no assigned programs sees no requests at all.
+- \`requests.review\`: the supervisor evaluates and recommends; only the unit manager takes the final
+  decision (D-139).
 - An officer account is bound to exactly one association; it sees only that association's records.
 - The super admin administers the system but does not take part in request review.
 - Deactivated accounts cannot sign in by any method, and their open sessions stop working.

@@ -2,6 +2,8 @@ import "server-only";
 import * as z from "zod";
 import { REVIEW_CRITERIA, type CriterionResult } from "@/config/review-criteria";
 import { toArabicDigits } from "@/lib/format";
+import { DECISIONS, RECOMMENDATION_LABELS, RECOMMENDATION_VALUES } from "@/lib/requests";
+import { reasonSchema } from "@/lib/validation/requests";
 import { can } from "@/server/authz/permissions";
 import { scopeRequests, type Actor } from "@/server/authz/scope";
 import { verifyPassword } from "@/server/auth/password";
@@ -12,18 +14,20 @@ import { audit } from "@/server/services/audit";
 import { notify, recordRequestAction } from "@/server/services/notifications";
 import { availableInitiativeWhere } from "@/server/services/taxonomy";
 import { decideRequests } from "./decisions";
-import { activeManagerIds, requestRef, statusMap, type Tx } from "./common";
+import { activeManagerIds, recordTakeover, requestRef, statusMap, type Tx } from "./common";
 
-// The two-step review (D-116). The assigned supervisor evaluates the request against the acceptance
-// criteria, notes, signs (password re-entered, sealed electronically, D-122) and sends it to the unit manager,
-// who approves, returns or rejects it (decisions.ts). While it is under review the supervisor (at
+// The two-step review (D-116, D-139, D-144). Any supervisor of the track evaluates the request against the acceptance
+// criteria, recommends accepting, returning or rejecting it, signs (password re-entered, sealed electronically,
+// D-122) and sends it to the unit manager, who takes the final decision, whatever was recommended
+// (decisions.ts). Wrong or incomplete data is another matter: a supervisor may return or reject directly
+// before evaluating (D-145). While it is under review the supervisor (at
 // the supervisor stage) and the unit manager may change its programme and initiatives, never its
 // content. The request stays «قيد المراجعة» throughout, so the association sees no step in between.
 
 const MSG = {
   unavailable: "الطلب غير متاح لك.",
   notUnderReview: "الطلب ليس قيد المراجعة.",
-  notYours: "لا يقيّم الطلب إلا المشرف المسند إليه.",
+  notYours: "يقيّم الطلب مشرفو مساره.",
   wrongStage: "أُرسل الطلب إلى مدير الوحدة؛ لا يمكن تقييمه مرة أخرى قبل أن يعود.",
   password: "كلمة المرور غير صحيحة.",
   scopeNotAllowed: "لا يمكنك تعديل البرنامج والمبادرات في هذا الطلب الآن.",
@@ -57,6 +61,8 @@ const criteriaFields = {
 
 export const evaluationSchema = z.object({
   ...criteriaFields,
+  recommendation: z.enum(DECISIONS),
+  reason: z.string().default(""),
   ...signerFields,
 });
 
@@ -135,7 +141,11 @@ export async function approveRequests(actor: Actor, ids: readonly string[], raw:
   return decideRequests(actor, ids, "approve", parsed.data.note, { passwordConfirmed: true });
 }
 
-/** The supervisor evaluates, signs and sends the request to the unit manager (D-116). */
+/**
+ * A supervisor of the track evaluates, signs and sends the request to the unit manager (D-116, D-144).
+ * The first to sign wins; if that is not the supervisor it was assigned to, the request moves to them, so
+ * the later notifications and a resubmission reach whoever reviewed it.
+ */
 export async function evaluateRequest(actor: Actor, id: string, raw: EvaluationInput): Promise<Result> {
   assertCan(actor, "requests.review");
   if (actor.role !== "SUPERVISOR") return refuse(MSG.notYours);
@@ -145,6 +155,13 @@ export async function evaluateRequest(actor: Actor, id: string, raw: EvaluationI
     return fieldRefusal(String(issue.path[0] ?? "criteria"), issue.message);
   }
   const input = parsed.data;
+  // Recommending to return or reject needs the reason the unit manager will read (D-139).
+  let reason: string | null = null;
+  if (input.recommendation !== "approve") {
+    const parsedReason = reasonSchema.safeParse(input.reason);
+    if (!parsedReason.success) return fieldRefusal("reason", parsedReason.error.issues[0].message);
+    reason = parsedReason.data;
+  }
   const statuses = await statusMap();
   const request = await db.request.findFirst({
     where: { AND: [scopeRequests(actor, "requests.review"), { id }] },
@@ -152,7 +169,6 @@ export async function evaluateRequest(actor: Actor, id: string, raw: EvaluationI
   });
   if (!request) return refuse(MSG.unavailable);
   if (request.statusId !== statuses.UNDER_REVIEW.id) return refuse(MSG.notUnderReview);
-  if (request.assignedSupervisorId !== actor.id) return refuse(MSG.notYours);
   if (request.reviewStage !== "SUPERVISOR") return refuse(MSG.wrongStage);
   if (!(await passwordMatches(actor.id, input.password))) {
     await audit({ actorId: actor.id, action: "request.evaluation_password_failed", entityType: "Request", entityId: id, after: requestRef(request) });
@@ -165,12 +181,14 @@ export async function evaluateRequest(actor: Actor, id: string, raw: EvaluationI
   });
   return db.$transaction(async (tx) => {
     const moved = await tx.request.updateMany({
-      where: { id, statusId: statuses.UNDER_REVIEW.id, assignedSupervisorId: actor.id, reviewStage: "SUPERVISOR" },
-      data: { reviewStage: "MANAGER" },
+      where: { id, statusId: statuses.UNDER_REVIEW.id, reviewStage: "SUPERVISOR" },
+      data: { reviewStage: "MANAGER", assignedSupervisorId: actor.id },
     });
     if (moved.count !== 1) return refuse(MSG.changed);
+    const took = request.assignedSupervisorId !== actor.id;
+    if (took) await recordTakeover(tx, actor.id, request, "قيّم الطلب ورفع توصيته");
     const now = new Date();
-    const evaluation = await tx.requestEvaluation.create({ data: { requestId: id, reviewerId: actor.id, criteria, note: input.note, createdAt: now } });
+    const evaluation = await tx.requestEvaluation.create({ data: { requestId: id, reviewerId: actor.id, criteria, note: input.note, recommendation: RECOMMENDATION_VALUES[input.recommendation], reason, createdAt: now } });
     const seal = await createSeal(tx, { kind: "EVALUATION", requestId: id, signerId: actor.id, evaluationId: evaluation.id, at: now });
     const met = criteria.filter((c) => c.met).length;
     await recordRequestAction(tx, actor.id, id);
@@ -180,14 +198,14 @@ export async function evaluateRequest(actor: Actor, id: string, raw: EvaluationI
         action: "request.evaluated",
         entityType: "Request",
         entityId: id,
-        after: { ...requestRef(request), evaluationId: evaluation.id, seal: seal.serial, criteriaMet: met, criteriaTotal: criteria.length },
+        after: { ...requestRef(request), evaluationId: evaluation.id, seal: seal.serial, criteriaMet: met, criteriaTotal: criteria.length, recommendation: input.recommendation, reason, ...(took ? { previousSupervisorId: request.assignedSupervisorId } : {}) },
       },
       tx,
     );
     await notify(
       tx,
       await activeManagerIds(tx),
-      { type: "request.evaluated", title: "طلب بانتظار اعتمادكم", body: `${request.referenceNo ?? ""} — ${request.title}`, requestId: id },
+      { type: "request.evaluated", title: `طلب بانتظار قراركم — توصية المشرف: ${RECOMMENDATION_LABELS[input.recommendation]}`, body: `${request.referenceNo ?? ""} — ${request.title}`, requestId: id },
       actor.id,
     );
     return { ok: true };
@@ -205,10 +223,10 @@ async function scopeSnapshot(tx: Tx, programId: string | null, initiativeIds: st
 }
 
 /** Whether the actor may change the programme and initiatives now (D-116). */
-export function canChangeScope(actor: Actor, r: { statusKey: string; reviewStage: "SUPERVISOR" | "MANAGER"; assignedSupervisorId: string | null }): boolean {
+export function canChangeScope(actor: Actor, r: { statusKey: string; reviewStage: "SUPERVISOR" | "MANAGER"; trackId: string | null }): boolean {
   if (!can(actor.role, "requests.review") || r.statusKey !== "UNDER_REVIEW") return false;
   if (actor.role === "UNIT_MANAGER") return true;
-  return actor.role === "SUPERVISOR" && r.assignedSupervisorId === actor.id && r.reviewStage === "SUPERVISOR";
+  return actor.role === "SUPERVISOR" && r.trackId !== null && actor.trackIds.includes(r.trackId) && r.reviewStage === "SUPERVISOR";
 }
 
 /**
@@ -254,7 +272,7 @@ export async function changeRequestScope(actor: Actor, id: string, input: { prog
   });
   if (!request) return refuse(MSG.unavailable);
   const statusKey = request.statusId === statuses.UNDER_REVIEW.id ? "UNDER_REVIEW" : "OTHER";
-  if (!canChangeScope(actor, { statusKey, reviewStage: request.reviewStage, assignedSupervisorId: request.assignedSupervisorId })) return refuse(MSG.scopeNotAllowed);
+  if (!canChangeScope(actor, { statusKey, reviewStage: request.reviewStage, trackId: request.trackId })) return refuse(MSG.scopeNotAllowed);
   const program = await db.program.findFirst({
     where: { id: input.programId, archivedAt: null, isActive: true },
     select: { id: true, tracks: { where: { trackId: request.trackId ?? "" }, select: { trackId: true } } },
@@ -279,11 +297,11 @@ export async function changeRequestScope(actor: Actor, id: string, input: { prog
     await tx.requestScopeChange.create({ data: { requestId: id, actorId: actor.id, before, after, note: parsedNote.data } });
     await recordRequestAction(tx, actor.id, id);
     await audit({ actorId: actor.id, action: "request.scope_changed", entityType: "Request", entityId: id, before, after: { ...requestRef(request), ...after, note: parsedNote.data } }, tx);
-    if (actor.role === "UNIT_MANAGER") {
+    if (request.assignedSupervisorId !== actor.id) {
       await notify(
         tx,
         [request.assignedSupervisorId],
-        { type: "request.scope_changed", title: "عدّل مدير الوحدة برنامج الطلب أو مبادراته", body: `${request.referenceNo ?? ""} — ${request.title}`, requestId: id },
+        { type: "request.scope_changed", title: actor.role === "UNIT_MANAGER" ? "عدّل مدير الوحدة برنامج الطلب أو مبادراته" : "عدّل مشرف آخر برنامج الطلب أو مبادراته", body: `${request.referenceNo ?? ""} — ${request.title}`, requestId: id },
         actor.id,
       );
     }

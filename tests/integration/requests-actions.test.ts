@@ -8,7 +8,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import type { CurrentUser } from "@/server/auth/session";
 import type { Actor } from "@/server/authz/scope";
 import { db, resetDatabase } from "../support/db";
-import { attachPlan, makeRequestWorld, newDraft, stageFor, submittedRequest, validDraft, type RequestWorld } from "../support/requests";
+import { attachPlan, evaluationInput, makeRequestWorld, newDraft, stageFor, submittedRequest, validDraft, type RequestWorld } from "../support/requests";
 
 const session = vi.hoisted(() => ({ current: null as CurrentUser | null }));
 vi.mock("@/server/auth/session", () => ({
@@ -68,7 +68,7 @@ describe("officer actions", () => {
     expect(await a.attachOwnFileAction(id, await stageFor(w.actors.officer, id))).toEqual({ ok: true });
     const done = await a.submitRequestAction(id, {}, draftForm());
     expect(done).toMatchObject({ ok: true });
-    expect(done.referenceNo).toMatch(/^RF-\d{4}-00001$/);
+    expect(done.referenceNo).toMatch(/^PRH-\d{4}-00001$/);
     expect(await a.submitRequestAction(id, {}, draftForm())).toMatchObject({ ok: false });
   });
 
@@ -105,7 +105,7 @@ describe("officer actions", () => {
 });
 
 describe("review actions", () => {
-  it("let the assigned supervisor and the unit manager decide; others are refused or skipped", async () => {
+  it("let a supervisor of the track return directly or recommend, and the unit manager decide; others are refused", async () => {
     const r1 = await submittedRequest(w);
     const r2 = await submittedRequest(w); // supervisor2
     for (const actor of [w.actors.officer, w.actors.admin]) {
@@ -113,9 +113,12 @@ describe("review actions", () => {
       expect(await a.decideAction([r1.id], "approve", "")).toMatchObject({ ok: false, message: FORBIDDEN_MESSAGE });
     }
     signIn(w.actors.supervisor);
-    const sup = await a.decideAction([r1.id, r2.id], "return", "يرجى التعديل");
+    const sup = await a.decideAction([r1.id], "return", "يرجى التعديل");
     expect(sup.outcome?.done.map((d) => d.id)).toEqual([r1.id]);
-    expect(sup.outcome?.skipped.map((s) => s.id)).toEqual([r2.id]);
+    signIn(w.actors.supervisorP2);
+    expect(await a.evaluateAction(r2.id, evaluationInput({ recommendation: "reject", reason: "لا يستوفي" }))).toMatchObject({ ok: false }); // another track
+    signIn(w.actors.supervisor);
+    expect(await a.evaluateAction(r2.id, evaluationInput({ recommendation: "reject", reason: "لا يستوفي" }))).toEqual({ ok: true });
     signIn(w.actors.manager);
     expect((await a.decideAction([r2.id], "reject", ""))).toMatchObject({ ok: false }); // reason required
     expect((await a.decideAction([r2.id], "reject", "لا يستوفي")).outcome?.done).toHaveLength(1);

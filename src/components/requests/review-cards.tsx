@@ -7,6 +7,8 @@ import { Timeline, TimelineItem, TimelineText } from "@/components/ui/timeline";
 import { REVIEW_CRITERIA } from "@/config/review-criteria";
 import { cn } from "@/lib/cn";
 import { formatNumber, toArabicDigits } from "@/lib/format";
+import { DECISION_STATUS, RECOMMENDATION_LABELS, RECOMMENDATION_TONES } from "@/lib/requests";
+import { ROLE_LABELS } from "@/server/authz/roles";
 import type { ReviewView, ScopeSnapshotView, TimelineEntry } from "@/server/services/requests/read";
 
 // The staff's view of the two-step review (D-116): the programme and initiative cards under the
@@ -14,9 +16,9 @@ import type { ReviewView, ScopeSnapshotView, TimelineEntry } from "@/server/serv
 // and programme changes. None of it is shown to the association.
 
 /**
- * Where the request belongs (D-123), right under the stepper: the track and request type the
- * association chose and always every programme of that track; a classification marks its programme
- * and lists the initiatives under it. Classifying is optional: the request is decided either way.
+ * Where the request belongs (D-123, compact per the owner, D-138, D-145): one card with the track the
+ * association chose and the request type. Until a supervisor chooses, it lists the names of the
+ * track's programmes; afterwards only the chosen programme and initiatives, which `editor` can change.
  */
 export function ScopeCards({
   track,
@@ -28,69 +30,65 @@ export function ScopeCards({
 }: {
   track: { number: number; name: string } | null;
   requestType: string | null;
-  trackPrograms: { id: string; number: number; name: string; description: string | null }[];
+  trackPrograms: { id: string; number: number; name: string }[];
   program: { id: string; number: number; name: string } | null;
   initiatives: { id: string; number: number; name: string }[];
   editor?: ReactNode;
 }) {
   return (
-    <section aria-labelledby="scope-track" className="overflow-hidden rounded-xl border border-line bg-surface shadow-1">
-      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <div className="border-b border-line bg-primary-soft/40 px-6 py-5 md:border-b-0 md:border-e">
-          <div className="border-s-4 border-accent ps-4">
-            <p className="text-sm font-semibold text-accent-ink">المسار المستهدف</p>
-            <h2 id="scope-track" className="mt-1 text-xl font-bold leading-snug text-brand-ink">
-              {track ? track.name : "لم يُحدَّد"}
-            </h2>
-            {requestType ? (
-              <p className="mt-2 text-sm text-ink-muted">
-                نوع الطلب: <span className="font-semibold text-ink">{requestType}</span>
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="px-6 py-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-ink-muted">{`برامج هذا المسار (${formatNumber(trackPrograms.length)})`}</p>
-            {editor}
-          </div>
-          {/* Always the whole track, so the supervisor sees every programme the request may fall
-              under; a classification only marks its programme in the list (owner's request). */}
-          {trackPrograms.length ? (
+    <section aria-label="مسار الطلب وبرنامجه" className="rounded-xl border border-line bg-surface px-5 py-4 shadow-1 sm:px-6">
+      <div className="flex items-start gap-4 border-s-4 border-accent ps-4">
+        <dl className="flex min-w-0 flex-1 flex-col gap-2.5">
+          <ScopeRow label="المسار">
+            <span className="font-bold text-brand-ink">{track ? track.name : "لم يُحدَّد"}</span>
+            {requestType ? <span className="text-ink-muted"> · {requestType}</span> : null}
+          </ScopeRow>
+          {program ? (
             <>
-              <ul className="mt-3 flex flex-col gap-2">
-                {trackPrograms.map((p) => {
-                  const classified = p.id === program?.id;
-                  return (
-                    <li key={p.id} className={cn("rounded-lg border bg-surface px-3.5 py-2.5", "border-line", classified && "border-s-4 border-s-primary")}>
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="text-[0.9375rem] font-semibold leading-snug text-ink">{p.name}</p>
-                        {classified ? <StatusText tone="ok">التصنيف</StatusText> : null}
-                      </div>
-                      {p.description ? <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-ink-muted">{p.description}</p> : null}
-                      {classified && initiatives.length ? (
-                        <ol className={cn("mt-2.5 grid grid-cols-1 gap-2", initiatives.length > 1 && "lg:grid-cols-2")}>
-                          {initiatives.map((i) => (
-                            <li key={i.id} className="flex items-center gap-3 rounded-md border border-line-strong bg-surface px-3 py-2">
-                              <span className="t-figure shrink-0 text-sm text-ink-muted">{toArabicDigits(i.number)}.</span>
-                              <span className="min-w-0 text-sm font-semibold leading-snug text-ink">{i.name}</span>
-                            </li>
-                          ))}
-                        </ol>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-              <p className="mt-3 text-xs text-ink-subtle">يندرج الطلب تحت أحد هذه البرامج. تحديد البرنامج والمبادرات اختياري، ويمكن البتّ في الطلب دونه.</p>
+              <ScopeRow label="البرنامج">
+                <span className="font-semibold text-ink">{program.name}</span>
+              </ScopeRow>
+              {initiatives.length ? (
+                <ScopeRow label={initiatives.length > 1 ? "المبادرات" : "المبادرة"}>
+                  <ol className="flex flex-col gap-1">
+                    {initiatives.map((i) => (
+                      <li key={i.id} className="flex gap-1.5 text-ink">
+                        <span className="t-figure shrink-0 text-ink-muted">{toArabicDigits(i.number)}.</span>
+                        <span className="min-w-0">{i.name}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </ScopeRow>
+              ) : null}
             </>
           ) : (
-            <p className="mt-3 text-sm text-ink-muted">لم تُربط برامج بهذا المسار بعد.</p>
+            <ScopeRow label="البرامج">
+              {trackPrograms.length ? (
+                <ul className="flex flex-wrap gap-1.5">
+                  {trackPrograms.map((p) => (
+                    <li key={p.id} className="rounded-md border border-line bg-surface-muted px-2.5 py-1 text-sm text-ink">
+                      {p.name}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="text-ink-muted">لم تُربط برامج بهذا المسار بعد.</span>
+              )}
+            </ScopeRow>
           )}
-        </div>
+        </dl>
+        {editor ? <div className="shrink-0">{editor}</div> : null}
       </div>
     </section>
+  );
+}
+
+function ScopeRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-x-3 gap-y-0.5 sm:grid-cols-[5.5rem_minmax(0,1fr)]">
+      <dt className="text-sm font-semibold text-ink-subtle sm:pt-px">{label}</dt>
+      <dd className="min-w-0 text-[0.9375rem] leading-snug">{children}</dd>
+    </div>
   );
 }
 
@@ -110,6 +108,13 @@ export function EvaluationCard({ review, editor }: { review: ReviewView; editor?
         className="mb-4 py-3.5"
       />
       <div className="flex flex-col gap-4 px-5 pb-5 sm:px-6">
+        <div>
+          <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
+            توصية المشرف:
+            <StatusText tone={RECOMMENDATION_TONES[e.recommendation]}>{RECOMMENDATION_LABELS[e.recommendation]}</StatusText>
+          </p>
+          {e.reason ? <p className="mt-1.5 whitespace-pre-line text-sm text-ink-muted">{e.reason}</p> : null}
+        </div>
         <ul className="flex flex-col gap-2.5">
           {REVIEW_CRITERIA.map((c) => {
             const r = e.criteria.find((x) => x.key === c.key);
@@ -182,21 +187,76 @@ const scopeLine = (s: ScopeSnapshotView) => (s.program ? `${s.program.name} ← 
 
 type LogItem = { id: string; at: Date; node: ReactNode };
 
-/** «سجل الطلب» for the staff: status moves, changes to the evaluation and programme changes, newest first. */
+function LogActor({ name, role }: { name: string; role: string | null }) {
+  return (
+    <p className="mt-1 text-sm text-ink">
+      {name}
+      {role ? <span className="t-caption"> · {role}</span> : null}
+    </p>
+  );
+}
+
+function assignmentTitle(a: ReviewView["assignments"][number]): string {
+  if (!a.to) return "أصبح الطلب بلا مشرف";
+  if (!a.actor) return `أُسند الطلب تلقائيًا إلى ${a.to}`;
+  if (a.actor === a.to) return a.from ? `تولّى الطلب بدلًا من ${a.from}` : "تولّى الطلب";
+  return `أُسند الطلب إلى ${a.to}`;
+}
+
+/** «سجل الطلب» for the staff (D-146): who did what. Status moves, evaluations and recommendations, changes to them, programme changes and assignments, newest first. */
 export function RequestLog({ timeline, review }: { timeline: TimelineEntry[]; review: ReviewView }) {
+  // The evaluation a unit manager's decision answers: the latest one before it.
+  const answered = (t: TimelineEntry) => (t.actorRole === "UNIT_MANAGER" ? review.evaluations.filter((e) => e.createdAt < t.createdAt).at(-1) : undefined);
   const items: LogItem[] = [
-    ...timeline.map((t) => ({
-      id: `s-${t.id}`,
-      at: t.createdAt,
+    ...timeline.map((t) => {
+      const evaluation = answered(t);
+      const overruled = evaluation && DECISION_STATUS[evaluation.recommendation] !== t.to.key;
+      return {
+        id: `s-${t.id}`,
+        at: t.createdAt,
+        node: (
+          <>
+            <StatusText tone={t.to.tone}>{t.to.name}</StatusText>
+            <LogActor name={t.actor ?? "النظام"} role={t.actorRole ? ROLE_LABELS[t.actorRole] : null} />
+            {evaluation ? (
+              <TimelineText>
+                {overruled ? "خلاف توصية المشرف" : "وفق توصية المشرف"}: {RECOMMENDATION_LABELS[evaluation.recommendation]}
+              </TimelineText>
+            ) : null}
+            {t.note ? <TimelineText className="whitespace-pre-line">{t.note}</TimelineText> : null}
+          </>
+        ),
+      };
+    }),
+    ...review.evaluations.map((e) => ({
+      id: `e-${e.id}`,
+      at: e.createdAt,
       node: (
         <>
-          <StatusText tone={t.to.tone}>{t.to.name}</StatusText>
-          <p className="mt-1 text-sm text-ink">{t.actor ?? "النظام"}</p>
-          {t.note ? <TimelineText className="whitespace-pre-line">{t.note}</TimelineText> : null}
+          <p className="text-sm font-bold text-ink">قيّم الطلب ورفعه إلى مدير الوحدة</p>
+          <LogActor name={e.reviewer} role={ROLE_LABELS.SUPERVISOR} />
+          <p className="mt-1.5">
+            <StatusText tone={RECOMMENDATION_TONES[e.recommendation]}>{`التوصية: ${RECOMMENDATION_LABELS[e.recommendation]}`}</StatusText>
+          </p>
+          <TimelineText>
+            مستوفى {formatNumber(e.criteria.filter((c) => c.met).length)} من {formatNumber(e.criteria.length)} معايير
+            {e.reason ? <span className="mt-1 block whitespace-pre-line">السبب: {e.reason}</span> : null}
+            {e.note ? <span className="mt-1 block whitespace-pre-line">ملاحظة المراجع الفني: {e.note}</span> : null}
+          </TimelineText>
         </>
       ),
     })),
-    // The signed evaluation itself is shown in «تقييم المشرف», not repeated here (D-128).
+    ...review.assignments.map((a) => ({
+      id: `a-${a.id}`,
+      at: a.createdAt,
+      node: (
+        <>
+          <p className="text-sm font-bold text-ink">{assignmentTitle(a)}</p>
+          <p className="mt-1 text-sm text-ink">{a.actor ?? "النظام"}</p>
+          {a.reason ? <TimelineText className="whitespace-pre-line">{a.reason}</TimelineText> : null}
+        </>
+      ),
+    })),
     ...review.evaluations
       .filter((e) => e.edited)
       .map((e) => ({
@@ -237,7 +297,7 @@ export function RequestLog({ timeline, review }: { timeline: TimelineEntry[]; re
         <TimelineItem marker="current">
           <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
             <Hourglass aria-hidden="true" strokeWidth={1.75} className="size-4 text-accent-ink" />
-            بانتظار اعتماد مدير الوحدة
+            بانتظار قرار مدير الوحدة
           </p>
           <TimelineText>تظهر الحالة للجمعية «قيد المراجعة».</TimelineText>
         </TimelineItem>

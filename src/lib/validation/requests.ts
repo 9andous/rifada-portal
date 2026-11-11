@@ -9,9 +9,13 @@ import { toWesternDigits } from "./admin";
 
 export const REQUEST_LIMITS = {
   title: 200,
+  requestTypeDetail: 200,
+  /** Initiatives one request may cover. */
+  initiatives: 50,
   description: 5000,
   targetAudience: 300,
-  goals: 2000,
+  /** The chosen goals of the programme, one per line (D-151). */
+  goals: 8000,
   location: 300,
   kpis: 1000,
   partners: 500,
@@ -56,6 +60,15 @@ const choice = (message: string) => z.string().trim().max(40, message).default("
 export const draftSchema = z.object({
   trackId: choice("المسار المختار غير صالح."),
   requestTypeId: choice("نوع الطلب المختار غير صالح."),
+  requestTypeDetail: text("نوع الطلب", REQUEST_LIMITS.requestTypeDetail).default(""),
+  // Left out (undefined): the programme and initiatives stay as they are; "" clears them (D-151).
+  programId: z.string().trim().max(40, "البرنامج المختار غير صالح.").optional(),
+  // The initiatives of the programme, in the order the association ticked them (D-151).
+  initiativeIds: z
+    .array(z.string().trim().regex(/^[a-z0-9]{8,40}$/, "المبادرة المختارة غير صالحة."))
+    .max(REQUEST_LIMITS.initiatives, "اخترتم مبادرات أكثر من المسموح.")
+    .default([])
+    .transform((ids) => [...new Set(ids)]),
   title: text(GENERAL_FIELD_LABELS.title, REQUEST_LIMITS.title),
   description: text(GENERAL_FIELD_LABELS.description, REQUEST_LIMITS.description),
   goals: text(GENERAL_FIELD_LABELS.goals, REQUEST_LIMITS.goals),
@@ -75,6 +88,9 @@ export function draftFromForm(formData: FormData): Record<string, unknown> {
   return {
     trackId: get("trackId"),
     requestTypeId: get("requestTypeId"),
+    requestTypeDetail: get("requestTypeDetail"),
+    programId: formData.has("programId") ? get("programId") : undefined,
+    initiativeIds: formData.getAll("initiativeIds").map(String),
     title: get("title"),
     description: get("description"),
     goals: get("goals"),

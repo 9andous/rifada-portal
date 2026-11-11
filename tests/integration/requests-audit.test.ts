@@ -7,12 +7,11 @@ import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { reassignRequests } from "@/server/services/requests/assignment";
 import { addComment } from "@/server/services/requests/comments";
-import { decideRequests } from "@/server/services/requests/decisions";
 import { discardDraft } from "@/server/services/requests/drafts";
 import { getRequestDetail } from "@/server/services/requests/read";
 import { TEST_PASSWORD } from "../support/admin";
 import { db, resetDatabase } from "../support/db";
-import { addVersion, attachPlan, makeRequestWorld, newDraft, submittedRequest, type RequestWorld } from "../support/requests";
+import { addVersion, attachPlan, decideThroughManager, makeRequestWorld, newDraft, submittedRequest, type RequestWorld } from "../support/requests";
 
 const storageRoot = mkdtempSync(join(tmpdir(), "rifada-requests-audit-"));
 const previousStorage = process.env.STORAGE_DIR;
@@ -37,7 +36,7 @@ describe("request audit entries", () => {
     const { id } = await submittedRequest(w);
     await addComment(w.actors.supervisor, id, { body: SECRET_TEXT, internal: true });
     await addComment(w.actors.supervisor, id, { body: `${SECRET_TEXT}-علني`, internal: false });
-    await decideRequests(w.actors.supervisor, [id], "return", "يرجى التعديل");
+    await decideThroughManager(w, id, "return", "يرجى التعديل");
     const file = (await db.attachment.findFirstOrThrow({ where: { requestId: id } })).id;
     expect((await addVersion(w.actors.officer, id, file, "v2")).ok).toBe(true);
     await reassignRequests(w.actors.manager, [id], w.users.supervisor2.id, "توزيع");

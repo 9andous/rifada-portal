@@ -1,7 +1,7 @@
 import { ClipboardCheck, Lock, Send } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { ArchOutline, Diamond } from "@/components/brand/arch";
+import { ArchOutline } from "@/components/brand/arch";
 import { GeometricPattern } from "@/components/brand/geometric-pattern";
 import { Logo } from "@/components/brand/logo";
 import { brand } from "@/config/brand";
@@ -103,11 +103,7 @@ export function AuthSplit({
           <main id="main" className="relative flex w-full flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2">
             <span aria-hidden="true" className="block h-1.5 shrink-0 bg-linear-to-l from-band via-primary to-accent" />
             <div className="flex flex-1 flex-col justify-center px-8 py-6 short:py-4">
-              <p className="flex items-center gap-2 text-sm font-medium text-accent-ink short:hidden">
-                <Diamond />
-                {brand.systemName}
-              </p>
-              <h1 className="mt-1.5 text-[1.625rem] font-bold text-gold-action short:mt-0">{title}</h1>
+              <h1 className="text-[1.625rem] font-bold text-gold-action">{title}</h1>
               {description ? <p className="mt-1 text-sm text-ink-muted short:hidden">{description}</p> : null}
               <div className="mt-5">{children}</div>
             </div>

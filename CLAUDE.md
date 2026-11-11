@@ -1,4 +1,7 @@
-# Rifada (رفادة) — working conventions
+# Supervision portal — working conventions
+
+The product name «رفادة» was dropped (D-133): the interface shows the unit's name with the Presidency's
+logo. "rifada" survives only as an internal code name (repo, database, storage keys); never show it to users.
 
 Technical supervision portal for the Presidency of Religious Affairs' supervision unit over
 non-profit associations serving pilgrims. Arabic-only, RTL, government product. Read
@@ -7,7 +10,7 @@ non-profit associations serving pilgrims. Arabic-only, RTL, government product. 
 This public repository leaves out private material: the Presidency's source PDFs, the early HTML
 draft, the design lab (`src/app/dev/design-lab`, `docs/design-lab.md`), the design handoff and
 review screenshots. References to them in the docs are historical; obtain them privately as described
-in `docs/ONBOARDING.md` and never commit them (they are in `.gitignore`). The Rifada and Presidency
+in `docs/ONBOARDING.md` and never commit them (they are in `.gitignore`). The platform and Presidency
 logos (`public/brand/`) and the Haramain photographs (`public/images/haramain/`) are committed at the
 owner's request (D-092).
 
@@ -26,7 +29,7 @@ At the start of every session read CLAUDE.md, docs/ROADMAP.md, docs/DESIGN.md, d
 - TypeScript 6.0 strict (TypeScript 7 is not used: typescript-eslint needs the JS compiler API).
 - Prisma 7.10 (stable; 8.x is RC) with `@prisma/adapter-pg`. Client is generated to
   `src/generated/prisma` (git-ignored). Import from `@/generated/prisma/client`.
-  `prisma migrate dev` does **not** regenerate the client in v7: run `npm run db:generate`.
+  `prisma migrate dev` does **not** regenerate the client in v7; `npm run db:migrate` and `npm run dev` do it (D-135).
 - Better Auth 1.7 (username plugin, argon2id via `@node-rs/argon2`, DB sessions, rate limiting).
 - Tailwind CSS 4.3, CSS-first config in `src/app/globals.css`; tokens in `src/styles/tokens.css`.
 - Radix primitives via the `radix-ui` package, Lucide icons, Zod 4, Vitest 5, Playwright.
@@ -36,10 +39,10 @@ At the start of every session read CLAUDE.md, docs/ROADMAP.md, docs/DESIGN.md, d
 
 ```
 npm run db:up               # start Postgres (docker compose, port 5433; credentials from .env)
-npm run db:migrate          # create/apply migrations (dev); then npm run db:generate
+npm run db:migrate          # create/apply migrations (dev) and regenerate the client
 npm run db:seed             # baseline reference data + first super admin from .env
 npm run db:seed:dev-users   # optional dev accounts per role (flagged isDemo)
-npm run dev                 # http://localhost:3000
+npm run dev                 # applies pending migrations, regenerates the client, then http://localhost:3000
 npm run typecheck           # next typegen + tsc
 npm run lint                # eslint + scripts/check-ui-rules.mjs (emoji, RTL utilities)
 npm test                    # vitest: unit + integration against rifada_test database
@@ -100,7 +103,7 @@ requests list, detail page, bulk actions and decision panel.** Read it before an
 - Cairo everywhere (`src/app/fonts.ts`); typographic roles `t-page`, `t-section`, `t-label`,
   `t-body`, `t-figure`, `t-table`, `t-caption`.
 - Handoff radii (buttons and inputs 10, cards 14, hero panels 20). No dashed borders.
-- Shell: gov banner, white header with both logos, green navigation bar, white page head
+- Shell: gov banner, white header with the logo and the unit's name, green navigation bar, white page head
   (`<PageBand>`) with key figures as cards below it, then cards on the canvas.
 - **No emoji anywhere.** Icons: Lucide only, `size-4` inline / `size-[18px]` nav / `size-5` states.
 - Colors only through semantic tokens (`bg-surface`, `text-ink-muted`, `bg-primary`, `bg-band`,
@@ -108,7 +111,7 @@ requests list, detail page, bulk actions and decision panel.** Read it before an
   text only via `accent-ink` or `band-gold`. Run `npm run contrast` after any token change.
 - Status is a dot plus text (`<StatusText>`); notices are `<Alert>` (soft tint, 4px side rule).
 - Numbers through `formatNumber`/`toArabicDigits`; references through `<RefNumber>`; dates through
-  `<DateDisplay>` (Hijri first, Gregorian smaller, Asia/Riyadh time zone). Store numbers plainly and
+  `<DateDisplay>` and `<HijriDateInput>` (Hijri only, D-134; Asia/Riyadh time zone). Store numbers plainly and
   dates in UTC.
 - Prefer structured tables, split panes and timelines over grids of identical cards.
 - Every screen needs loading, empty, error and permission-denied states.

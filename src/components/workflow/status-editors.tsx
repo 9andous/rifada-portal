@@ -258,10 +258,10 @@ export function NewTransitionButton({ statuses }: { statuses: StatusItem[] }) {
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field id="transition-from" label="من الحالة" error={e.fromStatusId} required>
-              <Select id="transition-from" name="fromStatusId" placeholder="اختر" options={options.filter((o) => !statuses.find((s) => s.id === o.value)?.isTerminal)} />
+              <Select id="transition-from" name="fromStatusId" placeholder="يُرجى الاختيار" options={options.filter((o) => !statuses.find((s) => s.id === o.value)?.isTerminal)} />
             </Field>
             <Field id="transition-to" label="إلى الحالة" error={e.toStatusId} required>
-              <Select id="transition-to" name="toStatusId" placeholder="اختر" options={options} />
+              <Select id="transition-to" name="toStatusId" placeholder="يُرجى الاختيار" options={options} />
             </Field>
           </div>
           <RolesFields errors={e} roles={[]} automatic={false} />

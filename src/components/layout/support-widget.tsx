@@ -83,7 +83,7 @@ export function SupportWidget() {
           ref={panelRef}
           id="support-panel"
           role="dialog"
-          aria-label="مساعد رفادة"
+          aria-label="مساعد المنصة"
           tabIndex={-1}
           className="fade-up flex max-h-[min(34rem,calc(100dvh-7rem))] w-[min(22rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2 outline-none"
         >
@@ -94,7 +94,7 @@ export function SupportWidget() {
                 <Headset aria-hidden="true" className="size-5" strokeWidth={1.75} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="font-bold">مساعد {brand.productName}</p>
+                <p className="font-bold">مساعد المنصة</p>
                 <p className="text-xs text-band-ink-muted">إجابات سريعة عن الدخول وتقديم الطلبات</p>
               </div>
               <button
@@ -171,7 +171,7 @@ export function SupportWidget() {
         aria-controls={open ? "support-panel" : undefined}
         className={cn(
           // A labelled pill (owner's review, D-130): «المساعدة» says what it is without guessing at an icon.
-          "inline-flex h-12 items-center gap-2 rounded-full bg-band px-5 text-[0.9375rem] font-bold text-band-ink shadow-2 transition-transform hover:-translate-y-0.5",
+          "inline-flex h-12 items-center gap-2 rounded-full border border-gold-action bg-band px-5 text-[0.9375rem] font-bold text-band-ink shadow-2 transition-transform hover:-translate-y-0.5",
         )}
       >
         {open ? <X aria-hidden="true" className="size-5" /> : <MessageSquare aria-hidden="true" className="size-5" strokeWidth={1.75} />}

@@ -31,7 +31,8 @@ export default async function MyRequestsPage({ searchParams }: PageProps<"/assoc
         title="طلباتي"
         lead="جميع طلبات جمعيتكم. اختاروا حالة لعرض طلباتها، أو ابحثوا باسم المشروع أو رقم الطلب."
         actions={
-          <Link href={`${PATH}/new`} className={buttonClasses("gold", "lg")}>
+          // The navigation bar carries this button from lg up (D-136).
+          <Link href={`${PATH}/new`} className={buttonClasses("gold", "lg", "lg:hidden")}>
             <FilePlus2 aria-hidden="true" strokeWidth={1.75} />
             تقديم طلب جديد
           </Link>

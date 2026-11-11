@@ -24,6 +24,7 @@ export const SETTING_LIMITS = {
   uploadMb: { min: 1, max: 100 },
   bulk: { min: 1, max: 100 },
   quotaMb: { min: 100, max: 51200 },
+  inviteHours: { min: 1, max: 720 },
 } as const;
 
 const intIn = (min: number, max: number, label: string) =>
@@ -43,6 +44,7 @@ export const settingsSchema = z.object({
     .transform((groups) => UPLOAD_GROUPS.filter((g) => groups.includes(g))),
   "uploads.associationQuotaMb": intIn(SETTING_LIMITS.quotaMb.min, SETTING_LIMITS.quotaMb.max, "حد التخزين لكل جمعية"),
   "bulk.maxItems": intIn(SETTING_LIMITS.bulk.min, SETTING_LIMITS.bulk.max, "الحد الأقصى للإجراء الجماعي"),
+  "registration.inviteHours": intIn(SETTING_LIMITS.inviteHours.min, SETTING_LIMITS.inviteHours.max, "مدة صلاحية رابط التسجيل"),
   "public.showInitiatives": z.boolean({ error: "قيمة غير صالحة." }),
 });
 
@@ -58,6 +60,7 @@ export function settingsFromForm(formData: FormData): Record<string, unknown> {
     "uploads.allowedGroups": formData.getAll("uploads.allowedGroups").map(String),
     "uploads.associationQuotaMb": formData.get("uploads.associationQuotaMb"),
     "bulk.maxItems": formData.get("bulk.maxItems"),
+    "registration.inviteHours": formData.get("registration.inviteHours"),
     "public.showInitiatives": formData.get("public.showInitiatives") === "on",
   };
 }

@@ -166,7 +166,7 @@ export async function decideAction(requestIds: string[], decision: Decision, rea
   });
 }
 
-/** «تقييم واعتماد» by the assigned supervisor: criteria, note, password; sealed by the server (D-116, D-122). */
+/** The assigned supervisor's evaluation and recommendation: criteria, note, password; sealed by the server (D-116, D-122). */
 export async function evaluateAction(requestId: string, input: EvaluationInput): Promise<RequestFormState> {
   return asUser<RequestFormState>(async (user) => {
     if (!ID.test(requestId) || typeof input !== "object" || input === null) return { ok: false, message: INVALID_MESSAGE };

@@ -29,6 +29,7 @@ export const NAV: Record<Role, NavItem[]> = {
     { label: "الرئيسية", href: "/admin", icon: "home" },
     { label: "المستخدمون", href: "/admin/users", icon: "users" },
     { label: "الجمعيات", href: "/admin/associations", icon: "building" },
+    { label: "طلبات التسجيل", href: "/admin/registrations", icon: "registrations" },
     { label: "البرامج والمبادرات", href: "/admin/taxonomy", icon: "layers" },
     { label: "الإعدادات", href: "/admin/settings", icon: "settings" },
     { label: "سجل التدقيق", href: "/admin/audit", icon: "audit" },
@@ -61,7 +62,7 @@ export const HELP_HREF: Partial<Record<Role, string>> = {
   ASSOCIATION_OFFICER: "/association/help",
 };
 
-/** «التحقق من وثيقة» (D-122), in the user menu of the staff: the public page, outside the role areas. */
+/** «التحقق من وثيقة» (D-122, D-137), a gold button on the staff's navigation bar: the public page, outside the role areas. */
 export const VERIFY_HREF: Partial<Record<Role, string>> = {
   SUPER_ADMIN: "/verify",
   UNIT_MANAGER: "/verify",

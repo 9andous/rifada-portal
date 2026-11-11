@@ -12,7 +12,8 @@ import { cn } from "@/lib/cn";
 // by itself after a few seconds.
 
 type Tone = "success" | "info" | "danger";
-export type Toast = { id: number; title: string; description?: ReactNode; tone: Tone };
+/** `persist`: stays until «حسنًا» (no timer, no click outside), for something the reader must note, such as a request number. */
+export type Toast = { id: number; title: string; description?: ReactNode; tone: Tone; persist?: boolean };
 
 const MAX = 4;
 const LIFETIME_MS = 6000;
@@ -25,8 +26,8 @@ function emit() {
   for (const l of listeners) l();
 }
 
-export function toast(title: string, options: { description?: ReactNode; tone?: Tone } = {}) {
-  const item: Toast = { id: nextId++, title, description: options.description, tone: options.tone ?? "success" };
+export function toast(title: string, options: { description?: ReactNode; tone?: Tone; persist?: boolean } = {}) {
+  const item: Toast = { id: nextId++, title, description: options.description, tone: options.tone ?? "success", persist: options.persist };
   toasts = [...toasts, item].slice(-MAX);
   emit();
 }
@@ -94,12 +95,12 @@ function PopUp({ t }: { t: Toast }) {
     // Focus moves to «حسنًا» so Enter and Esc work at once, and returns where it was on close.
     const previous = document.activeElement as HTMLElement | null;
     okRef.current?.focus({ preventScroll: true });
-    const timer = setTimeout(() => dismiss(t.id), LIFETIME_MS);
+    const timer = t.persist ? undefined : setTimeout(() => dismiss(t.id), LIFETIME_MS);
     return () => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
-  }, [t.id]);
+  }, [t.id, t.persist]);
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") {
@@ -117,7 +118,7 @@ function PopUp({ t }: { t: Toast }) {
   }
 
   return (
-    <div className="pop-overlay pointer-events-auto fixed inset-0 flex items-center justify-center bg-[var(--overlay)] p-4" onClick={close}>
+    <div className="pop-overlay pointer-events-auto fixed inset-0 flex items-center justify-center bg-[var(--overlay)] p-4" onClick={t.persist ? undefined : close}>
       <div
         role="alertdialog"
         aria-modal="true"

@@ -3,20 +3,24 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { IMAGE_MAX_MB, REGISTRATION_LOGO_CONTEXT, REGISTRATION_UPLOADER } from "@/lib/images";
-import { registrationSchema } from "@/lib/validation/registration";
+import { IMAGE_MAX_MB, REGISTRATION_UPLOADER, registrationLetterContext, registrationLogoContext } from "@/lib/images";
+import { completionSchema, inviteSchema, LETTER_MAX_MB } from "@/lib/validation/registration";
 import { verifyPassword } from "@/server/auth/password";
 import type { Role } from "@/server/authz/roles";
 import { ForbiddenError, type Actor } from "@/server/authz/scope";
 import {
   approveRegistration,
-  checkRegistrationAvailability,
+  cancelInvitation,
+  createInvitation,
+  getInvitation,
   getRegistration,
   listRegistrations,
   lookupRegistration,
   registrationCounts,
+  registrationLetter,
   rejectRegistration,
-  submitRegistration,
+  renewInvitation,
+  submitCompletion,
 } from "@/server/services/registrations";
 import { openImage } from "@/server/services/images";
 import { stageUpload } from "@/server/uploads/stage";
@@ -24,47 +28,80 @@ import { makeAssociation, makeRoleActors } from "../support/admin";
 import { db, resetDatabase } from "../support/db";
 import { FIXTURES } from "../support/files";
 
-const PASSWORD = "Jamiya-2026-pass";
+const HOUR = 60 * 60 * 1000;
 let ctx: Awaited<ReturnType<typeof makeRoleActors>>;
 let admin: Actor;
 let seq = 0;
 
-/** A valid application as the public form sends it. */
-function rawApplication(overrides: Record<string, unknown> = {}) {
+const storageRoot = mkdtempSync(join(tmpdir(), "rifada-registration-"));
+const previousStorage = process.env.STORAGE_DIR;
+beforeAll(() => {
+  process.env.STORAGE_DIR = storageRoot;
+});
+afterAll(() => {
+  process.env.STORAGE_DIR = previousStorage;
+  rmSync(storageRoot, { recursive: true, force: true });
+});
+
+/** The super admin's six fields, as the form sends them. */
+function rawInvite(overrides: Record<string, unknown> = {}) {
   seq += 1;
   return {
     name: `جمعية سقيا الحرم ${seq}`,
+    officerName: "فهد بن سعد",
+    secondOfficerName: "سعد بن فهد",
+    website: "",
+    contactEmail: `Info${seq}@Example.org`,
     licenseNumber: `${1000 + seq}`,
+    ...overrides,
+  };
+}
+
+/** The association's part, as the form sends it. */
+function rawCompletion(overrides: Record<string, unknown> = {}) {
+  return {
     classification: "منظمات خدمة ضيوف الرحمن",
-    region: "منطقة مكة المكرمة",
-    city: "مكة المكرمة",
     foundedYear: "١٤٣٥",
     contactPhone: "٠٥٥٠١٢٣٤٥٦",
-    contactEmail: `info${seq}@example.org`,
     website: "",
-    officerName: "فهد بن سعد",
-    officerNationalId: "",
+    serviceSite: "MAKKAH",
+    servicePlaces: ["masaa", "mataf"],
     officerPhone: "0551234567",
-    officerEmail: `officer${seq}@example.org`,
-    username: `saqya.${seq}`,
-    password: PASSWORD,
-    confirmPassword: PASSWORD,
+    secondOfficerPhone: "",
     pledge: "on",
     ...overrides,
   };
 }
 
-/** The same, parsed by the real schema. */
-function application(overrides: Record<string, unknown> = {}) {
-  return registrationSchema.parse(rawApplication(overrides));
+async function invited(overrides: Record<string, unknown> = {}, now = new Date()) {
+  const result = await createInvitation(admin, inviteSchema.parse(rawInvite(overrides)), now);
+  if (!result.ok) throw new Error(JSON.stringify(result));
+  return result;
 }
 
-async function submitted(overrides: Record<string, unknown> = {}) {
-  const input = application(overrides);
-  const result = await submitRegistration(input);
+async function stage(registrationId: string, kind: "letter" | "logo", uploaderId = REGISTRATION_UPLOADER) {
+  const bytes = kind === "letter" ? FIXTURES.pdf() : FIXTURES.png();
+  const staged = await stageUpload({
+    uploaderId,
+    sessionId: null,
+    fileName: kind === "letter" ? "خطاب.pdf" : "شعار.png",
+    declaredMime: kind === "letter" ? "application/pdf" : "image/png",
+    contentLength: bytes.length,
+    body: Readable.from([bytes]),
+    context: kind === "letter" ? registrationLetterContext(registrationId) : registrationLogoContext(registrationId),
+    only: kind === "letter" ? { groups: ["pdf"], maxMb: LETTER_MAX_MB } : { groups: ["image"], maxMb: IMAGE_MAX_MB },
+  });
+  if (!staged.ok) throw new Error(staged.message);
+  return staged.uploadId;
+}
+
+async function completed(overrides: Record<string, unknown> = {}) {
+  const invite = await invited();
+  const letterUploadId = await stage(invite.id, "letter");
+  const result = await submitCompletion(invite.token, completionSchema.parse(rawCompletion(overrides)), { letterUploadId });
   if (!result.ok) throw new Error(JSON.stringify(result));
-  const row = await db.associationRegistration.findUniqueOrThrow({ where: { referenceNo: result.referenceNo } });
-  return { input, row, referenceNo: result.referenceNo };
+  const row = await db.associationRegistration.findUniqueOrThrow({ where: { id: invite.id } });
+  return { invite, row, referenceNo: result.referenceNo };
 }
 
 beforeEach(async () => {
@@ -74,55 +111,148 @@ beforeEach(async () => {
 });
 
 describe("registrations: validation", () => {
-  it("normalises digits and requires the pledge and matching passwords", () => {
-    const input = application();
-    expect(input.contactPhone).toBe("0550123456");
-    expect(input.foundedYear).toBe(1435);
-    expect(registrationSchema.safeParse({ ...input, foundedYear: "", pledge: "" }).success).toBe(false);
-    const raw = { ...input, foundedYear: "", contactPhone: "0551111111", officerPhone: "0551111111", pledge: "on" };
-    expect(registrationSchema.safeParse(raw).success).toBe(true);
-    expect(registrationSchema.safeParse({ ...raw, confirmPassword: "other-pass-1" }).success).toBe(false);
+  it("normalises the super admin's fields and requires both officers", () => {
+    const input = inviteSchema.parse(rawInvite({ licenseNumber: "١٢٣٤" }));
+    expect(input.licenseNumber).toBe("1234");
+    expect(input.contactEmail).toMatch(/^info\d+@example\.org$/);
+    expect(input.website).toBeNull();
+    expect(inviteSchema.safeParse(rawInvite({ secondOfficerName: "" })).success).toBe(false);
+    expect(inviteSchema.safeParse(rawInvite({ contactEmail: "" })).success).toBe(false);
+  });
+
+  it("takes only places of the chosen site, at least one, in the site's order", () => {
+    expect(completionSchema.parse(rawCompletion()).servicePlaces).toEqual(["mataf", "masaa"]);
+    expect(completionSchema.safeParse(rawCompletion({ servicePlaces: [] })).success).toBe(false);
+    expect(completionSchema.safeParse(rawCompletion({ servicePlaces: ["rawdah"] })).success).toBe(false);
+    expect(completionSchema.safeParse(rawCompletion({ serviceSite: "MADINAH", servicePlaces: ["rawdah"] })).success).toBe(true);
+    expect(completionSchema.safeParse(rawCompletion({ serviceSite: "RIYADH" })).success).toBe(false);
+    expect(completionSchema.safeParse(rawCompletion({ pledge: "" })).success).toBe(false);
+    expect(completionSchema.parse(rawCompletion({ classification: "أخرى", classificationOther: "رعاية كبار السن" })).classification).toBe("رعاية كبار السن");
+    expect(completionSchema.safeParse(rawCompletion({ classification: "أخرى" })).success).toBe(false);
   });
 });
 
-describe("registrations: submission", () => {
-  it("stores a pending application with a hashed password and an audit entry, creating no account", async () => {
-    const { row, referenceNo } = await submitted();
-    expect(referenceNo).toMatch(/^JM-[A-Z0-9]{8}$/);
-    expect(row.status).toBe("PENDING");
-    expect(row.passwordHash).not.toContain(PASSWORD);
-    expect(await verifyPassword({ hash: row.passwordHash!, password: PASSWORD })).toBe(true);
-    expect(await db.user.findUnique({ where: { username: row.officerUsername } })).toBeNull();
-    expect(await db.association.count()).toBe(1);
-    const entry = await db.auditLog.findFirstOrThrow({ where: { action: "registration.submitted", entityId: row.id } });
-    expect(entry.actorId).toBeNull();
-    expect(JSON.stringify(entry.after)).not.toMatch(/hash|password/i);
+describe("registrations: the invitation", () => {
+  it("issues a link valid for the configured hours, with an audit entry that leaves the token out", async () => {
+    const now = new Date("2026-11-05T08:00:00Z");
+    const invite = await invited({}, now);
+    expect(invite.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(invite.expiresAt.getTime() - now.getTime()).toBe(48 * HOUR);
+    const row = await db.associationRegistration.findUniqueOrThrow({ where: { id: invite.id } });
+    expect(row).toMatchObject({ status: "INVITED", invitedById: admin.id, inviteToken: invite.token });
+    expect(row.createdAt).toEqual(now);
+    const entry = await db.auditLog.findFirstOrThrow({ where: { action: "registration.invited", entityId: invite.id } });
+    expect(JSON.stringify(entry.after)).not.toContain(invite.token);
+
+    await db.setting.create({ data: { key: "registration.inviteHours", value: 72 } });
+    const longer = await invited({}, now);
+    expect(longer.expiresAt.getTime() - now.getTime()).toBe(72 * HOUR);
   });
 
-  it("refuses a license already registered or already under review, and a taken username", async () => {
+  it("refuses a licence or email already registered or held by an open registration", async () => {
     await makeAssociation("جمعية قائمة", { licenseNumber: "7777" });
-    const registered = await submitRegistration(application({ licenseNumber: "7777" }));
-    expect(registered.ok).toBe(false);
+    const registered = await createInvitation(admin, inviteSchema.parse(rawInvite({ licenseNumber: "7777" })));
     expect(!registered.ok && registered.errors?.licenseNumber).toBeTruthy();
 
-    const first = await submitted({ licenseNumber: "8888" });
-    const pending = await submitRegistration(application({ licenseNumber: "8888" }));
-    expect(!pending.ok && pending.errors?.licenseNumber).toBeTruthy();
-
-    const sameUser = await submitRegistration(application({ username: first.input.username }));
-    expect(!sameUser.ok && sameUser.errors?.username).toBeTruthy();
-    const existingUser = await submitRegistration(application({ username: ctx.users.admin.username }));
-    expect(!existingUser.ok && existingUser.errors?.username).toBeTruthy();
+    await invited({ licenseNumber: "8888", contactEmail: "same@example.org" });
+    const sameLicense = await createInvitation(admin, inviteSchema.parse(rawInvite({ licenseNumber: "8888" })));
+    expect(!sameLicense.ok && sameLicense.errors?.licenseNumber).toBeTruthy();
+    const sameEmail = await createInvitation(admin, inviteSchema.parse(rawInvite({ contactEmail: "same@example.org" })));
+    expect(!sameEmail.ok && sameEmail.errors?.contactEmail).toBeTruthy();
+    const userEmail = await createInvitation(admin, inviteSchema.parse(rawInvite({ contactEmail: ctx.users.manager.email })));
+    expect(!userEmail.ok && userEmail.errors?.contactEmail).toBeTruthy();
   });
 
+  it("shows the super admin's fields while open, and nothing once expired, used or unknown", async () => {
+    const now = new Date();
+    const invite = await invited({}, now);
+    expect(await getInvitation(invite.token, now)).toMatchObject({ state: "open", officerName: "فهد بن سعد", secondOfficerName: "سعد بن فهد" });
+    expect(await getInvitation(invite.token, new Date(now.getTime() + 49 * HOUR))).toEqual({ state: "expired" });
+    expect(await getInvitation("x".repeat(43))).toEqual({ state: "invalid" });
+    expect(await getInvitation("short")).toEqual({ state: "invalid" });
+  });
+
+  it("renews an expired link from now, and cancelling frees the licence", async () => {
+    const t0 = new Date("2026-11-05T08:00:00Z");
+    const invite = await invited({ licenseNumber: "4242" }, t0);
+    const later = new Date(t0.getTime() + 60 * HOUR);
+    expect((await getInvitation(invite.token, later)).state).toBe("expired");
+    expect(await renewInvitation(admin, invite.id, 5, later)).toMatchObject({ ok: true });
+    expect((await getInvitation(invite.token, new Date(later.getTime() + 4 * HOUR))).state).toBe("open");
+
+    expect(await cancelInvitation(admin, invite.id, "")).toMatchObject({ ok: true });
+    expect((await getInvitation(invite.token)).state).toBe("invalid");
+    expect(await renewInvitation(admin, invite.id, 5)).toMatchObject({ ok: false });
+    expect((await createInvitation(admin, inviteSchema.parse(rawInvite({ licenseNumber: "4242" })))).ok).toBe(true);
+  });
+});
+
+describe("registrations: the association's part", () => {
+  it("records the data and letter, keeps the admin's fields, and the link stops working", async () => {
+    const { invite, row, referenceNo } = await completed();
+    expect(referenceNo).toMatch(/^JM-[A-Z0-9]{8}$/);
+    expect(row).toMatchObject({
+      status: "PENDING",
+      officerName: "فهد بن سعد",
+      contactPhone: "0550123456",
+      serviceSite: "MAKKAH",
+      servicePlaces: ["mataf", "masaa"],
+      city: "مكة المكرمة",
+      region: "منطقة مكة المكرمة",
+      foundedYear: 1435,
+      letterFileName: "خطاب.pdf",
+    });
+    expect(row.letterKey).toMatch(/^attachments\//);
+    expect(row.submittedAt).not.toBeNull();
+    expect(await db.user.count({ where: { email: row.contactEmail! } })).toBe(0);
+    expect((await getInvitation(invite.token)).state).toBe("used");
+
+    const again = await submitCompletion(invite.token, completionSchema.parse(rawCompletion()), { letterUploadId: await stage(invite.id, "letter").catch(() => null) });
+    expect(again.ok).toBe(false);
+  });
+
+  it("requires the letter, staged through this registration's own link", async () => {
+    const a = await invited();
+    const b = await invited();
+    const input = completionSchema.parse(rawCompletion());
+    expect(await submitCompletion(a.token, input, { letterUploadId: null })).toMatchObject({ ok: false, errors: { letter: expect.any(String) } });
+    const forOther = await stage(b.id, "letter");
+    expect(await submitCompletion(a.token, input, { letterUploadId: forOther })).toMatchObject({ ok: false, errors: { letter: expect.any(String) } });
+    expect((await db.associationRegistration.findUniqueOrThrow({ where: { id: a.id } })).status).toBe("INVITED");
+  });
+
+  it("refuses an expired link", async () => {
+    const now = new Date();
+    const invite = await invited({}, new Date(now.getTime() - 49 * HOUR));
+    const letterUploadId = await stage(invite.id, "letter");
+    expect(await submitCompletion(invite.token, completionSchema.parse(rawCompletion()), { letterUploadId }, now)).toMatchObject({ ok: false });
+  });
+
+  it("stores the logo, which moves to the association on approval", async () => {
+    const invite = await invited();
+    const result = await submitCompletion(invite.token, completionSchema.parse(rawCompletion()), {
+      letterUploadId: await stage(invite.id, "letter"),
+      logoUploadId: await stage(invite.id, "logo"),
+    });
+    expect(result.ok).toBe(true);
+    const row = await db.associationRegistration.findUniqueOrThrow({ where: { id: invite.id } });
+    expect(row.logoKey).toMatch(/^images\/[a-f0-9]{32}$/);
+    expect(await openImage("registration", row.id)).toMatchObject({ mime: "image/png" });
+    expect(await approveRegistration(admin, row.id, "")).toMatchObject({ ok: true });
+    const association = await db.association.findFirstOrThrow({ where: { licenseNumber: row.licenseNumber } });
+    expect(association.logoKey).toBe(row.logoKey);
+  });
 });
 
 describe("registrations: permissions", () => {
-  it("denies listing, reading and deciding to every role but the super admin", async () => {
-    const { row } = await submitted();
+  it("denies inviting, listing, reading and deciding to every role but the super admin", async () => {
+    const { row } = await completed();
     for (const role of ["UNIT_MANAGER", "SUPERVISOR", "ASSOCIATION_OFFICER"] as Role[]) {
       const actor = ctx.actors[role];
       const calls: (() => Promise<unknown>)[] = [
+        () => createInvitation(actor, inviteSchema.parse(rawInvite())),
+        () => renewInvitation(actor, row.id, 5),
+        () => cancelInvitation(actor, row.id, ""),
         () => listRegistrations(actor, "PENDING"),
         () => registrationCounts(actor),
         () => getRegistration(actor, row.id),
@@ -130,129 +260,55 @@ describe("registrations: permissions", () => {
         () => rejectRegistration(actor, row.id, "بيانات غير مكتملة"),
       ];
       for (const call of calls) await expect(call(), role).rejects.toBeInstanceOf(ForbiddenError);
+      expect(await registrationLetter(actor, row.id), role).toBeNull();
     }
     expect((await db.associationRegistration.findUniqueOrThrow({ where: { id: row.id } })).status).toBe("PENDING");
-  });
-
-  it("never exposes the password hash to the reviewer", async () => {
-    const { row } = await submitted();
-    const detail = await getRegistration(admin, row.id);
-    expect(detail).not.toHaveProperty("passwordHash");
+    expect(await registrationLetter(admin, row.id)).toMatchObject({ fileName: "خطاب.pdf" });
   });
 });
 
 describe("registrations: decisions", () => {
-  it("approval creates the association and an officer who signs in with the chosen password", async () => {
-    const { row, input, referenceNo } = await submitted();
+  it("approval creates the association and an account signed in by email with a temporary password", async () => {
+    const { row, referenceNo } = await completed();
     const result = await approveRegistration(admin, row.id, "تحقق من الترخيص");
-    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(JSON.stringify(result));
+    expect(result.credentials?.username).toBe(row.contactEmail);
 
     const reg = await db.associationRegistration.findUniqueOrThrow({ where: { id: row.id } });
-    expect(reg.status).toBe("APPROVED");
-    expect(reg.passwordHash).toBeNull();
-    expect(reg.reviewedById).toBe(admin.id);
-
+    expect(reg).toMatchObject({ status: "APPROVED", reviewedById: admin.id });
     const association = await db.association.findUniqueOrThrow({ where: { id: reg.associationId! }, include: { officer: true } });
-    expect(association.licenseNumber).toBe(input.licenseNumber);
-    expect(association.officer?.username).toBe(input.username);
-    expect(association.officer?.role).toBe("ASSOCIATION_OFFICER");
-    expect(association.officer?.mustChangePassword).toBe(false);
+    expect(association).toMatchObject({ licenseNumber: row.licenseNumber, city: "مكة المكرمة", contactName: "فهد بن سعد" });
+    expect(association.officer).toMatchObject({ email: row.contactEmail, role: "ASSOCIATION_OFFICER", mustChangePassword: true, name: "فهد بن سعد" });
+    expect(association.officer?.username).toMatch(/^[a-z0-9][a-z0-9._]*$/);
     const account = await db.account.findFirstOrThrow({ where: { userId: association.officer!.id, providerId: "credential" } });
-    expect(await verifyPassword({ hash: account.password!, password: PASSWORD })).toBe(true);
+    expect(await verifyPassword({ hash: account.password!, password: result.credentials!.password })).toBe(true);
 
-    const actions = (await db.auditLog.findMany({ where: { actorId: admin.id } })).map((a) => a.action).sort();
+    const actions = (await db.auditLog.findMany({ where: { actorId: admin.id, action: { not: "registration.invited" } } })).map((a) => a.action).sort();
     expect(actions).toEqual(["association.created", "registration.approved", "user.created"]);
+    expect(JSON.stringify(await db.auditLog.findMany())).not.toContain(result.credentials!.password);
 
     expect(await approveRegistration(admin, row.id, "")).toMatchObject({ ok: false });
-    expect((await lookupRegistration(referenceNo, input.licenseNumber))?.username).toBe(input.username);
+    expect(await lookupRegistration(referenceNo, row.licenseNumber)).toMatchObject({ status: "APPROVED", signIn: row.contactEmail });
   });
 
-  it("approval is refused when the username was taken meanwhile, leaving the application pending", async () => {
-    const { row, input } = await submitted();
-    await db.user.update({ where: { id: ctx.users.manager.id }, data: { username: input.username } });
+  it("approval is refused when the email was taken meanwhile, leaving the application pending", async () => {
+    const { row } = await completed();
+    await db.user.update({ where: { id: ctx.users.manager.id }, data: { email: row.contactEmail! } });
     expect((await approveRegistration(admin, row.id, "")).ok).toBe(false);
     expect((await db.associationRegistration.findUniqueOrThrow({ where: { id: row.id } })).status).toBe("PENDING");
     expect(await db.association.count()).toBe(1);
   });
 
-  it("rejection needs a reason, discards the password and shows the reason in the public lookup", async () => {
-    const { row, input, referenceNo } = await submitted();
+  it("rejection needs a reason and shows it in the public lookup; a waiting link cannot be decided", async () => {
+    const { row, referenceNo } = await completed();
     expect(await rejectRegistration(admin, row.id, "")).toMatchObject({ ok: false });
     expect((await rejectRegistration(admin, row.id, "رقم الترخيص لا يطابق السجل")).ok).toBe(true);
-    const reg = await db.associationRegistration.findUniqueOrThrow({ where: { id: row.id } });
-    expect(reg.status).toBe("REJECTED");
-    expect(reg.passwordHash).toBeNull();
-
-    const lookup = await lookupRegistration(referenceNo, input.licenseNumber);
-    expect(lookup).toMatchObject({ status: "REJECTED", note: "رقم الترخيص لا يطابق السجل", username: null });
+    expect(await lookupRegistration(referenceNo, row.licenseNumber)).toMatchObject({ status: "REJECTED", note: "رقم الترخيص لا يطابق السجل", signIn: null });
     expect(await lookupRegistration(referenceNo, "0000")).toBeNull();
 
-    // The license is free again for a corrected application.
-    expect((await submitRegistration(application({ licenseNumber: input.licenseNumber }))).ok).toBe(true);
-  });
-});
-
-describe("checking a step before submission", () => {
-  it("reports a license under review and a taken username, and passes free ones", async () => {
-    const { input } = await submitted();
-    expect(await checkRegistrationAvailability({ licenseNumber: input.licenseNumber })).toMatchObject({ ok: false, errors: { licenseNumber: expect.any(String) } });
-    expect(await checkRegistrationAvailability({ username: input.username })).toMatchObject({ ok: false, errors: { username: expect.any(String) } });
-    expect(await checkRegistrationAvailability({ licenseNumber: "99999", username: "free.name" })).toEqual({ ok: true });
-    expect(await checkRegistrationAvailability({})).toEqual({ ok: true });
-  });
-});
-
-describe("the logo sent with an application (D-100)", () => {
-  const storageRoot = mkdtempSync(join(tmpdir(), "rifada-registration-logo-"));
-  const previousStorage = process.env.STORAGE_DIR;
-  beforeAll(() => {
-    process.env.STORAGE_DIR = storageRoot;
-  });
-  afterAll(() => {
-    process.env.STORAGE_DIR = previousStorage;
-    rmSync(storageRoot, { recursive: true, force: true });
-  });
-
-  async function stagedLogo(uploaderId = REGISTRATION_UPLOADER) {
-    const bytes = FIXTURES.png();
-    const staged = await stageUpload({
-      uploaderId,
-      sessionId: null,
-      fileName: "شعار.png",
-      declaredMime: "image/png",
-      contentLength: bytes.length,
-      body: Readable.from([bytes]),
-      context: REGISTRATION_LOGO_CONTEXT,
-      only: { groups: ["image"], maxMb: IMAGE_MAX_MB },
-    });
-    if (!staged.ok) throw new Error(staged.message);
-    return staged.uploadId;
-  }
-
-  it("is stored with the application and moves to the association on approval", async () => {
-    const result = await submitRegistration(application(), new Date(), await stagedLogo());
-    if (!result.ok) throw new Error(JSON.stringify(result));
-    const row = await db.associationRegistration.findUniqueOrThrow({ where: { referenceNo: result.referenceNo } });
-    expect(row.logoKey).toMatch(/^images\/[a-f0-9]{32}$/);
-    expect(await openImage("registration", row.id)).toMatchObject({ mime: "image/png" });
-
-    expect(await approveRegistration(admin, row.id, "")).toMatchObject({ ok: true });
-    const reg = await db.associationRegistration.findUniqueOrThrow({ where: { id: row.id } });
-    expect(reg.logoKey).toBeNull();
-    const association = await db.association.findUniqueOrThrow({ where: { id: reg.associationId! } });
-    expect(association.logoKey).toBe(row.logoKey);
-  });
-
-  it("refuses an upload staged by someone else or already used", async () => {
-    const foreign = await stagedLogo(admin.id);
-    expect(await submitRegistration(application(), new Date(), foreign)).toMatchObject({ ok: false, errors: { image: expect.any(String) } });
-    const once = await stagedLogo();
-    expect(await submitRegistration(application(), new Date(), once)).toMatchObject({ ok: true });
-    expect(await submitRegistration(application(), new Date(), once)).toMatchObject({ ok: false, errors: { image: expect.any(String) } });
-  });
-
-  it("requires both emails", () => {
-    expect(registrationSchema.safeParse({ ...rawApplication(), contactEmail: "" }).success).toBe(false);
-    expect(registrationSchema.safeParse({ ...rawApplication(), officerEmail: "" }).success).toBe(false);
+    const waiting = await invited();
+    const waitingRow = await db.associationRegistration.findUniqueOrThrow({ where: { id: waiting.id } });
+    expect(await approveRegistration(admin, waiting.id, "")).toMatchObject({ ok: false });
+    expect(await lookupRegistration(waitingRow.referenceNo, waitingRow.licenseNumber)).toBeNull();
   });
 });

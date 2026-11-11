@@ -5,7 +5,8 @@ import { Suspense, type ReactNode } from "react";
 import { VerificationQr } from "@/components/requests/verification-qr";
 import { RefNumber } from "@/components/ui/ref-number";
 import { brand } from "@/config/brand";
-import { formatGregorian, formatHijri, formatNumber, formatTime, toArabicDigits } from "@/lib/format";
+import { formatHijri, formatNumber, formatTime, toArabicDigits } from "@/lib/format";
+import { requestTypeLabel } from "@/lib/requests";
 import { requireUser } from "@/server/auth/session";
 import { getRequestDetail, type FileView } from "@/server/services/requests/read";
 import { verifyUrl } from "@/server/services/verification";
@@ -29,18 +30,13 @@ function text(value: string | null | undefined): ReactNode {
   return value?.trim() ? <span className="whitespace-pre-line">{toArabicDigits(value.trim())}</span> : empty;
 }
 
-function dual(date: Date | null | undefined): ReactNode {
-  if (!date) return empty;
-  return (
-    <>
-      {formatHijri(date)} <span className="text-[#444]">الموافق {formatGregorian(date)}</span>
-    </>
-  );
+function dateValue(date: Date | null | undefined): ReactNode {
+  return date ? formatHijri(date) : empty;
 }
 
 function fieldValue(type: string | null, value: string | null): ReactNode {
   if (!value?.trim()) return empty;
-  if (type === "DATE" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return dual(new Date(`${value}T12:00:00Z`));
+  if (type === "DATE" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return dateValue(new Date(`${value}T12:00:00Z`));
   return text(value);
 }
 
@@ -135,7 +131,7 @@ async function RequestDocument({ params }: { params: Promise<{ id: string }> }) 
 
   // Printed in the bottom margin of every page, next to the page number.
   const ref = r.referenceNo ? `⁦${toArabicDigits(r.referenceNo).replace(/-/g, "‎-‎")}⁩` : null;
-  const footerLine = `وثيقة صادرة إلكترونيًا من ${brand.systemName}${ref ? ` — رقم الطلب ${ref}` : ""}`;
+  const footerLine = `وثيقة صادرة إلكترونيًا من ${brand.unitName}${ref ? ` — رقم الطلب ${ref}` : ""}`;
   const days =
     r.startDate && r.endDate ? Math.round((r.endDate.getTime() - r.startDate.getTime()) / 86_400_000) + 1 : null;
 
@@ -170,10 +166,9 @@ async function RequestDocument({ params }: { params: Promise<{ id: string }> }) 
             <p>المملكة العربية السعودية</p>
             <p>{brand.presidencyName}</p>
             <p>{brand.unitName}</p>
-            <p className="font-normal">{brand.systemName}</p>
           </div>
           <div className="flex justify-end">
-            <Image src={brand.logo.color.src} alt={brand.logo.alt} width={66} height={76} className="grayscale" priority />
+            <Image src={brand.presidencyLogo.src} alt={brand.presidencyLogo.alt} width={66} height={42} className="grayscale" priority />
           </div>
         </header>
 
@@ -216,7 +211,7 @@ async function RequestDocument({ params }: { params: Promise<{ id: string }> }) 
           <Rows
             rows={[
               ["المسار المستهدف", text(r.track?.name ?? null)],
-              ["نوع الطلب", text(r.requestType?.name ?? null)],
+              ["نوع الطلب", text(requestTypeLabel(r.requestType, r.requestTypeDetail))],
               ...(r.program
                 ? ([
                     ["البرنامج", <>{toArabicDigits(r.program.number)}. {r.program.name}</>],
@@ -239,15 +234,15 @@ async function RequestDocument({ params }: { params: Promise<{ id: string }> }) 
         <Section n={3} title="بيانات المشروع">
           <Rows
             rows={[
-              ["اسم المشروع أو البرنامج", <span key="t" className="font-bold">{text(r.title)}</span>],
+              ["اسم البرنامج المقترح", <span key="t" className="font-bold">{text(r.title)}</span>],
               ["وصف المشروع", text(r.description)],
               ["الأهداف والمخرجات المتوقعة", text(r.goals)],
               ...(r.targetAudience ? ([["الفئة المستهدفة", text(r.targetAudience)]] as [string, ReactNode][]) : []),
               ...(r.location ? ([["مكان التنفيذ", text(r.location)]] as [string, ReactNode][]) : []),
               ["الفئات المستهدفة", text(r.expectedBeneficiaries)],
               ["الميزانية التقديرية", r.estimatedBudget !== null ? `${formatNumber(r.estimatedBudget)} ر.س` : empty],
-              ["تاريخ البداية", dual(r.startDate)],
-              ["تاريخ النهاية", dual(r.endDate)],
+              ["تاريخ البداية", dateValue(r.startDate)],
+              ["تاريخ النهاية", dateValue(r.endDate)],
               ["مدة التنفيذ", days && days > 0 ? `${toArabicDigits(days)} يومًا` : empty],
               ["مؤشرات القياس", text(r.kpis)],
               ["الشركاء", text(r.partners)],
@@ -294,7 +289,7 @@ async function RequestDocument({ params }: { params: Promise<{ id: string }> }) 
           <Rows
             rows={[
               ["القرار", decision ? <span className="font-bold">{decision.to.name}</span> : "لم يصدر قرار بعد"],
-              ["تاريخ القرار", decision ? dual(decision.createdAt) : empty],
+              ["تاريخ القرار", decision ? dateValue(decision.createdAt) : empty],
               ["المشرف المختص", text(decision?.actor ?? r.assignment?.supervisor?.name ?? null)],
               ["ملاحظات القرار", text(decision?.note)],
             ]}
@@ -335,7 +330,7 @@ async function RequestDocument({ params }: { params: Promise<{ id: string }> }) 
           </div>
           {certificate ? (
             <p className="mt-4 border border-black px-3 py-2 text-[9pt] leading-[1.8]">
-              وُقِّعت هذه الوثيقة إلكترونيًا من {brand.systemName}، ولا تحتاج إلى توقيع بخط اليد أو ختم. للتحقق من صحتها امسحوا رمز
+              وُقِّعت هذه الوثيقة إلكترونيًا من {brand.unitName}، ولا تحتاج إلى توقيع بخط اليد أو ختم. للتحقق من صحتها امسحوا رمز
               التحقق بكاميرا الجوال، أو افتحوا <bdi dir="ltr">{verifyPage}</bdi> وأدخلوا الرمز <bdi dir="ltr">{certificate.verifyCode}</bdi>.
               تفقد الوثيقة صلاحيتها إذا تغيّر الطلب بعد اعتماده.
             </p>

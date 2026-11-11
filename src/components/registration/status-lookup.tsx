@@ -13,9 +13,10 @@ import { useActionForm } from "@/components/ui/use-action-form";
 import { lookupRegistrationAction, type LookupState } from "@/server/actions/registration";
 
 const STATUS = {
+  INVITED: { tone: "warn", label: "بانتظار استكمال البيانات", icon: Hourglass, text: "لم تُرسَل بيانات الجمعية بعد. استكملوها من الرابط الذي وصلكم من الوحدة الإشرافية." },
   PENDING: { tone: "info", label: "قيد المراجعة", icon: Hourglass, text: "تراجع الوحدة الإشرافية بيانات الجمعية وترخيصها، ويُفعَّل الحساب فور اعتماد الطلب." },
-  APPROVED: { tone: "ok", label: "معتمد", icon: CircleCheck, text: "اعتُمد طلبكم وفُعِّل حساب الجمعية. ادخلوا باسم المستخدم وكلمة المرور التي اخترتموها." },
-  REJECTED: { tone: "bad", label: "مرفوض", icon: CircleX, text: "لم يُعتمد الطلب. اطّلعوا على السبب، ويمكنكم تقديم طلب جديد بعد استكمال المطلوب." },
+  APPROVED: { tone: "ok", label: "معتمد", icon: CircleCheck, text: "اعتُمد طلبكم وفُعِّل حساب الجمعية. تدخلون بالبريد الإلكتروني للجمعية وكلمة المرور المؤقتة التي تصلكم من الوحدة الإشرافية، ثم تُغيّرونها عند أول دخول." },
+  REJECTED: { tone: "bad", label: "مرفوض", icon: CircleX, text: "لم يُعتمد الطلب. اطّلعوا على السبب، وتواصلوا مع الوحدة الإشرافية لإصدار رابط تسجيل جديد بعد استكمال المطلوب." },
 } as const;
 
 /** Public status lookup by reference and license number. */
@@ -62,12 +63,7 @@ export function RegistrationStatusLookup() {
               عرض حالة الطلب
             </SubmitButton>
           </div>
-          <p className="mt-6 text-sm text-ink-muted">
-            لم تسجّلوا جمعيتكم بعد؟{" "}
-            <Link href="/register" className="font-semibold text-primary hover:underline">
-              ابدؤوا التسجيل
-            </Link>
-          </p>
+          <p className="mt-6 text-sm leading-relaxed text-ink-muted">تُسجَّل الجمعيات عبر رابط تصدره الوحدة الإشرافية لكل جمعية.</p>
         </form>
 
         <section aria-live="polite" className="rounded-2xl border border-line bg-surface p-6 shadow-1 sm:p-8">
@@ -108,7 +104,7 @@ export function RegistrationStatusLookup() {
               {r.status === "APPROVED" ? (
                 <Link href="/login" className={buttonClasses("dark", "lg", "mt-6")}>
                   <LogIn aria-hidden="true" />
-                  الدخول إلى المنصة{r.username ? <bdi dir="ltr" className="font-normal opacity-80">({r.username})</bdi> : null}
+                  الدخول إلى المنصة{r.signIn ? <bdi dir="ltr" className="font-normal opacity-80">({r.signIn})</bdi> : null}
                 </Link>
               ) : null}
             </div>

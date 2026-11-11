@@ -1412,3 +1412,207 @@ on the taxonomy pages. (3) «المستخدمون حسب الدور»: the ring 
 look like the dashboards' figures: `<BandFigures>` draws through `<KpiRow>`, so every figure has an
 icon tile (required), a tone and a caption, and links to its filtered list where one exists (active,
 inactive and officer-less associations; active supervisors and officers). `KpiTone` gains `neutral`.
+
+**D-133 The product name is dropped; the logo is the Presidency's (owner's decision, 2026-11-03).** The
+platform is no longer called «رفادة»; it goes by «الوحدة الإشرافية على المنظمات غير الربحية»
+(`brand.unitShortName`), replacing `brand.productName` and `brand.systemName`. Logos stay wherever they
+were (header, login panel, footer, print letterhead, favicon, browser notifications), all showing the
+Presidency's logo through `brand.logo` and `<Logo>`. The header shows the logo and, from lg, the name.
+The form card on the login page loses its «منصة رفادة» eyebrow, which would only have repeated the
+name beside the panel; the letterhead loses its product line; the document's footer and seal note name
+the unit. The full official name with «بالحرمين الشريفين» (home hero, login panel, letterhead) is
+unchanged. "rifada" remains only as an internal code name, never shown to users: repo and package name,
+database names, `no-email.rifada.invalid` placeholder addresses, the notification channel, browser
+storage keys, the digit font's family name and the logo file names in `public/brand/`. Renaming those
+would need data migrations and would reset saved preferences for no visible gain.
+
+**D-134 Hijri dates only; the page head mark; figures follow the filter (owner's review, 2026-11-03).**
+(1) The platform shows Hijri dates only: the Gregorian date is removed from `<DateDisplay>` (whose
+`variant` goes with it), `<BandDate>`, the request pages and the print document, replacing the
+«Hijri first, Gregorian smaller» rule of the brief. Date entry follows: `<HijriDateInput>` picks day,
+month and year from selects, because browsers have no Hijri calendar; it replaces the native pickers
+in the request wizard and the audit filter. A hidden input still submits YYYY-MM-DD, and dates are
+still stored in UTC, so the server's rules and existing data are unchanged. (2) The page head's faint
+arch was briefly replaced by `<RifedaMark>` («رفادة»); at the owner's request the ogee arch is back
+(`<ArchOutline>`, 7% opacity), so the name no longer shows anywhere (D-133 holds in full). (3) Figures that filter their own page's table now show which filter is on:
+`<BandFigures params>` turns the matching tile green instead of always the first
+(`selectedFigureIndex`), as the request lists do (D-130). Applies to associations (admin, manager),
+users and registrations, whose tiles become links; the first tile links back to the unfiltered list.
+
+**D-135 The dev server cannot start behind the schema (owner's request, 2026-11-03).** Pages kept failing
+with Prisma errors after schema changes, for two reasons. Nothing applied new migrations or regenerated
+the client when the code changed, so code could ask for columns the database or client did not have.
+And `src/server/db.ts` kept one client on `globalThis` across hot reloads, so a regenerated client was
+ignored until a restart. Now `npm run dev` first runs `prisma migrate deploy` and `prisma generate`
+(`predev`) and stops with the error if they fail, `npm run db:migrate` also regenerates, and `db.ts`
+replaces the cached client when the generated class changes. `migrate deploy` only applies pending
+migrations and never resets data. A migration added while the server runs still needs `npm run db:deploy`.
+
+**D-136 One «تقديم طلب جديد» on screen (owner's review, 2026-11-04).** The association home and «طلباتي»
+showed the gold button twice on wide screens, in the navigation bar and in the page head. The navigation
+bar's stays, because it is on every page of the area. The page head's now shows only below `lg`, where
+the bar is hidden and the bar's button sits inside the phone menu, so phones keep it in view. The button
+in the empty states stays: it is the next step of an empty list.
+
+**D-137 «التحقق من وثيقة» is a gold button on the green bar (owner's review, 2026-11-04).** For the admin,
+the unit manager and the supervisor it moves out of the user menu to the end of the navigation bar, as a
+gold button beside any other call-to-action, on every page of their areas. Below `lg`, where the bar is
+hidden, it is a gold button at the top of the navigation drawer. This adds to the gold rule in
+docs/DESIGN.md. Association officers still reach the page from the public footer only, as before.
+
+**D-138 One compact card for where a request belongs (owner's review, 2026-11-04).** The two-part card
+under the stepper (D-118, D-123) was too heavy for staff who already know the programmes. It is now one
+card, one line per item: the track and request type, then the chosen programme and initiatives, with
+«تعديل». Programme descriptions and the explanatory sentence are gone. Until a programme is chosen the
+card lists the names of the track's programmes; afterwards only the choice. Replaces «always every
+programme of the track» in D-123. Classifying stays optional.
+
+**D-139 The supervisor recommends, the unit manager decides (owner's request, 2026-11-04).** Replaces the
+direct return and reject of the supervisor (D-070, D-116).
+- **Supervisor.** Three buttons: «التوصية بالقبول», «التوصية بالإعادة للتعديل», «التوصية بالرفض». Each opens
+  the same evaluation (criteria, note, password, seal; owner's choice), with a required reason for
+  return and reject. The request then moves to the unit manager (`reviewStage` MANAGER). The supervisor
+  can no longer decide anything directly. The recommendation and reason are stored on the
+  `RequestEvaluation` and are in the evaluation seal's statement; `evaluationDigest` is unchanged, so
+  existing seals still verify. Evaluations made earlier count as recommending acceptance, the only
+  way they could reach the manager.
+- **Unit manager.** Sees the recommendation and reason in «القرار» and on the list rows, and may accept,
+  return or reject whatever was recommended. The button matching the recommendation reads «تأكيد …».
+  The supervisor's reason is offered for a return or rejection and may be changed before it reaches the
+  association; it is never carried into an approval's note. A final acceptance is always signed and
+  sealed (D-117, D-122), also when it overrules a return or a rejection.
+- **Waiting.** The manager decides only after the recommendation (owner's choice; replaces «return and
+  reject at any time»). **Exception, not asked for by the owner:** with no assigned or active supervisor nobody can
+  evaluate the request and there is no screen to reassign it, so it would be stuck; the manager may
+  then return or reject it, not accept it.
+- **Association.** Sees «قيد المراجعة» and gets no notification until the manager decides (owner's choice).
+- The lifecycle table still lists the supervisor on the three transitions; `decisions.ts` refuses
+  them, as it already did for approval since D-116.
+
+**D-140 A Hijri calendar instead of three selects (owner's review, 2026-11-04).** `<HijriDateInput>` is now a
+field showing the chosen date that opens a month calendar (Umm al-Qura; the week starts on Sunday; today
+is marked; dates before `min` are disabled), with month and year selects and arrows to move, «اليوم» and
+«مسح التاريخ», and arrow keys between days. Used in the request wizard and the audit filter. It still submits
+YYYY-MM-DD through a hidden input, so storage and the server's rules are unchanged (D-134).
+
+**D-141 The end date is controlled by the start date (owner's review, 2026-11-04).** In the request form the
+end date's calendar stays closed until a start date is chosen, and offers only the days from the start date
+to five years after it, the period the completeness check already enforces (`MAX_SPAN_DAYS`). A new start
+that leaves the end outside that period clears the end and says so. The same day stays allowed, as on the
+server. The server's rules are unchanged.
+
+**D-142 A corrected field drops its error (owner's report, 2026-11-04).** After a refused save or send, a field's
+message stayed until the next save or send, so a correct end date still showed «مدة التنفيذ تزيد على خمس سنوات».
+Changing a field in the request form now removes its message, and the refused-send banner when nothing is left;
+the server checks again at the next save or send. The calendar did not fire the form's input event, so a picked
+date was not saved on leaving the field as other fields are (D-140); it now is.
+
+**D-143 The supervisor's home lists the same requests as «قائمة الطلبات» (owner's report, 2026-11-04).** «الطلبات
+الأخيرة» read only the open requests assigned to the supervisor, so the latest requests of their tracks did not
+appear on the home page although «قائمة الطلبات» showed them. The tab now reads the same requests as that page,
+newest first, up to eight, with «جديد». The card is «طلبات برامجي». The button reads «مراجعة» on a request
+assigned to the supervisor and under review, «عرض» otherwise. «ذات أولوية» stays the supervisor's own requests.
+
+**D-144 The supervisor role acts on its tracks, not only the assigned user (owner's decision, 2026-11-04).**
+Replaces «only the assigned supervisor» in D-070 and D-116. Any active supervisor of a request's track may
+choose its programme and initiatives and send the signed recommendation. Requests are still assigned
+automatically, for workload and notifications. The first to sign wins (a conditional update); if that is not the
+assigned supervisor, the request moves to the signer, recorded in the assignment history and audit, and the
+previous supervisor is told, so later notifications and a resubmission reach whoever reviewed it. A programme
+change by another supervisor also tells the assigned one. New-request notifications, the «new request» banner and
+«ذات أولوية» still follow the assignment. The unit manager's exception in D-139 now applies only when the
+track has no active supervisor.
+
+**D-145 Direct return and reject stay; «تقييم واعتماد» holds the recommendation; the supervisor chooses the programme
+(owner's correction of D-139, 2026-11-04).**
+- **Two paths.** Wrong or incomplete data: on the request page a supervisor of the track returns or rejects
+  directly, with a reason, straight to the association, without the unit manager and without an evaluation. Otherwise
+  «تقييم واعتماد» opens the criteria, and inside it the supervisor chooses «التوصية بالقبول», «التوصية
+  بالإعادة للتعديل» or «التوصية بالرفض», signs, and the request goes to the unit manager, who takes the final decision.
+  This replaces the three recommendation buttons and the removal of the direct path in D-139. A direct decision
+  by another supervisor of the track moves the request to them, as in D-144.
+- **Unchanged.** The manager still decides only after the evaluation (exception in D-139 and D-144).
+- **Programme.** The association never chooses the programme: the card shows the track it chose and the track's
+  programmes until a supervisor chooses a programme, then its initiatives, in that order in the dialog. A
+  migration clears the programme and initiatives that requests from before D-123 still carried, on open
+  requests no supervisor has evaluated or classified. Decided requests and those with the manager keep theirs, as
+  their seals cover them.
+
+**D-146 «سجل الطلب» shows who did what (owner's report, 2026-11-04).** The unit manager could not see in the log what the
+supervisor had done. For the staff it now also lists every evaluation (who, the recommendation, the reason, the
+criteria met and the reviewer's note, across resubmissions) and every assignment (automatic, reassigned, or taken over
+by another supervisor), shows each actor's role, and says whether the manager's decision followed or overruled
+the recommendation. This reverses «not repeated here» in D-128. The association's own timeline is unchanged.
+
+**D-147 Clean showcase data for demos (owner's request, 2026-11-04).** `npm run db:seed:showcase` (`CONFIRM_SHOWCASE_RESET=yes`) deletes every
+request with its history, the notifications and the association registrations, keeps accounts, associations, taxonomy,
+templates and settings, and writes realistic requests in every state of the review, with real seals that it checks
+before committing. Audit rows stay (append-only), with one row recording the reset. Requests carry no attachments.
+
+**D-148 A rich demo dataset, and a one-time purge of the test audit log (owner's request, 2026-11-04).** `npm run db:seed:rich-demo` (`CONFIRM_RICH_DEMO_RESET=yes`) replaces the test deployment's data with the requests of the foundation's strategy document (مؤسسة تعظيم البلد الحرام) and of illustrative associations, in every state of the review, with real seals and real Word attachments. It keeps `admin`, the foundation's record and logo, taxonomy, templates and settings. New accounts use `DEV_USERS_PASSWORD`. The test typing the owner wanted gone survived only in `audit_logs`, so this script also deletes the audit rows: an owner-requested exception to the append-only rule, for test deployments only, with a dump taken first. No application code path deletes audit rows. Budgets, decisions, comments, licence numbers and every person's name are illustrative; initiative 7 of the document is blank, so its request stays a short draft.
+
+**D-149 Associations register through a link the super admin issues (owner's request, 2026-11-05).** Replaces the
+self-registration of D-094 (closed by D-131) and the direct «جمعية جديدة» form for new associations.
+- **Super admin.** «جمعية جديدة» asks for six fields: اسم الجمعية، المسؤول الأول، المسؤول الثاني، موقع الويب (optional)،
+  البريد الإلكتروني، رقم الترخيص. The creation date is the system's. «تأكيد وإنشاء الرابط» records an
+  `AssociationRegistration` in the new status `INVITED` and shows its link (`/register/<token>`, 256 random bits),
+  which stays on the registration's page to copy again. The licence and email must not belong to an association, an
+  account or another open (`INVITED`/`PENDING`) registration.
+- **Validity.** `registration.inviteHours` (default 48, 1 to 720, in «الإعدادات»). On a waiting registration the
+  super admin can set a new validity from now («تعديل مدة الصلاحية», which also reopens an expired link) or withdraw
+  the link («إلغاء الرابط», which moves it to «المرفوضة» and frees the licence and email). The link stops working when
+  it expires, when it is withdrawn and once the association has sent the form (single use). The token is kept in the
+  database in clear, at the owner's request to see the link again; it is never written to the audit log.
+- **Association.** The link opens the former registration journey in five steps. The super admin's fields are shown
+  locked. The association adds classification, founding year (optional), phone, website (only when none was given),
+  logo (optional), the service site and places, the officers' mobiles (the second optional), the letter («الخطاب»,
+  PDF only, at most 10 MB, required) and the pledge. Uploads go through `/api/registration/logo` and
+  `/api/registration/letter`, which accept only an open link and bind the staged file to that registration.
+- **Service places.** Only the two sites of the Presidency's map «أماكن تقديم الخدمة»: the association chooses مكة
+  المكرمة (المسجد الحرام) or المدينة المنورة (المسجد النبوي), then at least one of that site's places
+  (`src/lib/service-places.ts`). The site sets the association's city and region on approval.
+- **Officers and account.** The two officers' names are for the record. One account is created on approval: its
+  sign-in name is the association's email (the sign-in page and «نسيت كلمة المرور» accept an email as well as a
+  username), its name is the first officer's, and its password is temporary, shown once to the super admin, and
+  must be changed at first sign-in. A username is still derived from the email for the admin screens. No email is
+  sent yet: the super admin passes the link and the password on.
+- **Follow-up.** «متابعة طلب التسجيل» (`/register/status`) is back, with its footer link; it finds a sent application
+  by reference and licence number, and names the email to sign in with once approved. The bare `/register` leads to it.
+- **Admin.** «طلبات التسجيل» joins the admin navigation, with a «بانتظار الجمعية» tab and figure; the request page
+  shows the service places, both officers and the letter (download for the super admin only); the association's page
+  shows the same under «من طلب التسجيل». Applications sent through the old self-registration keep their chosen
+  username and password on approval.
+
+**D-150 Request numbers start with PRH; the number stays on screen after sending (owner's request, 2026-11-06).**
+(1) Request references are `PRH-<hijriYear>-<seq>` (were `RF-…`) and seal serials `PRH-SIG-<hijriYear>-<seq>` (were
+`RFD-SIG-…`). Numbers already issued are not renamed: the reference is inside each seal's signed content digest and the
+serial inside its signed statement, so renaming them would make existing sealed documents fail verification. The
+demo scripts (`db:seed:showcase`, `db:seed:rich-demo`) issue PRH numbers when run again. (2) When an association sends or
+resends a request, the pop-up shows the request number large with a copy button and stays until «حسنًا» (no six-second
+timer, no closing by a click outside): `toast(..., { persist: true })`. Other pop-ups are unchanged.
+
+**D-151 The association chooses the track, the programme and its initiatives again; goals from the strategy;
+target groups with numbers; «أخرى» (owner's request, 2026-11-06).** Supersedes the association side of D-123 and D-145
+(the supervisor may still change the programme and initiatives in review, D-116).
+- **Order in «عن المشروع».** «المسار المستهدف» (تصنيف المستوى ب), then «البرنامج» (the programmes that track covers;
+  disabled until a track is chosen), then «المبادرات» (one or more of the programme's open initiatives, as
+  checkboxes). Changing the track drops a programme it does not cover; changing the programme drops the initiatives
+  and goals. All three are required at submission (`program_missing`, `initiatives_missing`, and the existing
+  `program_unavailable` / `initiative_unavailable`). A programme or initiative archived since it was chosen stays
+  on the request's edit form, but the submission asks for an available one.
+- **Tracks.** The Presidency's classification sheet («التصنيف المقترح لرئاسة الحرمين») has seven level-B entries;
+  the migration adds the two missing ones as tracks 6 «الترجمة بالحرمين الشريفين» and 7 «المكتبات بالحرمين الشريفين»
+  (descriptions from the sheet), and, for now, links every track to every programme. The super admin narrows the
+  links in «المسارات».
+- **«الأهداف والمخرجات المتوقعة».** No longer typed: the association ticks goals of the chosen programme
+  (`ProgramGoal`, from «ملامح الاستراتيجية»). Stored as before in `goals`, one goal per line, so the request page,
+  the print and the seal read it unchanged. Lines from before D-151 that are not programme goals stay ticked on
+  the form until unticked.
+- **«الفئات المستهدفة».** One row per group with «العدد المستهدف» (its measurement figure) and «إضافة فئة» for more.
+  Stored in `expectedBeneficiaries` as «الفئة — العدد» lines (`formatTargetGroups` / `parseTargetGroups` in
+  `src/lib/requests.ts`); a group without a number blocks submission (`target_group_count_missing`).
+- **«نوع الطلب».** The super admin already adds types in «أنواع الطلبات»; a type can now be marked «تكتب الجمعية
+  نوع طلبها بنفسها» (`RequestType.requiresDetail`). Choosing such a type shows a text field
+  (`Request.requestTypeDetail`, required at submission, `request_type_detail_missing`); screens show
+  «أخرى: …». The migration adds «أخرى» with the flag, last in the list.
+- **Seals.** Version 3 also covers `requestTypeDetail`; versions 1 and 2 are checked against what they covered.

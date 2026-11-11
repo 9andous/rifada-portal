@@ -126,7 +126,7 @@ export function AssocRequestsTable({ rows, caption }: { rows: RequestRow[]; capt
                     {r.track?.name ?? ""}
                   </span>
                 </td>
-                <td className={cn(TD, "whitespace-nowrap text-ink-muted")}>{r.submittedAt ? <DateDisplay date={r.submittedAt} variant="hijri" /> : "لم يُرسل بعد"}</td>
+                <td className={cn(TD, "whitespace-nowrap text-ink-muted")}>{r.submittedAt ? <DateDisplay date={r.submittedAt} /> : "لم يُرسل بعد"}</td>
                 <td className={TD}>
                   <StatusText tone={r.status.tone}>{r.status.name}</StatusText>
                 </td>
@@ -166,7 +166,7 @@ export function AssocRequestsTable({ rows, caption }: { rows: RequestRow[]; capt
                 <dt className="text-ink-muted">المسار</dt>
                 <dd className="text-ink">{r.track?.name ?? "—"}</dd>
                 <dt className="text-ink-muted">تاريخ الإرسال</dt>
-                <dd className="text-ink">{r.submittedAt ? <DateDisplay date={r.submittedAt} variant="hijri" /> : "لم يُرسل بعد"}</dd>
+                <dd className="text-ink">{r.submittedAt ? <DateDisplay date={r.submittedAt} /> : "لم يُرسل بعد"}</dd>
                 <dt className="text-ink-muted">الخطوة التالية</dt>
                 <dd>
                   <NextStep statusKey={r.status.key} />

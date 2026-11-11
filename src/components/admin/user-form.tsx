@@ -208,7 +208,7 @@ export function UserForm({
                   id="associationId"
                   name="associationId"
                   defaultValue={defaults.associationId}
-                  placeholder="اختر الجمعية"
+                  placeholder="يُرجى اختيار الجمعية"
                   searchPlaceholder="ابحث باسم الجمعية…"
                   options={associations.map((a) => ({ value: a.id, label: a.name }))}
                   aria-invalid={Boolean(e.associationId)}

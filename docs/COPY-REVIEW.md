@@ -169,3 +169,10 @@ The track wording of D-126 (registration step, «مسارات الجمعية», 
 | Admin home chart | حسابًا نشطًا (under the total) | Accusative after the number. |
 | Association form (admin) | Section help lines; «الحقول المعلَّمة بـ* مطلوبة.»; «يمكن إنشاؤه لاحقًا من صفحة المستخدمين.» | |
 | Help button | المساعدة; new answers «ماذا أفعل بعد تفعيل الحساب؟» and the four-step registration | Check against the screens. |
+| Supervisor's recommendation (D-139) | توصية المشرف، التوصية بالقبول، التوصية بالإعادة للتعديل، التوصية بالرفض، سبب التوصية، رُفعت توصيتك إلى مدير الوحدة | New wording; check the tone. |
+| Unit manager's decision (D-139) | قرار مدير الوحدة، تأكيد الإعادة للتعديل، تأكيد الرفض، بانتظار توصية المشرف، طلب بانتظار قراركم | Replaces «اعتماد مدير الوحدة» on the stepper and in the notification. |
+| Hijri calendar (D-140) | اختر التاريخ، اليوم، مسح التاريخ، الشهر السابق، الشهر التالي؛ أحد، إثنين، ثلاثاء، أربعاء، خميس، جمعة، سبت | Check the short weekday names. |
+| End date control (D-141) | اختاروا تاريخ البداية أولًا؛ اختاروا تاريخ النهاية من جديد؛ لم يعد يناسب تاريخ البداية الجديد؛ يُختار بعد تاريخ البداية، ولا يسبقه | New wording. |
+| Supervisors of a track (D-144) | يقيّم الطلب مشرفو مساره؛ قيّم مشرف آخر طلبًا كان لديك؛ عدّل مشرف آخر برنامج الطلب أو مبادراته؛ قيّم الطلب ورفع توصيته | New wording. |
+| Direct path and takeover (D-145) | يُقبل الطلب عبر «تقييم واعتماد»؛ توصيتك إلى مدير الوحدة؛ يصل القرار إلى الجمعية مباشرة؛ تولّى مشرف آخر طلبًا كان لديك؛ بتّ في الطلب قبل تقييمه؛ اختر البرنامج | New wording. |
+| Request log (D-146) | قيّم الطلب ورفعه إلى مدير الوحدة؛ التوصية؛ خلاف توصية المشرف؛ وفق توصية المشرف؛ أُسند الطلب تلقائيًا إلى؛ تولّى الطلب بدلًا من؛ أصبح الطلب بلا مشرف | New wording. |

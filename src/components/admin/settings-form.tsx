@@ -41,7 +41,7 @@ export function SettingsForm({
   const { state, onSubmit, pending } = useActionForm<AdminFormState>(action, {});
   const e = state.errors ?? {};
 
-  const number = (key: "sla.workingDays" | "uploads.maxFileMb" | "uploads.associationQuotaMb" | "bulk.maxItems", limits: { min: number; max: number }, unit: string) => (
+  const number = (key: "sla.workingDays" | "uploads.maxFileMb" | "uploads.associationQuotaMb" | "bulk.maxItems" | "registration.inviteHours", limits: { min: number; max: number }, unit: string) => (
     <Field id={key} label={SETTING_LABELS[key]} hint={range(limits.min, limits.max, unit)} error={e[key]} required>
       <Input
         id={key}
@@ -98,6 +98,10 @@ export function SettingsForm({
 
       <Group title="الإجراءات الجماعية" description="أقصى عدد من الطلبات يمكن اعتمادها أو إعادتها أو رفضها أو إعادة إسنادها في إجراء واحد.">
         {number("bulk.maxItems", SETTING_LIMITS.bulk, "بعدد الطلبات")}
+      </Group>
+
+      <Group title="روابط تسجيل الجمعيات" description="مدة صلاحية الرابط الذي يُنشأ للجمعية عند إضافتها، تُحسب من إنشائه. يتعطل الرابط بانتهاء المدة أو بعد إرسال الجمعية بياناتها.">
+        {number("registration.inviteHours", SETTING_LIMITS.inviteHours, "بالساعات")}
       </Group>
 
       <Group title="الموقع العام" description="عند الإيقاف تظهر قوائم المبادرات للمستخدمين المسجلين فقط، وتبقى صفحات البرامج العامة بأهدافها.">

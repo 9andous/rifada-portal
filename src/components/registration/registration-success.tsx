@@ -12,7 +12,7 @@ import { toArabicDigits } from "@/lib/format";
 const NEXT = [
   { icon: SearchCheck, title: "مراجعة الطلب", text: "تتحقق الوحدة الإشرافية من بيانات الجمعية وترخيصها." },
   { icon: ClipboardCheck, title: "القرار", text: "يُعتمد الطلب فيُفعَّل حساب الجمعية، أو يُعاد إليكم مع السبب." },
-  { icon: KeyRound, title: "الدخول إلى المنصة", text: "بعد الاعتماد تدخلون باسم المستخدم وكلمة المرور التي اخترتموها." },
+  { icon: KeyRound, title: "الدخول إلى المنصة", text: "بعد الاعتماد تدخلون بالبريد الإلكتروني للجمعية وكلمة مرور مؤقتة، وتُغيّرونها عند أول دخول." },
 ];
 
 /** Shown after a successful submission: the reference number and what happens next. */

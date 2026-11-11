@@ -6,20 +6,21 @@ import { audit } from "@/server/services/audit";
 import { assertCan, fieldRefusal, lockAdminWrites, refuse, type Result } from "./common";
 
 // «أنواع الطلبات» (D-123): the kinds of request an association can submit. The super admin adds,
-// renames, pauses and archives them; they are never deleted, since requests keep their type.
+// renames, pauses and archives them; they are never deleted, since requests keep their type. A type
+// may ask the association to write what it requests in its own words, like «أخرى» (D-151).
 
 const MSG = {
   notFound: "نوع الطلب غير موجود.",
   nameTaken: "يوجد نوع طلب بهذا الاسم.",
 } as const;
 
-const snapshot = (t: { name: string; description: string | null; isActive: boolean }) => ({ name: t.name, description: t.description, isActive: t.isActive });
+const snapshot = (t: { name: string; description: string | null; isActive: boolean; requiresDetail: boolean }) => ({ name: t.name, description: t.description, isActive: t.isActive, requiresDetail: t.requiresDetail });
 
 export async function listRequestTypes(actor: Actor) {
   assertCan(actor, "taxonomy.manage");
   const rows = await db.requestType.findMany({
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, description: true, isActive: true, archivedAt: true, sortOrder: true, _count: { select: { requests: true } } },
+    select: { id: true, name: true, description: true, isActive: true, requiresDetail: true, archivedAt: true, sortOrder: true, _count: { select: { requests: true } } },
   });
   // Archived types last.
   return rows

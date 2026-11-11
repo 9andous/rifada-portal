@@ -53,3 +53,7 @@ exports/
 *.p12
 *.pfx
 credentials*
+# devsecops-reviewer local state (stamps, reports, logs) are ignored,
+# but the shared team config is committed so the whole team gets it.
+.security-review/*
+!.security-review/config.md

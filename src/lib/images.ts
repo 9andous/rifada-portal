@@ -3,9 +3,15 @@
 
 /** Upload context of a staged image, so a document upload cannot be used as a picture. */
 export const IMAGE_CONTEXT = "image";
-/** The logo sent with a public registration (D-100): no session, so a fixed uploader and context. */
+/**
+ * The logo sent with a registration (D-100): no session, so a fixed uploader, and a context bound to
+ * the registration whose link was used (D-149).
+ */
 export const REGISTRATION_LOGO_CONTEXT = "registration-logo";
 export const REGISTRATION_UPLOADER = "public-registration";
+export const registrationLogoContext = (registrationId: string) => `${REGISTRATION_LOGO_CONTEXT}:${registrationId}`;
+/** The letter («الخطاب») sent with a registration (D-149). */
+export const registrationLetterContext = (registrationId: string) => `registration-letter:${registrationId}`;
 export const IMAGE_MAX_MB = 2;
 export const IMAGE_ACCEPT = ".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
 

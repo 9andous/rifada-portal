@@ -5,11 +5,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { markRequestNotificationsRead } from "@/server/services/notifications";
 import { addComment } from "@/server/services/requests/comments";
 import { decideRequests } from "@/server/services/requests/decisions";
+import { evaluateRequest } from "@/server/services/requests/review";
 import { saveDraft } from "@/server/services/requests/drafts";
 import { getRequestDetail, listRequests, parseRequestListParams, requestStatusCounts } from "@/server/services/requests/read";
 import { submitRequest } from "@/server/services/requests/submit";
 import { db, resetDatabase } from "../support/db";
-import { makeRequestWorld, submittedRequest, validDraft, type RequestWorld } from "../support/requests";
+import { decideThroughManager, evaluationInput, makeRequestWorld, submittedRequest, validDraft, type RequestWorld } from "../support/requests";
 
 // Owner's review of 2026-11-03 (D-130): «جديد» on rows, notifications settled by acting,
 // «بعد التعديل» for resubmitted requests, and searching a reference as shown on screen.
@@ -56,8 +57,10 @@ describe("notifications settled by acting", () => {
     const { id } = await submittedRequest(w);
     const about = { userId: w.users.supervisor.id, requestId: id };
     expect(await db.notification.count({ where: about })).toBeGreaterThan(0);
-    expect((await decideRequests(w.actors.supervisor, [id], "return", "أرفقوا الخطة المحدثة")).ok).toBe(true);
+    const input = evaluationInput({ recommendation: "return", reason: "أرفقوا الخطة المحدثة" });
+    expect(await evaluateRequest(w.actors.supervisor, id, input)).toEqual({ ok: true });
     expect(await db.notification.count({ where: about })).toBe(0);
+    expect((await decideRequests(w.actors.manager, [id], "return", "أرفقوا الخطة المحدثة")).ok).toBe(true);
     // The association is told, and keeps its notice until it acts.
     expect(await db.notification.count({ where: { userId: w.users.officer.id, requestId: id, type: "request.returned" } })).toBe(1);
   });
@@ -67,7 +70,7 @@ describe("«بعد التعديل»", () => {
   it("is what the unit sees for a request sent back after edits; the association still sees «قيد المراجعة»", async () => {
     const { id } = await submittedRequest(w);
     const first = await submittedRequest(w);
-    await decideRequests(w.actors.supervisor, [id], "return", "يرجى التعديل");
+    await decideThroughManager(w, id, "return", "يرجى التعديل");
     await saveDraft(w.actors.officer, id, validDraft({ title: "طلب بعد التعديل" }));
     expect((await submitRequest(w.actors.officer, id)).ok).toBe(true);
 
@@ -86,7 +89,7 @@ describe("«بعد التعديل»", () => {
     // Still reviewed and decided like any request under review.
     const detail = await getRequestDetail(w.actors.supervisor, id);
     expect(detail?.status.key).toBe("RESUBMITTED");
-    expect(detail?.capabilities.canDecide).toBe(true);
+    expect(detail?.capabilities.canEvaluate).toBe(true);
   });
 });
 

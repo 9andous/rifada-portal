@@ -9,17 +9,17 @@ import { ForbiddenPage } from "@/components/states/forbidden-page";
 import { ListSkeleton } from "@/components/states/list-skeleton";
 import { EmptyState } from "@/components/states/states";
 import { DateDisplay } from "@/components/ui/date-display";
-import { Input } from "@/components/ui/field";
+import { HijriDateInput } from "@/components/ui/hijri-date-input";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Pagination } from "@/components/ui/pagination";
 import { Panel, PanelHeader } from "@/components/ui/surface";
 import { DataTable, THead, Td, Th, Tr } from "@/components/ui/table";
 import { auditActionLabel, auditEntityLabel } from "@/lib/audit-labels";
-import { formatHijri, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import type { SearchParams } from "@/lib/list-params";
 import { requireUser, type CurrentUser } from "@/server/auth/session";
 import { can } from "@/server/authz/permissions";
-import { auditFigures, auditFilterOptions, listAuditLog, parseAuditListParams, riyadhDayStart } from "@/server/services/admin/audit-log";
+import { auditFigures, auditFilterOptions, listAuditLog, parseAuditListParams } from "@/server/services/admin/audit-log";
 
 export const metadata: Metadata = { title: "سجل التدقيق" };
 
@@ -56,14 +56,13 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
 }
 
 function DateFilter({ name, label, value }: { name: string; label: string; value?: string }) {
-  const start = riyadhDayStart(value);
   return (
-    <div className="flex w-44 flex-col gap-1.5">
+    <div className="flex w-80 flex-col gap-1.5">
       <label htmlFor={`list-${name}`} className="t-label">
         {label}
       </label>
-      <Input id={`list-${name}`} name={name} type="date" defaultValue={value} dir="ltr" />
-      {start ? <span className="t-caption">{formatHijri(new Date(start.getTime() + 12 * 60 * 60 * 1000))}</span> : null}
+      {/* Keyed by the value: «مسح التصفية» navigates without remounting the list. */}
+      <HijriDateInput key={value ?? ""} id={`list-${name}`} name={name} defaultValue={value} />
     </div>
   );
 }
@@ -136,7 +135,7 @@ async function AuditList({ user, searchParams }: { user: CurrentUser; searchPara
                 return (
                   <Tr key={r.id}>
                     <Td className="w-64">
-                      <DateDisplay date={r.createdAt} variant="hijri" />
+                      <DateDisplay date={r.createdAt} />
                     </Td>
                     <Td>
                       {r.actorName ?? <span className="text-ink-subtle">النظام</span>}

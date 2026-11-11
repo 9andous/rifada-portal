@@ -461,7 +461,8 @@ export function RequestsTableCard({
   hrefBase: string;
   listHref: string;
   now: Date;
-  actionLabel?: string;
+  /** The row's button; a function when it depends on the row. */
+  actionLabel?: string | ((row: RequestRow) => string);
   /** Returned requests get a gold «تعديل» button to this edit page (association). */
   editHref?: (id: string) => string;
   tools?: ReactNode;
@@ -514,7 +515,7 @@ export function RequestsTableCard({
                       {columns.includes("title") ? <td className={cn(TD, "max-w-72 font-semibold")}><span className="line-clamp-2">{r.title || "طلب بلا عنوان"}</span></td> : null}
                       {columns.includes("program") ? <td className={cn(TD, "text-sm text-ink-muted")}>{r.track?.name ?? "—"}</td> : null}
                       {columns.includes("submitted") ? (
-                        <td className={cn(TD, "text-sm text-ink-muted")}>{r.submittedAt ? <DateDisplay date={r.submittedAt} variant="hijri" /> : "—"}</td>
+                        <td className={cn(TD, "text-sm text-ink-muted")}>{r.submittedAt ? <DateDisplay date={r.submittedAt} /> : "—"}</td>
                       ) : null}
                       {columns.includes("status") ? (
                         <td className={TD}>
@@ -535,7 +536,7 @@ export function RequestsTableCard({
                         ) : (
                           <Link href={`${hrefBase}/${r.id}`} tabIndex={-1} className={cn(buttonClasses("outline", "sm"), "relative z-10")}>
                             <Eye aria-hidden="true" />
-                            {actionLabel}
+                            {typeof actionLabel === "function" ? actionLabel(r) : actionLabel}
                           </Link>
                         )}
                       </td>

@@ -1,40 +1,7 @@
 import { redirect } from "next/navigation";
-import { REGISTRATION_OPEN } from "@/config/features";
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import { RegistrationJourney } from "@/components/registration/registration-journey";
-import { Skeleton } from "@/components/ui/surface";
-import { getPublicHome } from "@/server/services/public-site";
 
-export const metadata: Metadata = {
-  title: "تسجيل جمعية",
-  description: "انضموا إلى منصة رفادة: سجّلوا جمعيتكم لتقديم برامجها ومشروعاتها في خدمة قاصدي الحرمين الشريفين.",
-};
-
+// Associations register only through the link the unit issues for each of them (D-149); the bare
+// address leads to the follow-up page.
 export default function RegisterPage() {
-  // Self-registration is closed (D-130).
-  if (!REGISTRATION_OPEN) redirect("/");
-  return (
-    <Suspense
-      fallback={
-        <div aria-busy="true" aria-label="جارٍ التحميل" className="mx-auto grid w-full max-w-[1360px] gap-6 px-4 py-10 sm:px-8 lg:grid-cols-[22rem_1fr]">
-          <Skeleton className="h-[34rem] rounded-2xl" />
-          <Skeleton className="h-[34rem] rounded-2xl" />
-        </div>
-      }
-    >
-      <Journey />
-    </Suspense>
-  );
-}
-
-async function Journey() {
-  const home = await getPublicHome();
-  return (
-    <RegistrationJourney
-      vision={home.vision}
-      values={home.values}
-      objectives={home.objectives}
-    />
-  );
+  redirect("/register/status");
 }

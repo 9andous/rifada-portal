@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { Menu, ShieldCheck, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,8 +11,11 @@ import { NavIcon } from "./nav-icon";
 import { SignOutButton } from "./sign-out-button";
 import { TextSizeControl } from "./text-size";
 
+const GOLD_LINK =
+  "flex h-12 items-center justify-center gap-2.5 rounded-md bg-gold-action px-4 text-base font-bold text-on-gold-action hover:bg-gold-action-hover [&_svg]:size-[18px]";
+
 /** Navigation drawer for widths where the band cannot fit every item (tablet and below). */
-export function MobileNav({ items, root, roleLabel, cta }: { items: NavItem[]; root: string; roleLabel: string; cta?: NavItem }) {
+export function MobileNav({ items, root, roleLabel, cta, verifyHref }: { items: NavItem[]; root: string; roleLabel: string; cta?: NavItem; verifyHref?: string }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   // eslint-disable-next-line react-hooks/set-state-in-effect -- close the drawer after navigation
@@ -39,15 +42,20 @@ export function MobileNav({ items, root, roleLabel, cta }: { items: NavItem[]; r
             </Dialog.Close>
           </div>
           <Dialog.Description className="sr-only">روابط التنقل الرئيسية</Dialog.Description>
-          {cta?.href ? (
-            <div className="px-4 pt-4">
-              <Link
-                href={cta.href}
-                className="flex h-12 items-center justify-center gap-2.5 rounded-md bg-gold-action px-4 text-base font-bold text-on-gold-action hover:bg-gold-action-hover [&_svg]:size-[18px]"
-              >
-                <NavIcon name={cta.icon} />
-                {cta.label}
-              </Link>
+          {cta?.href || verifyHref ? (
+            <div className="flex flex-col gap-2 px-4 pt-4">
+              {cta?.href ? (
+                <Link href={cta.href} className={GOLD_LINK}>
+                  <NavIcon name={cta.icon} />
+                  {cta.label}
+                </Link>
+              ) : null}
+              {verifyHref ? (
+                <Link href={verifyHref} className={GOLD_LINK}>
+                  <ShieldCheck aria-hidden="true" strokeWidth={1.75} />
+                  التحقق من وثيقة
+                </Link>
+              ) : null}
             </div>
           ) : null}
           <div className="mx-4 mt-4 rounded-md bg-surface p-2.5 text-ink">

@@ -1,3 +1,4 @@
+import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { GeometricPattern } from "@/components/brand/geometric-pattern";
@@ -20,6 +21,9 @@ import { HeaderDivider, SiteHeader } from "./site-header";
 import { TopNav, TopNavView } from "./top-nav";
 import { UserMenu, UserMenuArrow } from "./user-menu";
 
+/** The gold buttons at the end of the green navigation bar. */
+const BAR_BUTTON = "h-11! px-5 text-[0.9375rem] xl:text-base";
+
 /**
  * Logged-in layout for one role area (docs/DESIGN.md: App shell): gov banner, white header with
  * both logos and the user, the green navigation bar, then each page's <PageBand> head and body.
@@ -28,6 +32,7 @@ import { UserMenu, UserMenuArrow } from "./user-menu";
 export function AppShell({ role, easy, children }: { role: Role; easy?: boolean; children: ReactNode }) {
   const root = ROLE_HOME[role];
   const cta = NAV_CTA[role];
+  const verifyHref = VERIFY_HREF[role];
 
   return (
     // `data-easy`: the simplified interface of the association area (D-102).
@@ -41,7 +46,7 @@ export function AppShell({ role, easy, children }: { role: Role; easy?: boolean;
           leading={
             // The drawer reads the URL; on dynamic routes it is unknown while prerendering.
             <Suspense fallback={<span aria-hidden="true" className="size-[42px] lg:hidden" />}>
-              <MobileNav items={NAV[role]} root={root} roleLabel={ROLE_LABELS[role]} cta={cta} />
+              <MobileNav items={NAV[role]} root={root} roleLabel={ROLE_LABELS[role]} cta={cta} verifyHref={verifyHref} />
             </Suspense>
           }
         >
@@ -52,22 +57,31 @@ export function AppShell({ role, easy, children }: { role: Role; easy?: boolean;
           </Suspense>
           <HeaderDivider />
           <Suspense fallback={<span className="mx-2 h-[46px] w-40 animate-pulse rounded-lg bg-surface-sunken" />}>
-            <UserChip helpHref={HELP_HREF[role]} verifyHref={VERIFY_HREF[role]} />
+            <UserChip helpHref={HELP_HREF[role]} />
           </Suspense>
         </SiteHeader>
 
         <nav data-print="hide" aria-label="التنقل الرئيسي" className="band-scope relative hidden overflow-hidden bg-band text-band-ink lg:block">
           <GeometricPattern size={56} />
-          <div className="relative flex h-16 items-stretch gap-4 px-8">
-            <Suspense fallback={<TopNavView items={NAV[role]} root={root} pathname={null} className="h-full" />}>
-              <TopNav items={NAV[role]} root={root} className="h-full" />
+          {/* With two gold buttons and enlarged text they may not fit beside the items: they wrap to a second row. */}
+          <div className="relative flex flex-wrap items-stretch gap-x-4 px-8">
+            <Suspense fallback={<TopNavView items={NAV[role]} root={root} pathname={null} className="h-16" />}>
+              <TopNav items={NAV[role]} root={root} className="h-16" />
             </Suspense>
-            {cta?.href ? (
-              <div className="ms-auto flex items-center">
-                <Link href={cta.href} className={buttonClasses("gold", "lg", "h-11! px-5 text-[0.9375rem] xl:text-base")}>
-                  <NavIcon name={cta.icon} />
-                  {cta.label}
-                </Link>
+            {cta?.href || verifyHref ? (
+              <div className="ms-auto flex h-16 items-center gap-2">
+                {verifyHref ? (
+                  <Link href={verifyHref} className={buttonClasses("gold", "lg", BAR_BUTTON)}>
+                    <ShieldCheck aria-hidden="true" strokeWidth={1.75} />
+                    التحقق من وثيقة
+                  </Link>
+                ) : null}
+                {cta?.href ? (
+                  <Link href={cta.href} className={buttonClasses("gold", "lg", BAR_BUTTON)}>
+                    <NavIcon name={cta.icon} />
+                    {cta.label}
+                  </Link>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -107,7 +121,7 @@ async function Notifications() {
 }
 
 /** The user's avatar and name; it opens the user menu (help, sign out). */
-async function UserChip({ helpHref, verifyHref }: { helpHref?: string; verifyHref?: string }) {
+async function UserChip({ helpHref }: { helpHref?: string }) {
   const user = await requireRole(ROLES);
   if (!user) return null;
   // When the account's name is its role («مدير النظام»), show the username instead of repeating it.
@@ -131,7 +145,7 @@ async function UserChip({ helpHref, verifyHref }: { helpHref?: string; verifyHre
       <UserMenuArrow />
     </span>
   );
-  return <UserMenu chip={chip} helpHref={helpHref} verifyHref={verifyHref} />;
+  return <UserMenu chip={chip} helpHref={helpHref} />;
 }
 
 /** Content area below the page head. */

@@ -27,7 +27,7 @@ export function SearchSelect({
   id,
   name,
   options,
-  placeholder = "اختر",
+  placeholder = "يُرجى الاختيار",
   searchPlaceholder = "ابحث…",
   defaultValue = "",
   onValueChange,

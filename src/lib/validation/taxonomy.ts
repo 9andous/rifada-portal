@@ -59,6 +59,8 @@ export type TrackFormInput = z.infer<typeof trackFormSchema>;
 export const requestTypeFormSchema = z.object({
   name: text(3, 100, "أدخل اسم نوع الطلب.", "اسم نوع الطلب طويل جدًا."),
   description: optionalLong(500, "الوصف"),
+  /** A ticked checkbox sends "on"; unticked sends nothing (D-151). */
+  requiresDetail: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()),
 });
 export type RequestTypeFormInput = z.infer<typeof requestTypeFormSchema>;
 

@@ -27,7 +27,7 @@ const subscribePermission = (l: () => void) => {
 function systemNotify(item: BellItem) {
   if (typeof Notification === "undefined" || Notification.permission !== "granted" || !document.hidden) return;
   try {
-    const n = new Notification(item.title, { body: item.body ?? undefined, icon: "/brand/rifada-logo-color.png", tag: item.id, lang: "ar", dir: "rtl" });
+    const n = new Notification(item.title, { body: item.body ?? undefined, icon: "/brand/prh-logo.png", tag: item.id, lang: "ar", dir: "rtl" });
     n.onclick = () => {
       window.focus();
       if (item.link) window.location.assign(item.link);

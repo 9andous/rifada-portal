@@ -4,7 +4,7 @@
 // the availability flags, and persists the result (CompletenessCheck, ranBy RULES).
 
 import { arabicList } from "./format";
-import { GENERAL_FIELD_LABELS, REQUIRED_GENERAL_FIELDS, groupOfMime, type CustomValues, type RequirementSpec } from "./requests";
+import { GENERAL_FIELD_LABELS, REQUIRED_GENERAL_FIELDS, groupOfMime, parseGoals, parseTargetGroups, type CustomValues, type RequirementSpec } from "./requests";
 import { UPLOAD_GROUP_LABELS, type UploadGroup } from "./validation/settings";
 import { toWesternDigits } from "./validation/admin";
 
@@ -14,8 +14,13 @@ export type MissingCode =
   | "track_unavailable"
   | "request_type_missing"
   | "request_type_unavailable"
+  | "request_type_detail_missing"
+  | "program_missing"
   | "program_unavailable"
+  | "initiatives_missing"
   | "initiative_unavailable"
+  | "target_group_count_missing"
+  | "goal_measure_missing"
   | "general_missing"
   | "date_invalid"
   | "start_in_past"
@@ -51,7 +56,12 @@ export type CompletenessInput = {
   availability: {
     associationActive: boolean;
     track: { name: string; available: boolean } | null;
-    requestType: { name: string; available: boolean } | null;
+    requestType: { name: string; available: boolean; requiresDetail?: boolean } | null;
+    /** The programme and initiatives the association chose (D-151); left out for callers that do not check them. */
+    program?: { name: string; available: boolean } | null;
+    initiatives?: readonly { name: string; available: boolean }[];
+    /** What the association wrote for a type that asks for it (D-151). */
+    requestTypeDetail?: string | null;
   };
   /** Kept for the callers; the «start date is today or later» rule now applies on every submission (D-123). */
   firstSubmission: boolean;
@@ -59,7 +69,7 @@ export type CompletenessInput = {
   today: string;
 };
 
-const MAX_SPAN_DAYS = 5 * 366;
+export const MAX_SPAN_DAYS = 5 * 366;
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 export function isValidDateOnly(value: string): boolean {
@@ -87,12 +97,25 @@ export function checkCompleteness(input: CompletenessInput): MissingItem[] {
   else if (!a.track.available) add("track_unavailable", "trackId", `المسار ${quoted(a.track.name)} مؤرشف حاليًا؛ اختاروا مسارًا آخر.`);
   if (!a.requestType) add("request_type_missing", "requestTypeId", "نوع الطلب مطلوب.");
   else if (!a.requestType.available) add("request_type_unavailable", "requestTypeId", `نوع الطلب ${quoted(a.requestType.name)} موقوف حاليًا؛ اختاروا نوعًا آخر.`);
+  else if (a.requestType.requiresDetail && !a.requestTypeDetail?.trim()) add("request_type_detail_missing", "requestTypeDetail", "اكتبوا نوع الطلب الذي تريدونه.");
+  if (a.program !== undefined) {
+    if (!a.program) add("program_missing", "programId", "البرنامج مطلوب.");
+    else if (!a.program.available) add("program_unavailable", "programId", `البرنامج ${quoted(a.program.name)} غير متاح حاليًا؛ اختاروا برنامجًا آخر.`);
+    else if (!a.initiatives?.length) add("initiatives_missing", "initiativeIds", "اختاروا مبادرة واحدة على الأقل.");
+    else for (const i of a.initiatives.filter((x) => !x.available)) add("initiative_unavailable", "initiativeIds", `المبادرة ${quoted(i.name)} غير متاحة حاليًا؛ ألغوا اختيارها.`);
+  }
 
   const g = input.general;
   for (const field of REQUIRED_GENERAL_FIELDS) {
     // Plural labels («الفئات المستهدفة»، «مؤشرات القياس») take the feminine.
     const required = field === "expectedBeneficiaries" || field === "kpis" ? "مطلوبة" : "مطلوب";
     if (!g[field]?.trim()) add("general_missing", field, `${GENERAL_FIELD_LABELS[field]} ${required}.`);
+  }
+  for (const goal of parseGoals(g.goals).filter((x) => !x.measure)) {
+    add("goal_measure_missing", "goals", `اكتبوا مؤشر القياس للهدف ${quoted(goal.goal)}.`);
+  }
+  for (const group of parseTargetGroups(g.expectedBeneficiaries).filter((x) => !x.count)) {
+    add("target_group_count_missing", "expectedBeneficiaries", `اكتبوا العدد المستهدف لفئة ${quoted(group.name)}.`);
   }
   const start = g.startDate && !Number.isNaN(g.startDate.getTime()) ? g.startDate.toISOString().slice(0, 10) : null;
   const end = g.endDate && !Number.isNaN(g.endDate.getTime()) ? g.endDate.toISOString().slice(0, 10) : null;

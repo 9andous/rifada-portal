@@ -75,7 +75,7 @@ stateDiagram-v2
 ```
 
 Submission runs in one transaction: the rule-based completeness check (persisted whether it passes
-or not), the reference number `RF-<hijriYear>-<seq>`, the status history, the requirements
+or not), the reference number `PRH-<hijriYear>-<seq>`, the status history, the requirements
 snapshot, the SLA due date in working days (Sunday to Thursday, Asia/Riyadh) and the automatic
 assignment (fewest open requests, then least recently assigned, then username). Decisions use
 conditional updates so a double click or a concurrent decision is reported as skipped (D-085).

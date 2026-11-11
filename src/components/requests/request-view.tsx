@@ -10,7 +10,8 @@ import { Alert, Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { DataTable, THead, Td, Th, Tr } from "@/components/ui/table";
 import { acceptedGroups } from "@/lib/completeness";
 import { cn } from "@/lib/cn";
-import { arabicList, formatGregorian, formatHijri, formatHijriDateTime, formatNumber, toArabicDigits } from "@/lib/format";
+import { arabicList, formatHijri, formatHijriDateTime, formatNumber, toArabicDigits } from "@/lib/format";
+import { requestTypeLabel } from "@/lib/requests";
 import { acceptAttribute } from "@/lib/uploads";
 import { UPLOAD_GROUP_LABELS } from "@/lib/validation/settings";
 import { workingDaysBetween } from "@/lib/working-days";
@@ -77,17 +78,10 @@ function Block({ label, children, className }: { label: string; children: ReactN
 
 const dateOnly = (d: Date | null) => (d ? <DateDisplay date={d} dateOnly /> : <span className="text-ink-subtle">—</span>);
 
-/** A stored field value for display: dates Hijri first, digits Arabic-Indic. */
+/** A stored field value for display: dates in Hijri, digits Arabic-Indic. */
 function fieldValue(type: string | null, value: string | null): ReactNode {
   if (!value?.trim()) return <span className="text-ink-subtle">—</span>;
-  if (type === "DATE" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const d = new Date(`${value}T12:00:00Z`);
-    return (
-      <span className="inline-flex flex-wrap items-baseline gap-x-2">
-        {formatHijri(d)} <span className="text-xs text-ink-subtle">{formatGregorian(d)}</span>
-      </span>
-    );
-  }
+  if (type === "DATE" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return formatHijri(new Date(`${value}T12:00:00Z`));
   return <span className="whitespace-pre-line">{toArabicDigits(value)}</span>;
 }
 
@@ -114,6 +108,8 @@ export function RequestView({ request: r, listHref, listLabel, uploads, scopePro
   const submitted = r.referenceNo !== null;
   const dialogRequest = { id: r.id, title: r.title, referenceNo: r.referenceNo };
   const acts = caps.canDecide || caps.canEvaluate || caps.canApprove;
+  // The latest evaluation exists when the request is with the unit manager (D-139).
+  const latest = caps.canApprove ? r.review?.evaluations.at(-1) : undefined;
 
   const facts: [string, ReactNode, ReactNode][] = [
     ["تاريخ التقديم", r.submittedAt ? formatHijriDateTime(r.submittedAt) : "لم يُقدَّم بعد", <CalendarDays key="i" strokeWidth={1.75} />],
@@ -175,7 +171,7 @@ export function RequestView({ request: r, listHref, listLabel, uploads, scopePro
             {isStaff ? (
               <ScopeCards
                 track={r.track}
-                requestType={r.requestType?.name ?? null}
+                requestType={requestTypeLabel(r.requestType, r.requestTypeDetail)}
                 trackPrograms={r.trackPrograms}
                 program={r.program}
                 initiatives={r.initiatives}
@@ -206,13 +202,13 @@ export function RequestView({ request: r, listHref, listLabel, uploads, scopePro
                   {isStaff ? null : (
                     <>
                       <Block label="المسار المستهدف">{r.track?.name ?? "—"}</Block>
-                      <Block label="نوع الطلب">{r.requestType?.name ?? "—"}</Block>
+                      <Block label="نوع الطلب">{requestTypeLabel(r.requestType, r.requestTypeDetail) ?? "—"}</Block>
                     </>
                   )}
                 </div>
-                <Block label="اسم المشروع أو البرنامج">{r.title || <span className="text-ink-subtle">—</span>}</Block>
+                <Block label="اسم البرنامج المقترح">{r.title || <span className="text-ink-subtle">—</span>}</Block>
                 <Block label="وصف المشروع">{r.description || <span className="text-ink-subtle">لم يُكتب وصف بعد.</span>}</Block>
-                <Block label="الأهداف والمخرجات المتوقعة">{r.goals || <span className="text-ink-subtle">—</span>}</Block>
+                <Block label="الأهداف والمخرجات المتوقعة">{r.goals ? <span className="whitespace-pre-line">{r.goals}</span> : <span className="text-ink-subtle">—</span>}</Block>
                 {r.targetAudience ? <Block label="الفئة المستهدفة">{r.targetAudience}</Block> : null}
                 {r.location ? <Block label="مكان التنفيذ">{r.location}</Block> : null}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -371,7 +367,16 @@ export function RequestView({ request: r, listHref, listLabel, uploads, scopePro
           {/* The side column stays in view while the main column scrolls; it scrolls on its own when
               taller than the screen, so the «القرار» panel at its top never covers the timeline. */}
           <aside className="flex flex-col gap-5 lg:sticky lg:top-[168px] lg:max-h-[calc(100vh-11.5rem)] lg:self-start lg:overflow-y-auto lg:pb-1 [&>*]:shrink-0">
-            {acts ? <DecisionPanel request={dialogRequest} canEvaluate={caps.canEvaluate} canApprove={caps.canApprove} canDecide={caps.canDecide} /> : null}
+            {acts ? (
+              <DecisionPanel
+                request={dialogRequest}
+                canEvaluate={caps.canEvaluate}
+                canApprove={caps.canApprove}
+                canDecide={caps.canDecide}
+                recommendation={latest ? { decision: latest.recommendation, reason: latest.reason } : null}
+              />
+            ) : null}
+            {caps.awaitsSupervisor ? <Alert ruled tone="info" title="بانتظار توصية المشرف">يتاح قرارك بعد تقييم المشرف وتوقيعه.</Alert> : null}
             {r.review ? (
               <EvaluationCard
                 review={r.review}

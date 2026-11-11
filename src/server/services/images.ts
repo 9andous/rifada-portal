@@ -1,7 +1,7 @@
 import "server-only";
 import type { Readable } from "node:stream";
 import { fileTypeFromFile } from "file-type";
-import { IMAGE_CONTEXT, REGISTRATION_LOGO_CONTEXT, REGISTRATION_UPLOADER, type ImageOwner } from "@/lib/images";
+import { IMAGE_CONTEXT, REGISTRATION_UPLOADER, registrationLogoContext, type ImageOwner } from "@/lib/images";
 import { can } from "@/server/authz/permissions";
 import { assertCan, fieldRefusal, type Result } from "@/server/services/admin/common";
 import { audit } from "@/server/services/audit";
@@ -75,14 +75,14 @@ async function currentKey(owner: ImageOwner, id: string): Promise<string | null 
   return (await db.homeQuote.findUnique({ where: { id }, select: { imageKey: true } }))?.imageKey;
 }
 
-/** Whether a logo staged from the public registration form can still be used (D-100). */
-export async function registrationLogoUsable(uploadId: string): Promise<boolean> {
-  return Boolean(await peekUpload(REGISTRATION_UPLOADER, uploadId, REGISTRATION_LOGO_CONTEXT));
+/** Whether a logo staged from a registration's form can still be used (D-100, D-149). */
+export async function registrationLogoUsable(registrationId: string, uploadId: string): Promise<boolean> {
+  return Boolean(await peekUpload(REGISTRATION_UPLOADER, uploadId, registrationLogoContext(registrationId)));
 }
 
-/** Moves a logo staged from the registration form into `images/`; its storage key, or null. */
-export async function commitRegistrationLogo(uploadId: string): Promise<string | null> {
-  const consumed = await consumeUpload(REGISTRATION_UPLOADER, uploadId, "images", Date.now(), REGISTRATION_LOGO_CONTEXT);
+/** Moves a logo staged from a registration's form into `images/`; its storage key, or null. */
+export async function commitRegistrationLogo(registrationId: string, uploadId: string): Promise<string | null> {
+  const consumed = await consumeUpload(REGISTRATION_UPLOADER, uploadId, "images", Date.now(), registrationLogoContext(registrationId));
   return consumed.ok ? consumed.file.storageKey : null;
 }
 

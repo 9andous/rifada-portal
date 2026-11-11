@@ -6,9 +6,8 @@ Arabic terms used in the interface, the code and the documents, with their Engli
 
 | Arabic | English | Notes |
 |---|---|---|
-| رفادة | Rifada | Product name (historically, the hospitality offered to pilgrims). |
 | رئاسة الشؤون الدينية بالمسجد الحرام والمسجد النبوي | Presidency of Religious Affairs at the Grand Mosque and the Prophet's Mosque | The supervising authority. |
-| الوحدة الإشرافية على المنظمات غير الربحية بالحرمين الشريفين | Supervision unit over non-profit organisations at the Two Holy Mosques | The unit that uses the portal. |
+| الوحدة الإشرافية على المنظمات غير الربحية بالحرمين الشريفين | Supervision unit over non-profit organisations at the Two Holy Mosques | The unit that uses the portal. Its short form, without «بالحرمين الشريفين», is the platform's name (D-133). |
 | الحرمان الشريفان | The Two Holy Mosques | |
 | جمعية | Association | A registered non-profit organisation. |
 | مدير النظام | Super admin | `SUPER_ADMIN`: administers the system; reads requests read-only. |
@@ -51,7 +50,7 @@ Arabic terms used in the interface, the code and the documents, with their Engli
 | قائمة أعمالي | My work queue (supervisor) | |
 | مهلة المراجعة | Review deadline (SLA, in working days) | |
 | أيام العمل | Working days (Sunday to Thursday) | |
-| الرقم المرجعي | Reference number, `RF-<Hijri year>-<sequence>` | |
+| الرقم المرجعي | Reference number, `PRH-<Hijri year>-<sequence>` (RF before D-150) | |
 | المرفقات / الإصدار | Attachments / version | |
 | المحادثة / تعليق / رد | Conversation / comment / reply | |
 | ملاحظة داخلية — للفريق فقط | Internal note — team only | Never visible to officers. |

@@ -213,7 +213,7 @@ export function RequirementsEditor({
                     <Select
                       id="req-attachment-type"
                       name="attachmentTypeId"
-                      placeholder="اختر نوع المرفق"
+                      placeholder="يُرجى اختيار نوع المرفق"
                       options={freeTypes.map((t) => ({ value: t.id, label: t.name }))}
                       aria-invalid={Boolean(errors.attachmentTypeId)}
                     />

@@ -48,6 +48,7 @@ describe("settings validation", () => {
     "uploads.allowedGroups": ["pdf", "image"],
     "uploads.associationQuotaMb": 2048,
     "bulk.maxItems": 25,
+    "registration.inviteHours": 48,
     "public.showInitiatives": false,
   };
 
@@ -74,6 +75,8 @@ describe("settings validation", () => {
     ["uploads.allowedGroups", []],
     ["uploads.allowedGroups", ["video"]],
     ["uploads.allowedGroups", ["pdf", "mp4"]],
+    ["registration.inviteHours", 0],
+    ["registration.inviteHours", 721],
     ["public.showInitiatives", "yes"],
   ])("rejects %s = %j with an Arabic message", (key, value) => {
     const result = settingsSchema.safeParse({ ...valid, [key]: value });
@@ -89,6 +92,7 @@ describe("settings validation", () => {
     fd.append("uploads.allowedGroups", "pdf");
     fd.set("bulk.maxItems", "30");
     fd.set("uploads.associationQuotaMb", "500");
+    fd.set("registration.inviteHours", "72");
     const parsed = settingsSchema.parse(settingsFromForm(fd));
     expect(parsed).toEqual({
       "sla.workingDays": 10,
@@ -96,6 +100,7 @@ describe("settings validation", () => {
       "uploads.allowedGroups": ["pdf", "image"],
       "uploads.associationQuotaMb": 500,
       "bulk.maxItems": 30,
+      "registration.inviteHours": 72,
       "public.showInitiatives": false,
     });
   });
@@ -209,7 +214,7 @@ describe("navigation (Phase 2a)", () => {
   const links = (role: keyof typeof NAV) => NAV[role].filter((i) => i.href).map((i) => i.href);
 
   it("activates the Phase 2 and Phase 3 screens for the right roles only", () => {
-    expect(links("SUPER_ADMIN")).toEqual(["/admin", "/admin/users", "/admin/associations", "/admin/taxonomy", "/admin/settings", "/admin/audit"]);
+    expect(links("SUPER_ADMIN")).toEqual(["/admin", "/admin/users", "/admin/associations", "/admin/registrations", "/admin/taxonomy", "/admin/settings", "/admin/audit"]);
     expect(links("UNIT_MANAGER")).toEqual(["/manager", "/manager/requests", "/manager/associations", "/manager/taxonomy"]);
     expect(links("SUPERVISOR")).toEqual(["/supervisor", "/supervisor/requests", "/supervisor/templates"]);
     // D-102: «طلب جديد» is the gold call-to-action only; «المساعدة» lives in the user menu (D-106).

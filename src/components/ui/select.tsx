@@ -2,7 +2,7 @@ import { ChevronDown } from "lucide-react";
 import type { SelectHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-export type SelectOption = { value: string; label: string };
+export type SelectOption = { value: string; label: string; disabled?: boolean };
 
 /** Native select styled like <Input>. Native keeps keyboard and screen-reader behaviour for free. */
 export function Select({
@@ -23,7 +23,7 @@ export function Select({
       >
         {placeholder !== undefined ? <option value="">{placeholder}</option> : null}
         {options.map((o) => (
-          <option key={o.value} value={o.value}>
+          <option key={o.value} value={o.value} disabled={o.disabled}>
             {o.label}
           </option>
         ))}

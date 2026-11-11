@@ -42,7 +42,7 @@ describe("sealing", () => {
     await evaluateRequest(w.actors.supervisor, id, evaluationInput());
     const evaluation = await db.requestSeal.findFirstOrThrow({ where: { requestId: id } });
     expect(evaluation).toMatchObject({ kind: "EVALUATION", signerId: w.users.supervisor.id, verifyCode: null });
-    expect(evaluation.serial).toMatch(/^RFD-SIG-\d{4}-\d{6}$/);
+    expect(evaluation.serial).toMatch(/^PRH-SIG-\d{4}-\d{6}$/);
     const statement = openSeal(evaluation);
     expect(statement).toMatchObject({ kind: "EVALUATION", requestId: id, signer: { id: w.users.supervisor.id, role: "SUPERVISOR" } });
     expect(statement?.content).toBe(await contentDigest(db, id));

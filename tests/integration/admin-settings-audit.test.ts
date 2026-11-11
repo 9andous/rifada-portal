@@ -17,6 +17,7 @@ const valid = {
   "uploads.allowedGroups": ["pdf", "word", "excel", "image"],
   "uploads.associationQuotaMb": 2048,
   "bulk.maxItems": 25,
+  "registration.inviteHours": 48,
   "public.showInitiatives": false,
 };
 

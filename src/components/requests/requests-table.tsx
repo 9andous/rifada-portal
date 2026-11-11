@@ -6,13 +6,15 @@ import { NewBadge } from "@/components/ui/new-badge";
 import { RefNumber } from "@/components/ui/ref-number";
 import { StatusText } from "@/components/ui/surface";
 import { DataTable, ROW_LINK, Td, Tr } from "@/components/ui/table";
+import { RECOMMENDATION_LABELS } from "@/lib/requests";
 import type { RequestRow } from "@/server/services/requests/read";
 
 const SLA_KEYS = ["SUBMITTED", "RESUBMITTED", "COMPLETENESS_CHECK", "UNDER_REVIEW"];
 
 /**
  * The requests table (change 16, D-130): status as dot plus text, initial circles, and the whole row
- * opening the request. A row with something the viewer has not seen yet carries «جديد». Decisions
+ * opening the request. A row with something the viewer has not seen yet carries «جديد», and a request
+ * with the unit manager shows the supervisor's recommendation (D-139). Decisions
  * are taken on the request page only (no checkboxes or bulk actions, owner's review).
  */
 export function RequestsTable({
@@ -59,16 +61,21 @@ export function RequestsTable({
             </Td>
             <Td>
               <StatusText tone={r.status.tone}>{r.status.name}</StatusText>
-              {r.withManager ? <span className="t-caption mt-1 block whitespace-nowrap">بانتظار مدير الوحدة</span> : null}
+              {r.withManager ? (
+                <span className="t-caption mt-1 block whitespace-nowrap">
+                  بانتظار مدير الوحدة
+                  {r.recommendation ? <span className="block">التوصية: {RECOMMENDATION_LABELS[r.recommendation]}</span> : null}
+                </span>
+              ) : null}
             </Td>
             {showSupervisor ? (
               <Td>{r.supervisor ? <PersonName name={r.supervisor.name} muted={!r.supervisor.isActive} /> : <span className="whitespace-nowrap text-ink-subtle">لم يُسند بعد</span>}</Td>
             ) : null}
-            <Td className="min-w-[9.5rem]">{r.submittedAt ? <DateDisplay date={r.submittedAt} variant="hijri" /> : <span className="text-ink-subtle">—</span>}</Td>
+            <Td className="min-w-[9.5rem]">{r.submittedAt ? <DateDisplay date={r.submittedAt} /> : <span className="text-ink-subtle">—</span>}</Td>
             <Td className="min-w-[9.5rem]">
               {r.slaDueAt && SLA_KEYS.includes(r.status.key) ? (
                 <span className="inline-flex flex-col items-start gap-1">
-                  <DateDisplay date={r.slaDueAt} variant="hijri" className={r.overdue ? "text-st-bad" : undefined} />
+                  <DateDisplay date={r.slaDueAt} className={r.overdue ? "text-st-bad" : undefined} />
                   {r.overdue ? <StatusText tone="bad">متأخر</StatusText> : null}
                 </span>
               ) : (

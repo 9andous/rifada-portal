@@ -40,7 +40,7 @@ async function fixtures() {
         statusId: status[key],
         createdById,
         title,
-        referenceNo: submitted ? `RF-1448-${String(seq).padStart(5, "0")}` : null,
+        referenceNo: submitted ? `PRH-1448-${String(seq).padStart(5, "0")}` : null,
         submittedAt: submitted ? new Date(NOW.getTime() - 2 * DAY) : null,
         updatedAt: new Date(NOW.getTime() - minutesAgo * 60000),
       },

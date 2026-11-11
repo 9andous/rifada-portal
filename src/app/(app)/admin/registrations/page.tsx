@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { CircleCheck, CircleX, ClipboardList, Hourglass } from "lucide-react";
+import { CircleCheck, CircleX, ClipboardList, Hourglass, Link2, Plus } from "lucide-react";
 import { PageBody } from "@/components/layout/app-shell";
 import { BandFigures, PageBand } from "@/components/layout/page-band";
 import { ForbiddenPage } from "@/components/states/forbidden-page";
@@ -13,9 +13,11 @@ import { Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { TabNav } from "@/components/ui/tab-nav";
 import { DataTable, ROW_LINK, THead, Td, Th, Tr } from "@/components/ui/table";
 import type { RegistrationStatus } from "@/generated/prisma/client";
+import { buttonClasses } from "@/components/ui/button";
 import { formatNumber, toArabicDigits } from "@/lib/format";
+import { siteLabel } from "@/lib/service-places";
 import type { SearchParams } from "@/lib/list-params";
-import { REGISTRATION_STATUS } from "@/lib/registrations";
+import { REGISTRATION_STATUS, inviteOpen } from "@/lib/registrations";
 import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/authz/permissions";
 import type { CurrentUser } from "@/server/auth/session";
@@ -25,6 +27,7 @@ export const metadata: Metadata = { title: "طلبات تسجيل الجمعيا
 
 const TABS: { key: RegistrationStatus; label: string }[] = [
   { key: "PENDING", label: "قيد المراجعة" },
+  { key: "INVITED", label: "بانتظار الجمعية" },
   { key: "APPROVED", label: "المعتمدة" },
   { key: "REJECTED", label: "المرفوضة" },
 ];
@@ -32,20 +35,28 @@ const TABS: { key: RegistrationStatus; label: string }[] = [
 export default async function RegistrationsPage({ searchParams }: PageProps<"/admin/registrations">) {
   const user = await requireUser();
   if (!can(user.role, "registrations.review")) return <ForbiddenPage />;
-  const counts = await registrationCounts(user);
+  const [counts, params] = await Promise.all([registrationCounts(user), searchParams]);
 
   return (
     <>
       <PageBand
         compact
         title="طلبات تسجيل الجمعيات"
-        lead="طلبات الجمعيات التي سجّلت من الموقع العام. اعتماد الطلب ينشئ الجمعية وحساب مسؤولها."
+        lead="تُضاف الجمعية فيُنشأ لها رابط تسجيل تستكمل منه بياناتها، ثم يُراجع الطلب هنا. اعتماده ينشئ الجمعية وحسابها."
+        actions={
+          <Link href="/admin/associations/new" className={buttonClasses("gold")}>
+            <Plus aria-hidden="true" strokeWidth={1.75} />
+            جمعية جديدة
+          </Link>
+        }
         figures={
           <BandFigures
+            params={params}
             items={[
-              { label: "قيد المراجعة", icon: Hourglass, value: formatNumber(counts.PENDING), attention: counts.PENDING > 0 && "warn", caption: "بانتظار القرار" },
-              { label: "المعتمدة", icon: CircleCheck, tone: "ok", value: formatNumber(counts.APPROVED), caption: "أُنشئت جمعياتها" },
-              { label: "المرفوضة", icon: CircleX, tone: "bad", value: formatNumber(counts.REJECTED), caption: "لم تُعتمد" },
+              { label: "بانتظار الجمعية", icon: Link2, tone: "gold", value: formatNumber(counts.INVITED), caption: "رابط تسجيل لم يُستكمل", href: "/admin/registrations?status=INVITED" },
+              { label: "قيد المراجعة", icon: Hourglass, value: formatNumber(counts.PENDING), attention: counts.PENDING > 0 && "warn", caption: "بانتظار القرار", href: "/admin/registrations" },
+              { label: "المعتمدة", icon: CircleCheck, tone: "ok", value: formatNumber(counts.APPROVED), caption: "أُنشئت جمعياتها", href: "/admin/registrations?status=APPROVED" },
+              { label: "المرفوضة", icon: CircleX, tone: "bad", value: formatNumber(counts.REJECTED), caption: "لم تُعتمد", href: "/admin/registrations?status=REJECTED" },
             ]}
           />
         }
@@ -77,19 +88,18 @@ async function RegistrationsList({ user, counts, searchParams }: { user: Current
         <EmptyState
           variant="inline"
           icon={<ClipboardList strokeWidth={1.75} />}
-          title={status === "PENDING" ? "لا توجد طلبات بانتظار المراجعة" : "لا توجد طلبات في هذه القائمة"}
-          description="تظهر هنا طلبات الجمعيات التي تسجّل من صفحة «تسجيل جمعية» في الموقع العام."
+          title={status === "PENDING" ? "لا توجد طلبات بانتظار المراجعة" : status === "INVITED" ? "لا توجد روابط بانتظار الجمعيات" : "لا توجد طلبات في هذه القائمة"}
+          description="أضف جمعية من «جمعية جديدة» فيُنشأ لها رابط تسجيل، وتظهر بياناتها هنا بعد أن تستكملها."
         />
       ) : (
         <>
           <DataTable caption="طلبات تسجيل الجمعيات" minWidth="52rem">
             <THead>
               <Th>الجمعية</Th>
-              <Th>التصنيف</Th>
-              <Th>الموقع</Th>
-              <Th>المسؤول</Th>
-              <Th>تاريخ التقديم</Th>
-              <Th>الحالة</Th>
+              <Th>{status === "INVITED" ? "البريد الإلكتروني" : "موقع الخدمة"}</Th>
+              <Th>المسؤول الأول</Th>
+              <Th>{status === "INVITED" ? "تاريخ الإنشاء" : "تاريخ التقديم"}</Th>
+              <Th>{status === "INVITED" ? "الرابط" : "الحالة"}</Th>
             </THead>
             <tbody>
               {page.items.map((r) => (
@@ -106,17 +116,35 @@ async function RegistrationsList({ user, counts, searchParams }: { user: Current
                       ترخيص {toArabicDigits(r.licenseNumber)}
                     </span>
                   </Td>
-                  <Td className="max-w-[14rem] text-ink-muted">{r.classification}</Td>
-                  <Td className="text-ink-muted">
-                    {r.city}
-                    <span className="t-caption block">{r.region}</span>
+                  <Td className="max-w-[16rem] text-ink-muted">
+                    {status === "INVITED" ? (
+                      <bdi dir="ltr">{r.contactEmail}</bdi>
+                    ) : (
+                      <>
+                        {siteLabel(r.serviceSite) ?? "—"}
+                        {r.classification ? <span className="t-caption block">{r.classification}</span> : null}
+                      </>
+                    )}
                   </Td>
                   <Td>{r.officerName}</Td>
                   <Td>
-                    <DateDisplay date={r.createdAt} variant="hijri" />
+                    <DateDisplay date={status === "INVITED" ? r.createdAt : (r.submittedAt ?? r.createdAt)} />
                   </Td>
                   <Td>
-                    <StatusText tone={REGISTRATION_STATUS[r.status].tone}>{REGISTRATION_STATUS[r.status].label}</StatusText>
+                    {status === "INVITED" ? (
+                      inviteOpen(r.inviteExpiresAt) ? (
+                        <span className="flex flex-col gap-0.5">
+                          <StatusText tone="ok">صالح</StatusText>
+                          <span className="t-caption">
+                            حتى <DateDisplay date={r.inviteExpiresAt} />
+                          </span>
+                        </span>
+                      ) : (
+                        <StatusText tone="bad">منتهي الصلاحية</StatusText>
+                      )
+                    ) : (
+                      <StatusText tone={REGISTRATION_STATUS[r.status].tone}>{REGISTRATION_STATUS[r.status].label}</StatusText>
+                    )}
                   </Td>
                 </Tr>
               ))}

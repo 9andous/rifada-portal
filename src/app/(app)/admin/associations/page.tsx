@@ -20,7 +20,7 @@ const PATH = "/admin/associations";
 export default async function AdminAssociationsPage({ searchParams }: PageProps<"/admin/associations">) {
   const user = await requireUser();
   if (!can(user.role, "associations.manage")) return <ForbiddenPage />;
-  const figures = await associationFigures(user);
+  const [figures, params] = await Promise.all([associationFigures(user), searchParams]);
 
   return (
     <>
@@ -36,8 +36,9 @@ export default async function AdminAssociationsPage({ searchParams }: PageProps<
         }
         figures={
           <BandFigures
+            params={params}
             items={[
-              { label: "الجمعيات", icon: Building2, value: formatNumber(figures.total), caption: "المسجلة في المنصة" },
+              { label: "الجمعيات", icon: Building2, value: formatNumber(figures.total), caption: "المسجلة في المنصة", href: PATH },
               { label: "النشطة", icon: CircleCheck, tone: "ok", value: formatNumber(figures.active), caption: "تقدّم طلباتها", href: `${PATH}?status=active` },
               { label: "المعطلة", icon: CircleSlash, tone: "neutral", value: formatNumber(figures.inactive), caption: "موقوفة عن التقديم", href: `${PATH}?status=inactive` },
               {

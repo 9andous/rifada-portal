@@ -31,11 +31,11 @@ export function stepperProgress(statusKey: string): { current: number; done: boo
   }
 }
 
-/** The staff's steps (D-116): the unit manager's approval between the review and the decision. */
+/** The staff's steps (D-116): the unit manager's decision between the review and the decision. */
 const STAFF_STEPS = [
   REQUEST_STEPS[0],
-  { title: "المراجعة الفنية", hint: "تقييم المشرف وتوقيعه" },
-  { title: "اعتماد مدير الوحدة", hint: "بعد تقييم المشرف" },
+  { title: "المراجعة الفنية", hint: "تقييم المشرف وتوصيته" },
+  { title: "قرار مدير الوحدة", hint: "بعد توصية المشرف" },
   REQUEST_STEPS[2],
 ] as const;
 

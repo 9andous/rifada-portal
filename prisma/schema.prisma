@@ -63,6 +63,7 @@ model User {
   settingsUpdated       Setting[]
   templateFiles         TemplateFile[]
   reviewedRegistrations AssociationRegistration[] @relation("RegistrationReviewer")
+  invitedRegistrations  AssociationRegistration[] @relation("RegistrationInviter")
   evaluations           RequestEvaluation[]       @relation("RequestEvaluations")
   approvals             RequestApproval[]         @relation("RequestApprovals")
   evaluationEdits       RequestEvaluation[]       @relation("RequestEvaluationEdits")
@@ -349,6 +350,8 @@ model RequestType {
   description String?
   sortOrder   Int       @default(0)
   isActive    Boolean   @default(true)
+  /// «أخرى» and the like (D-151): the association must write what it requests in its own words.
+  requiresDetail Boolean @default(false)
   archivedAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -408,13 +411,15 @@ model ReferenceCounter {
 
 model Request {
   id                    String      @id @default(cuid())
-  // Assigned on first successful submission: RF-<hijriYear>-<seq>.
+  // Assigned on first successful submission: PRH-<hijriYear>-<seq>.
   referenceNo           String?     @unique
   associationId         String
   // The association chooses the track and the request type (D-123); the supervisor may later
   // classify the request under a programme and initiatives of that track, or leave it unclassified.
   trackId               String?
   requestTypeId         String?
+  /// What the association requests in its own words, for a type that asks for it (D-151).
+  requestTypeDetail     String?
   programId             String?
   // The first chosen initiative; every chosen one is in `initiatives` (D-115).
   initiativeId          String?
@@ -487,8 +492,15 @@ enum ReviewStage {
   MANAGER
 }
 
-// The supervisor's «تقييم واعتماد» (D-116): the acceptance criteria met or not with notes, the
-// reviewer's note, sealed electronically after re-entering the password (D-122). Staff only.
+// What the supervisor recommends to the unit manager, who takes the final decision (D-139).
+enum ReviewRecommendation {
+  APPROVE
+  RETURN
+  REJECT
+}
+
+// The supervisor's evaluation (D-116): the acceptance criteria met or not with notes, the reviewer's
+// note and a recommendation (D-139), sealed electronically after re-entering the password (D-122). Staff only.
 model RequestEvaluation {
   id         String    @id @default(cuid())
   requestId  String
@@ -496,6 +508,9 @@ model RequestEvaluation {
   // [{ key, met, note }] for the criteria in src/config/review-criteria.ts.
   criteria   Json
   note       String?
+  recommendation ReviewRecommendation @default(APPROVE)
+  // Why the supervisor recommends returning or rejecting; offered to the unit manager as the reason.
+  reason     String?
   // The unit manager's last change to the criteria or the note (D-120); the seal stays.
   editedById String?
   editedAt   DateTime?
@@ -897,54 +912,81 @@ model Setting {
 }
 
 // ---------------------------------------------------------------------------
-// Association self-registration (D-094): a public application reviewed by the super admin.
-// Approval creates the association and its officer account; the password hash chosen by the
-// applicant is moved to the credential account and cleared here on any decision.
+// Association registration by invitation (D-149). The super admin enters the association's name,
+// its two officers, its email, licence number and website, and the platform issues a single-use
+// link valid for `registration.inviteHours`. The association completes the rest (service site and
+// places, letter, contacts, pledge) through that link; the super admin then approves, which creates
+// the association and its account (sign-in by the association's email, temporary password), or
+// rejects. Applications from the earlier public self-registration (D-094) keep their rows.
 // ---------------------------------------------------------------------------
 
 enum RegistrationStatus {
+  /// Created by the super admin; waiting for the association to complete it through its link.
+  INVITED
   PENDING
   APPROVED
   REJECTED
 }
 
 model AssociationRegistration {
-  id                String             @id @default(cuid())
-  referenceNo       String             @unique
-  status            RegistrationStatus @default(PENDING)
-  name              String
-  licenseNumber     String
-  classification    String
-  region            String
-  city              String
-  foundedYear       Int?
-  contactPhone      String
-  contactEmail      String?
-  website           String?
+  id                 String             @id @default(cuid())
+  referenceNo        String             @unique
+  status             RegistrationStatus @default(PENDING)
+  name               String
+  licenseNumber      String
+  classification     String?
+  region             String?
+  city               String?
+  foundedYear        Int?
+  contactPhone       String?
+  /// The association's email: the sign-in name of its account (D-149).
+  contactEmail       String?
+  website            String?
   /// Legacy: programmes chosen in applications made before registration stopped asking (D-127).
-  programNumbers    Int[]              @default([])
-  officerName       String
-  officerUsername   String
-  officerEmail      String?
-  officerPhone      String
-  officerNationalId String?
+  programNumbers     Int[]              @default([])
+  /// «المسؤول الأول», entered by the super admin.
+  officerName        String
+  /// Legacy (D-094): the username an applicant chose. Invitations sign in by email instead.
+  officerUsername    String?
+  officerEmail       String?
+  officerPhone       String?
+  officerNationalId  String?
+  /// «المسؤول الثاني», entered by the super admin; its phone is completed by the association.
+  secondOfficerName  String?
+  secondOfficerPhone String?
+  /// MAKKAH (المسجد الحرام) or MADINAH (المسجد النبوي), see src/lib/service-places.ts.
+  serviceSite        String?
+  /// Keys of the service places chosen inside the site.
+  servicePlaces      String[]           @default([])
+  /// The association's letter («الخطاب»), a PDF in attachments/<key>.
+  letterKey          String?
+  letterFileName     String?
+  letterSize         Int?
   /// The association's logo sent with the application (images/<key>); moved to the association on approval.
-  logoKey           String?
-  passwordHash      String?
-  pledgeAcceptedAt  DateTime
-  decisionNote      String?
-  reviewedById      String?
-  reviewedAt        DateTime?
-  associationId     String?            @unique
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  logoKey            String?
+  /// Legacy (D-094): the password hash an applicant chose, cleared on any decision.
+  passwordHash       String?
+  /// Single-use registration link. Kept readable so the super admin can copy it again.
+  inviteToken        String?            @unique
+  inviteExpiresAt    DateTime?
+  invitedById        String?
+  submittedAt        DateTime?
+  pledgeAcceptedAt   DateTime?
+  decisionNote       String?
+  reviewedById       String?
+  reviewedAt         DateTime?
+  associationId      String?            @unique
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   reviewedBy  User?        @relation("RegistrationReviewer", fields: [reviewedById], references: [id])
+  invitedBy   User?        @relation("RegistrationInviter", fields: [invitedById], references: [id])
   association Association? @relation(fields: [associationId], references: [id])
 
   @@index([status, createdAt])
   @@index([licenseNumber])
   @@index([officerUsername])
+  @@index([contactEmail])
   @@map("association_registrations")
 }
 

@@ -10,7 +10,18 @@ import { Alert } from "./surface";
  * response and lives only in the calling component's state; nothing is stored, logged or put in a
  * URL. Leaving or refreshing the page discards it.
  */
-export function OneTimeSecret({ username, password, title }: { username: string; password: string; title: string }) {
+export function OneTimeSecret({
+  username,
+  password,
+  title,
+  usernameLabel = "اسم المستخدم",
+}: {
+  username: string;
+  password: string;
+  title: string;
+  /** What the sign-in name is called (an association signs in with its email, D-149). */
+  usernameLabel?: string;
+}) {
   const [copied, setCopied] = useState<"done" | "failed" | null>(null);
 
   async function copy() {
@@ -26,7 +37,7 @@ export function OneTimeSecret({ username, password, title }: { username: string;
     <Alert tone="warning" title={title}>
       <p>انسخ كلمة المرور المؤقتة الآن وسلّمها لصاحب الحساب بطريقة آمنة. لن تظهر مرة أخرى، ولا تُحفظ في النظام إلا بصيغة مشفرة.</p>
       <dl className="mt-3 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
-        <dt className="t-label">اسم المستخدم</dt>
+        <dt className="t-label">{usernameLabel}</dt>
         <dd>
           <bdi dir="ltr" className="font-semibold text-ink">
             {username}

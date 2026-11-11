@@ -55,7 +55,7 @@ const associationForm = (name: string) =>
   form({ name, licenseNumber: "", city: "", region: "", classification: "", contactName: "سعد", contactEmail: "a@example.org", contactPhone: "0500000000" });
 const officerForm = (username: string) => form({ "officer.username": username, "officer.name": "ماجد الحربي", "officer.email": "", "officer.phone": "" });
 const settingsForm = () =>
-  form({ "sla.workingDays": "9", "uploads.maxFileMb": "25", "uploads.allowedGroups": ["pdf", "word"], "uploads.associationQuotaMb": "2048", "bulk.maxItems": "25" });
+  form({ "sla.workingDays": "9", "uploads.maxFileMb": "25", "uploads.allowedGroups": ["pdf", "word"], "uploads.associationQuotaMb": "2048", "bulk.maxItems": "25", "registration.inviteHours": "48" });
 
 beforeEach(async () => {
   await resetDatabase();
@@ -144,7 +144,7 @@ describe("Phase 2a server actions", () => {
       return fd;
     })());
     expect(Object.keys(officer.errors ?? {}).sort()).toEqual(["officer.name", "officer.username"]);
-    const settings = await updateSettingsAction({}, form({ "sla.workingDays": "0", "uploads.maxFileMb": "25", "uploads.associationQuotaMb": "2048", "bulk.maxItems": "25" }));
+    const settings = await updateSettingsAction({}, form({ "sla.workingDays": "0", "uploads.maxFileMb": "25", "uploads.associationQuotaMb": "2048", "bulk.maxItems": "25", "registration.inviteHours": "48" }));
     expect(Object.keys(settings.errors ?? {}).sort()).toEqual(["sla.workingDays", "uploads.allowedGroups"]);
   });
 });

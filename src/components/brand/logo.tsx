@@ -10,7 +10,7 @@ type LogoProps = {
   priority?: boolean;
 };
 
-/** The Rifada mark (ogee arch, gold diamonds). */
+/** The Presidency mark used throughout the platform. */
 export function Logo({ tone = "auto", height = 48, className, priority }: LogoProps) {
   const { color, white, alt } = brand.logo;
   const width = Math.round((color.width / color.height) * height);
@@ -32,7 +32,7 @@ export function Logo({ tone = "auto", height = 48, className, priority }: LogoPr
  * sits on a white plate rather than being recoloured; the plate's padding is the mark's clear
  * space, with a hairline so it reads as a deliberate tile. "onDark" uses the white logo instead.
  */
-export function PresidencyLogo({ tone = "auto", height = 54, className, priority }: Omit<LogoProps, "tone"> & { tone?: "auto" | "onDark" }) {
+export function PresidencyLogo({ tone = "auto", height = 54, className, priority }: LogoProps) {
   const { src, width: w, height: h, alt, white } = brand.presidencyLogo;
   if (tone === "onDark") {
     const width = Math.round((white.width / white.height) * height);

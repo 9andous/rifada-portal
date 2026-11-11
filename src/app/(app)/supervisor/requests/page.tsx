@@ -16,7 +16,7 @@ export default async function SupervisorRequestsPage({ searchParams }: PageProps
       path="/supervisor/requests"
       detailBase="/supervisor/requests"
       title="قائمة الطلبات"
-      lead="جميع الطلبات المقدَّمة في برامجك. تقرّر فيما أُسند إليك، وتطّلع على الباقي وتعلّق عليه."
+      lead="جميع الطلبات المقدَّمة في برامجك: تراجعها وترفع توصيتك فيها إلى مدير الوحدة."
       emptyTitle="لا توجد طلبات مقدَّمة في برامجك بعد"
       emptyDescription="تظهر هنا الطلبات بعد أن تقدّمها الجمعيات؛ ولا تظهر المسودات."
       searchParams={searchParams}

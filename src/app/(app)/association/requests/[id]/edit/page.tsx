@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/states/states";
 import { buttonClasses } from "@/components/ui/button";
 import { RefNumber } from "@/components/ui/ref-number";
 import { arabicList } from "@/lib/format";
+import { requestTypeLabel } from "@/lib/requests";
 import { acceptAttribute } from "@/lib/uploads";
 import { UPLOAD_GROUP_LABELS } from "@/lib/validation/settings";
 import { requireUser } from "@/server/auth/session";
@@ -68,9 +69,20 @@ export default async function EditRequestPage({ params, searchParams }: PageProp
   const returnMove = returned ? request.timeline.filter((t) => t.to.key === "RETURNED").at(-1) : undefined;
   const choices = await newRequestOptions(user);
   // A track or type archived since it was chosen stays offered for this request.
-  const tracks = request.track && !choices.tracks.some((t) => t.id === request.track!.id) ? [...choices.tracks, { ...request.track, description: null }] : choices.tracks;
+  const tracks = request.track && !choices.tracks.some((t) => t.id === request.track!.id) ? [...choices.tracks, { ...request.track, description: null, programIds: [] }] : choices.tracks;
   const requestTypes =
     request.requestType && !choices.requestTypes.some((t) => t.id === request.requestType!.id) ? [...choices.requestTypes, { ...request.requestType, description: null }] : choices.requestTypes;
+  // The same for the programme and initiatives chosen (D-151): they stay offered under the request's track.
+  const own = request.program;
+  const ownInitiatives = request.initiatives;
+  let programs = choices.programs;
+  if (own) {
+    const listed = programs.find((p) => p.id === own.id);
+    const extra = ownInitiatives.filter((i) => !listed?.initiatives.some((x) => x.id === i.id));
+    if (!listed) programs = [...programs, { ...own, description: null, goals: [], initiatives: ownInitiatives }];
+    else if (extra.length) programs = programs.map((p) => (p.id === own.id ? { ...p, initiatives: [...p.initiatives, ...extra].sort((x, y) => x.number - y.number) } : p));
+  }
+  const tracksWithOwn = own ? tracks.map((t) => (t.id === request.track?.id && !t.programIds.includes(own.id) ? { ...t, programIds: [...t.programIds, own.id] } : t)) : tracks;
   const count = (n: number | null) => (n === null ? "" : String(n));
 
   return (
@@ -79,7 +91,7 @@ export default async function EditRequestPage({ params, searchParams }: PageProp
         compact
         eyebrow={eyebrow}
         title={returned ? "تعديل الطلب وإعادة إرساله" : "كتابة بيانات الطلب"}
-        lead={[request.track?.name, request.requestType?.name].filter(Boolean).join(" · ") || undefined}
+        lead={[request.track?.name, requestTypeLabel(request.requestType, request.requestTypeDetail)].filter(Boolean).join(" · ") || undefined}
         actions={<BackLink href={back} label="العودة إلى الطلب" />}
       />
       <PageBody>
@@ -92,11 +104,15 @@ export default async function EditRequestPage({ params, searchParams }: PageProp
           returnedAt={returnMove?.createdAt ?? null}
           canDiscard={request.capabilities.canDiscard}
           requestTitle={request.title}
-          tracks={tracks}
+          tracks={tracksWithOwn}
+          programs={programs}
           requestTypes={requestTypes}
           defaults={{
             trackId: request.track?.id ?? "",
             requestTypeId: request.requestType?.id ?? "",
+            requestTypeDetail: request.requestTypeDetail ?? "",
+            programId: request.program?.id ?? "",
+            initiativeIds: request.initiatives.map((i) => i.id),
             title: request.title,
             description: request.description ?? "",
             goals: request.goals ?? "",

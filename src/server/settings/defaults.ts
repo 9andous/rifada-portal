@@ -12,6 +12,8 @@ export const SETTING_DEFAULTS = {
   "uploads.allowedGroups": ["pdf", "word", "excel", "image"],
   /** Storage quota per association for request files, in megabytes (placeholder value, D-075). */
   "uploads.associationQuotaMb": 2048,
+  /** How long an association's registration link stays valid, in hours (D-149). */
+  "registration.inviteHours": 48,
   /** Maximum number of requests in one bulk review action. */
   "bulk.maxItems": 25,
   /** When false, initiative lists are shown only to signed-in users. */

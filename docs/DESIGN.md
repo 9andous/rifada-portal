@@ -1,8 +1,8 @@
 # Design system
 
-The approved visual design for Rifada is the **design handoff v2** (`design_handoff_rifada_platform`,
-private material, see docs/ONBOARDING.md), aligned with prh.gov.sa: official greens, the gold of the
-Rifada logo, cool neutrals, the gov.sa banner and a white header carrying both logos. It replaced
+The approved visual design is the **design handoff v2** (`design_handoff_rifada_platform`,
+private material, see docs/ONBOARDING.md), aligned with prh.gov.sa: official greens, gold, cool
+neutrals, the gov.sa banner and a white header carrying the logo and the unit's name (D-133). It replaced
 direction C (Heritage panel) on 2026-10-25 at the owner's request (D-092). Every screen, including
 those built in later phases, follows this document.
 
@@ -151,7 +151,7 @@ the chart palette kept its earlier colour-blind-checked values.
 
 ## Brand motifs
 
-- **Ogee arch** of the Rifada logo (`<ArchOutline>` in `src/components/brand/arch.tsx`, `.arch-mask`
+- **Ogee arch** (`<ArchOutline>` in `src/components/brand/arch.tsx`, `.arch-mask`
   in `globals.css`): faint outline at the end of the page head (7%), the login hero and the green
   home bands; photographs on the home page are framed by it. Not on key figures (D-095).
 - **Gold diamond** (`<Diamond>`) as eyebrow and section marker.
@@ -172,7 +172,7 @@ signed-in pages the white header and the green bar **stick to the top together**
 1. **Gov banner** (`<GovBar>`, 38px): Saudi flag, «موقع حكومي رسمي تابع لحكومة المملكة العربية
    السعودية», the «كيف تتحقق» toggle opening the gov.sa and HTTPS explanations, and today's Hijri date.
 2. **Header** (`<SiteHeader>`, white, sticky, 88px; 72px below sm): the platform's identity leads
-   at the start (Rifada logo 52px and «منصة رفادة» with the unit line, text from lg); theme
+   at the start (the Presidency's logo 52px and «الوحدة الإشرافية على المنظمات غير الربحية», text from lg; D-133); theme
    toggle, the user chip (rounded-square initial, name, role or association) and sign out follow
    at the end. The Presidency's logo is no longer in the header (owner's request, 2026-10-28,
    replacing D-095): its white version sits in the public footer under «الرئاسة». Below lg the drawer button sits at the start. The login and public pages use
@@ -200,7 +200,7 @@ signed-in pages the white header and the green bar **stick to the top together**
 ## Page head
 
 - `<PageBand>` (historical name) is the white page head, full width with side padding: eyebrow
-  with a gold diamond, title in brand green, optional lead (max 680px) and actions at the end, and the faint arch at the end. Inside it
+  with a gold diamond, title in brand green, optional lead (max 680px) and actions at the end, and the faint ogee arch (`<ArchOutline>`, D-134) at the end. Inside it
   `.page-head` remaps the on-band colours to ink, so actions and eyebrows written for the former
   green band stay legible; `.band-scope` restores them on green elements inside it.
 - **Key figures** (`<BandFigures>`) follow the head on the canvas as a row of identical white cards
@@ -274,7 +274,7 @@ signed-in pages the white header and the green bar **stick to the top together**
 Sections in order (`src/app/(public)/page.tsx`, `src/components/home/home-sections.tsx`):
 
 1. **Hero** (green, pattern): the Presidency's name, the unit's name, the strategy's motto
-   «مباركًا وهدًى للعالمين», what Rifada is, login and registration buttons, key figures
+   «مباركًا وهدًى للعالمين», what the platform is, login and registration buttons, key figures
    counted from the database (programmes, available initiatives, objectives, values), and the
    **leadership statements** one at a time (D-096): portrait in a gold ring with an arc, the
    statement, honorific, name and title, rotating every seven seconds with dots and a pause

@@ -1,4 +1,4 @@
-// «معايير القبول والامتثال» checked by the supervisor in «تقييم واعتماد» (D-116), in the owner's
+// «معايير القبول والامتثال» checked by the supervisor in the evaluation (D-116, D-139), in the owner's
 // words. The keys are stored with each evaluation; change a title freely, never reuse a key.
 
 export const REVIEW_CRITERIA = [

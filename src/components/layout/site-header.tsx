@@ -4,8 +4,8 @@ import { Logo } from "@/components/brand/logo";
 import { brand } from "@/config/brand";
 
 /**
- * White header of every page (docs/DESIGN.md: App shell). The platform's identity (Rifada logo and
- * system name) leads at the start; utilities (theme, user, sign in or out) follow at the end. The
+ * White header of every page (docs/DESIGN.md: App shell). The logo and the unit's name lead at the
+ * start as the platform's identity (D-133); utilities (theme, user, sign in or out) follow at the end. The
  * Presidency's logo lives in the public footer (owner's request, 2026-10-28). It spans the full
  * width of the screen; page content stays at 1360px. `leading` holds the drawer button on narrow
  * screens.
@@ -31,10 +31,8 @@ export function SiteHeader({
         {leading}
         <Link href={href} className="flex min-w-0 items-center gap-3.5">
           <Logo height={52} priority />
-          <span className="hidden leading-snug lg:block">
-            <span className="block text-[1.0625rem] font-bold text-brand-ink">{brand.systemName}</span>
-            <span className="block text-xs text-ink-subtle">الوحدة الإشرافية على المنظمات غير الربحية</span>
-          </span>
+          {/* With section links (from xl), the name shifts down to sit on their line. */}
+          <span className={`hidden text-[1.0625rem] font-bold leading-snug text-brand-ink lg:block ${middle ? "xl:translate-y-3" : ""}`}>{brand.unitShortName}</span>
         </Link>
         {middle ? <div className="hidden min-w-0 flex-1 xl:block">{middle}</div> : null}
         <div className="ms-auto flex items-center gap-1.5">{children}</div>

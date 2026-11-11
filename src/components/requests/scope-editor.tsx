@@ -98,6 +98,7 @@ export function ScopeEditor({ requestId, programs, programId, initiativeIds }: {
             <Field id="scope-program" label="البرنامج" hint="برامج مسار الطلب." error={errors.programId}>
               <Select
                 id="scope-program"
+                placeholder="يُرجى اختيار البرنامج"
                 value={program}
                 onChange={(e) => {
                   setProgram(e.target.value);
@@ -108,6 +109,8 @@ export function ScopeEditor({ requestId, programs, programId, initiativeIds }: {
               />
             </Field>
 
+            {/* The initiatives come after the programme (owner's review, D-145). */}
+            {current ? (
             <fieldset aria-describedby={errors.initiativeIds ? "scope-initiatives-error" : undefined}>
               <legend className="flex w-full items-center justify-between text-sm font-semibold text-ink">
                 <span>المبادرات</span>
@@ -162,6 +165,7 @@ export function ScopeEditor({ requestId, programs, programId, initiativeIds }: {
                 </p>
               ) : null}
             </fieldset>
+            ) : null}
 
             <Field id="scope-note" label="سبب التعديل" hint="اختياري؛ يظهر في سجل الطلب." error={errors.note}>
               <Textarea id="scope-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} />
@@ -174,7 +178,7 @@ export function ScopeEditor({ requestId, programs, programId, initiativeIds }: {
                 إلغاء
               </Button>
             </Dialog.Close>
-            <Button variant="primary" onClick={() => void submit()} disabled={pending}>
+            <Button variant="primary" onClick={() => void submit()} disabled={pending || !current || chosen.length === 0}>
               {pending ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
               {pending ? "جارٍ الحفظ…" : "حفظ التعديل"}
             </Button>

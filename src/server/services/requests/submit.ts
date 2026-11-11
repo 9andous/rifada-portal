@@ -25,7 +25,7 @@ export type SubmitResult = { ok: true; referenceNo: string } | (Refusal & { miss
 export const ALREADY_SUBMITTED = "قُدِّم هذا الطلب مسبقًا، فلا يمكن تقديمه مرة أخرى الآن.";
 export const BLOCKED_MESSAGE = "لم يُقدَّم الطلب لأن بعض البيانات أو المرفقات ناقصة:";
 
-/** Next RF-<hijriYear>-<seq>: one atomic upsert on the year's counter row. */
+/** Next PRH-<hijriYear>-<seq>: one atomic upsert on the year's counter row. */
 export async function nextReference(tx: Tx, now: Date): Promise<string> {
   const year = hijriYear(now);
   const rows = await tx.$queryRaw<{ lastSeq: number }[]>`
@@ -57,11 +57,13 @@ export async function submitRequest(actor: Actor, id: string, now: Date = new Da
         include: {
           association: { select: { isActive: true } },
           track: { select: { name: true, archivedAt: true } },
-          requestType: { select: { name: true, isActive: true, archivedAt: true } },
+          requestType: { select: { name: true, isActive: true, archivedAt: true, requiresDetail: true } },
+          program: { select: { name: true, isActive: true, archivedAt: true } },
+          initiatives: { orderBy: [{ sortOrder: "asc" }, { initiativeId: "asc" }], select: { initiative: { select: { name: true, isActive: true, archivedAt: true, programId: true } } } },
           attachments: { where: { ownerType: "REQUEST" }, select: { attachmentType: { select: { key: true } }, currentVersion: { select: { mime: true } } } },
         },
       });
-      // Initiative requirements no longer apply: the association chooses no initiative (D-123).
+      // Initiative requirements no longer apply to new submissions (D-123), though the association chooses initiatives again (D-151).
       const requirements: RequirementSpec[] = [];
       const firstSubmission = request.referenceNo === null;
       const missing = checkCompleteness({
@@ -73,7 +75,13 @@ export async function submitRequest(actor: Actor, id: string, now: Date = new Da
         availability: {
           associationActive: request.association.isActive,
           track: request.track ? { name: request.track.name, available: !request.track.archivedAt } : null,
-          requestType: request.requestType ? { name: request.requestType.name, available: request.requestType.isActive && !request.requestType.archivedAt } : null,
+          requestType: request.requestType
+            ? { name: request.requestType.name, available: request.requestType.isActive && !request.requestType.archivedAt, requiresDetail: request.requestType.requiresDetail }
+            : null,
+          requestTypeDetail: request.requestTypeDetail,
+          // The association's programme and initiatives (D-151).
+          program: request.program ? { name: request.program.name, available: request.program.isActive && !request.program.archivedAt } : null,
+          initiatives: request.initiatives.map(({ initiative: i }) => ({ name: i.name, available: i.isActive && !i.archivedAt && i.programId === request.programId })),
         },
         firstSubmission,
         today: riyadhDateString(now),

@@ -19,6 +19,10 @@ RUN npx prisma generate && npm run build
 FROM node:24-bookworm-slim AS run
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build /app ./
+COPY --from=build --chown=node:node /app ./
+# Run as the unprivileged built-in node user. The storage dir (also bind-mounted in compose)
+# must be writable by it; on a bind mount the host path should be owned by uid 1000.
+RUN mkdir -p /app/storage && chown -R node:node /app/storage
+USER node
 EXPOSE 3000
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]

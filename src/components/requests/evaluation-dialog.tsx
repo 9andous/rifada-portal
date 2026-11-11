@@ -7,12 +7,20 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Alert, FormError } from "@/components/ui/surface";
+import { Alert, FormError, StatusText } from "@/components/ui/surface";
 import { toast } from "@/components/ui/toaster";
 import { REVIEW_CRITERIA, type CriterionResult, type ReviewCriterionKey } from "@/config/review-criteria";
 import { cn } from "@/lib/cn";
 import { formatNumber, toArabicDigits } from "@/lib/format";
+import { RECOMMENDATION_LABELS, RECOMMENDATION_TONES, type Decision } from "@/lib/requests";
+import { REQUEST_LIMITS } from "@/lib/validation/requests";
 import { editEvaluationAction, evaluateAction } from "@/server/actions/requests";
+
+const RECOMMENDATIONS: { value: Decision; label: string; on: string }[] = [
+  { value: "approve", label: "التوصية بالقبول", on: "border-st-ok bg-st-ok-soft text-st-ok" },
+  { value: "return", label: "التوصية بالإعادة للتعديل", on: "border-st-warn bg-st-warn-soft text-st-warn" },
+  { value: "reject", label: "التوصية بالرفض", on: "border-st-bad bg-st-bad-soft text-st-bad" },
+];
 
 type Answer = { met: boolean | null; note: string; noteOpen: boolean };
 export type Answers = Record<ReviewCriterionKey, Answer>;
@@ -20,16 +28,30 @@ export type Answers = Record<ReviewCriterionKey, Answer>;
 const fresh = () => Object.fromEntries(REVIEW_CRITERIA.map((c) => [c.key, { met: null, note: "", noteOpen: false }])) as Record<ReviewCriterionKey, Answer>;
 
 /**
- * «تقييم واعتماد» (D-116, compact per the owner, D-117): first the acceptance criteria, each
- * ✓ or ✗ with a note only when asked for, and «ملاحظة المراجع الفني»; then «توقيع وإرسال إلى مدير
- * الوحدة» asks for the password, and the server seals the evaluation electronically (D-122).
+ * «تقييم واعتماد» (D-116, compact per the owner, D-117; D-139, D-145): first the acceptance criteria, each
+ * ✓ or ✗ with a note only when asked for, «ملاحظة المراجع الفني» and the supervisor's recommendation to
+ * the unit manager, with a reason when returning or rejecting; then «توقيع وإرسال إلى مدير الوحدة» asks
+ * for the password, and the server seals it electronically (D-122).
  */
-export function EvaluationDialog({ requestId, trigger }: { requestId: string; title: string; trigger: React.ReactNode }) {
+export function EvaluationDialog({
+  requestId,
+  size,
+  className,
+  children,
+}: {
+  requestId: string;
+  size?: "sm" | "md";
+  className?: string;
+  /** The trigger button's content. */
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"criteria" | "sign">("criteria");
   const [answers, setAnswers] = useState<Record<ReviewCriterionKey, Answer>>(fresh);
   const [note, setNote] = useState("");
+  const [recommendation, setRecommendation] = useState<Decision | null>(null);
+  const [reason, setReason] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -37,27 +59,31 @@ export function EvaluationDialog({ requestId, trigger }: { requestId: string; ti
 
   const answered = REVIEW_CRITERIA.filter((c) => answers[c.key].met !== null).length;
   const met = REVIEW_CRITERIA.filter((c) => answers[c.key].met === true).length;
-  const complete = answered === REVIEW_CRITERIA.length;
+  const needsReason = recommendation === "return" || recommendation === "reject";
+  const complete = answered === REVIEW_CRITERIA.length && recommendation !== null && (!needsReason || reason.trim().length >= 3);
 
   async function submit() {
+    if (!recommendation) return;
     setErrors({});
     setMessage(null);
     setPending(true);
     const r = await evaluateAction(requestId, {
       criteria: REVIEW_CRITERIA.map((c) => ({ key: c.key, met: answers[c.key].met === true, note: answers[c.key].note })),
       note,
+      recommendation,
+      reason,
       password,
     });
     setPending(false);
     if (!r.ok) {
       setErrors(r.errors ?? {});
       if (!r.errors?.password) setMessage(r.message ?? "تعذّر حفظ التقييم.");
-      if (r.errors?.criteria || r.errors?.note) setStep("criteria");
+      if (r.errors?.criteria || r.errors?.note || r.errors?.reason || r.errors?.recommendation) setStep("criteria");
       setPassword("");
       return;
     }
     setOpen(false);
-    toast("أُرسل الطلب إلى مدير الوحدة");
+    toast("رُفعت توصيتك إلى مدير الوحدة", { description: "القرار النهائي لمدير الوحدة." });
     router.refresh();
   }
 
@@ -71,6 +97,8 @@ export function EvaluationDialog({ requestId, trigger }: { requestId: string; ti
           setStep("criteria");
           setAnswers(fresh());
           setNote("");
+          setRecommendation(null);
+          setReason("");
           setPassword("");
           setErrors({});
           setMessage(null);
@@ -78,8 +106,8 @@ export function EvaluationDialog({ requestId, trigger }: { requestId: string; ti
       }}
     >
       <Dialog.Trigger asChild>
-        <Button variant="primary" className="w-full">
-          {trigger}
+        <Button variant="primary" size={size} className={className}>
+          {children}
         </Button>
       </Dialog.Trigger>
       <Dialog.Portal>
@@ -96,7 +124,7 @@ export function EvaluationDialog({ requestId, trigger }: { requestId: string; ti
               </Dialog.Close>
             </div>
           </div>
-          <Dialog.Description className="sr-only">تقييم الطلب وفق معايير القبول والامتثال ثم التوقيع وإرساله إلى مدير الوحدة.</Dialog.Description>
+          <Dialog.Description className="sr-only">تقييم الطلب وفق معايير القبول والامتثال، ثم التوقيع ورفع التوصية إلى مدير الوحدة.</Dialog.Description>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
             {message ? (
@@ -106,9 +134,41 @@ export function EvaluationDialog({ requestId, trigger }: { requestId: string; ti
             ) : null}
 
             {step === "criteria" ? (
-              <CriteriaFields answers={answers} setAnswers={setAnswers} note={note} setNote={setNote} errors={errors} />
+              <>
+                <CriteriaFields answers={answers} setAnswers={setAnswers} note={note} setNote={setNote} errors={errors} />
+                <fieldset className="mt-4">
+                  <legend className="text-sm font-semibold text-ink">
+                    توصيتك إلى مدير الوحدة <span className="text-danger">*</span>
+                  </legend>
+                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    {RECOMMENDATIONS.map((o) => (
+                      <label
+                        key={o.value}
+                        className={cn(
+                          "relative flex cursor-pointer items-center justify-center rounded-md border px-3 py-2.5 text-center text-sm font-semibold transition-colors has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-focus",
+                          recommendation === o.value ? o.on : "border-line-strong bg-surface text-ink hover:border-primary",
+                        )}
+                      >
+                        <input type="radio" name="eval-recommendation" value={o.value} checked={recommendation === o.value} onChange={() => setRecommendation(o.value)} className="sr-only" />
+                        {o.label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                {needsReason ? (
+                  <Field id="eval-reason" label="سبب التوصية" hint="يطّلع عليه مدير الوحدة، ولا يصل إلى الجمعية إلا إذا أكّد القرار." error={errors.reason} required className="mt-4">
+                    <Textarea id="eval-reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={REQUEST_LIMITS.reason} aria-invalid={Boolean(errors.reason)} />
+                  </Field>
+                ) : null}
+              </>
             ) : (
               <div className="flex flex-col gap-3">
+                {recommendation ? (
+                  <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
+                    توصيتك:
+                    <StatusText tone={RECOMMENDATION_TONES[recommendation]}>{RECOMMENDATION_LABELS[recommendation]}</StatusText>
+                  </p>
+                ) : null}
                 <SealNotice />
                 <Field id="eval-password" label="كلمة المرور" error={errors.password} required>
                   <PasswordInput id="eval-password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" aria-invalid={Boolean(errors.password)} />
@@ -161,7 +221,7 @@ export function SealNotice({ count = 1 }: { count?: number }) {
 
 /**
  * The acceptance criteria (✓ / ✗, a note only when asked for) and «ملاحظة المراجع الفني», shared by
- * the supervisor's «تقييم واعتماد» and the unit manager's «تعديل التقييم» (D-120).
+ * the supervisor's evaluation and the unit manager's «تعديل التقييم» (D-120).
  */
 export function CriteriaFields({
   answers,

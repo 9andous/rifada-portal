@@ -10,7 +10,7 @@ import { cn } from "@/lib/cn";
 import { formatNumber, toArabicDigits } from "@/lib/format";
 import { createRequestTypeAction, setRequestTypeActiveAction, setRequestTypeArchivedAction, updateRequestTypeAction } from "@/server/actions/admin/taxonomy";
 
-export type RequestTypeItem = { id: string; name: string; description: string | null; isActive: boolean; archivedAt: Date | null; requests: number };
+export type RequestTypeItem = { id: string; name: string; description: string | null; isActive: boolean; requiresDetail: boolean; archivedAt: Date | null; requests: number };
 
 /** «نوع طلب جديد»: name and a short description shown to the association. */
 export function NewRequestTypeButton() {
@@ -44,6 +44,13 @@ function RequestTypeFields({ prefix, error, type }: { prefix: string; error: Rec
       <Field id={`${prefix}-desc`} label="الوصف" hint="اختياري؛ جملة قصيرة تشرح للجمعية متى تختار هذا النوع." error={error.description}>
         <Textarea id={`${prefix}-desc`} name="description" defaultValue={type?.description ?? ""} aria-invalid={Boolean(error.description)} />
       </Field>
+      <label className="flex items-start gap-3 text-sm">
+        <input type="checkbox" name="requiresDetail" defaultChecked={type?.requiresDetail ?? false} className="mt-1 size-4 accent-[var(--primary)]" />
+        <span>
+          <span className="font-semibold text-ink">تكتب الجمعية نوع طلبها بنفسها</span>
+          <span className="t-caption block">مثل «أخرى»: يظهر للجمعية حقل تكتب فيه ما تطلبه، ويكون مطلوبًا عند الإرسال.</span>
+        </span>
+      </label>
     </>
   );
 }
@@ -65,6 +72,7 @@ export function RequestTypesList({ types }: { types: RequestTypeItem[] }) {
               <div className="flex flex-wrap items-center gap-2">
                 <p className={cn("text-base font-bold leading-relaxed", archived ? "text-ink-muted" : "text-ink")}>{t.name}</p>
                 {archived ? <StatusText tone="neutral">مؤرشف</StatusText> : t.isActive ? <StatusText tone="ok">نشط</StatusText> : <StatusText tone="warn">موقوف</StatusText>}
+                {t.requiresDetail ? <StatusText tone="neutral">تكتب الجمعية النوع</StatusText> : null}
               </div>
               {t.description ? <p className="t-body mt-1 text-sm">{t.description}</p> : null}
               <p className="t-caption mt-2">{t.requests ? `${formatNumber(t.requests)} طلب بهذا النوع` : "لا توجد طلبات بهذا النوع بعد"}</p>

@@ -20,12 +20,18 @@ export function FileUploader({
   error,
   label,
   endpoint = "/api/admin/template-uploads",
+  inputName = "uploadId",
+  types = ALLOWED_FILE_TYPES_TEXT,
 }: {
   accept: string;
   maxMb: number;
   error?: string;
   label: string;
   endpoint?: string;
+  /** Name of the hidden input that carries the upload id. */
+  inputName?: string;
+  /** The allowed types, for the help line. */
+  types?: string;
 }) {
   const id = useId();
   const [state, setState] = useState<{ phase: "idle" | "uploading" | "done" | "failed"; progress: number; message?: string; file?: Uploaded }>({
@@ -102,7 +108,7 @@ export function FileUploader({
         </label>
         <span className="min-w-0 truncate text-sm text-ink-muted">{chosen ? <bdi>{chosen}</bdi> : "لم يُختر ملف"}</span>
       </div>
-      <input type="hidden" name="uploadId" value={state.file?.uploadId ?? ""} />
+      <input type="hidden" name={inputName} value={state.file?.uploadId ?? ""} />
       {state.phase === "uploading" ? (
         <div className="flex items-center gap-3" role="status">
           <div className="h-1.5 flex-1 rounded-sm bg-surface-sunken">
@@ -123,7 +129,7 @@ export function FileUploader({
         </p>
       ) : (
         <p id={`${id}-help`} className="t-caption">
-          {ALLOWED_FILE_TYPES_TEXT}؛ حتى {formatNumber(maxMb)} ميغابايت.
+          {types}؛ حتى {formatNumber(maxMb)} ميغابايت.
         </p>
       )}
     </div>

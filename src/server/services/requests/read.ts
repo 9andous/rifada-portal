@@ -9,6 +9,8 @@ import {
   parseCustomValues,
   parseRequirementSnapshot,
   type RequirementSpec,
+  recommendationDecision,
+  type Decision,
 } from "@/lib/requests";
 import { statusTone, SYSTEM_STATUS_KEYS, type SystemStatusKey } from "@/lib/workflow";
 import type { StatusTone } from "@/components/ui/surface";
@@ -19,7 +21,7 @@ import { db } from "@/server/db";
 import { PAGE_SIZE, assertCan, containsAny } from "@/server/services/admin/common";
 import { audit } from "@/server/services/audit";
 import { statusMap } from "./common";
-import { isDecider } from "./decisions";
+import { managerMayDecide } from "./decisions";
 import { canChangeScope } from "./review";
 
 // Request read paths (Phase 3). Every query starts from `scopeRequests` (drafts only for their own
@@ -98,12 +100,13 @@ const listSelect = {
   assignedSupervisorId: true,
   reviewStage: true,
   status: { select: { key: true, name: true, colorToken: true } },
-  track: { select: { id: true, number: true, name: true } },
+  track: { select: { id: true, number: true, name: true, supervisors: { where: { user: { isActive: true, role: "SUPERVISOR" } }, take: 1, select: { userId: true } } } },
   requestType: { select: { name: true } },
   program: { select: { id: true, number: true, name: true } },
   initiative: { select: { number: true, name: true } },
   association: { select: { name: true } },
   assignedSupervisor: { select: { name: true, isActive: true } },
+  evaluations: { orderBy: { createdAt: "desc" }, take: 1, select: { recommendation: true } },
   resubmittedAt: true,
   lastActivityAt: true,
 } satisfies Prisma.RequestSelect;
@@ -125,12 +128,14 @@ export type RequestRow = {
   updatedAt: Date;
   slaDueAt: Date | null;
   overdue: boolean;
-  /** The viewer may return or reject it now (and approve it, when `approvable`). */
+  /** The viewer may return or reject it now (and approve it, when `approvable`, D-139, D-145). */
   decidable: boolean;
   /** The unit manager may give the final approval: the supervisor has evaluated it (D-116). */
   approvable: boolean;
   /** Staff only: under review and with the unit manager (D-116). */
   withManager: boolean;
+  /** Staff only, while it is with the unit manager: what the supervisor recommended (D-139). */
+  recommendation: Decision | null;
   /** Something happened on it since the viewer last opened it: the row shows «جديد» (D-130). */
   isNew: boolean;
 };
@@ -172,7 +177,7 @@ export async function listRequests(actor: Actor, params: RequestListParams, view
     referenceNo: r.referenceNo,
     title: r.title,
     status: unitStatus(actor, r.status, r.resubmittedAt),
-    track: r.track,
+    track: r.track && { id: r.track.id, number: r.track.number, name: r.track.name },
     requestType: r.requestType?.name ?? null,
     program: r.program,
     initiative: r.initiative,
@@ -182,9 +187,10 @@ export async function listRequests(actor: Actor, params: RequestListParams, view
     updatedAt: r.updatedAt,
     slaDueAt: r.slaDueAt,
     overdue: Boolean(r.slaDueAt && slaKeys.includes(r.status.key) && r.slaDueAt < now),
-    decidable: r.status.key === "UNDER_REVIEW" && isDecider(actor, r.assignedSupervisorId) && (actor.role === "UNIT_MANAGER" || r.reviewStage === "SUPERVISOR"),
-    approvable: r.status.key === "UNDER_REVIEW" && actor.role === "UNIT_MANAGER" && isDecider(actor, r.assignedSupervisorId) && r.reviewStage === "MANAGER",
+    decidable: r.status.key === "UNDER_REVIEW" && (actor.role === "UNIT_MANAGER" ? managerMayDecide(r.reviewStage, r.track) : actor.role === "SUPERVISOR" && r.reviewStage === "SUPERVISOR" && actor.trackIds.includes(r.track?.id ?? "")),
+    approvable: r.status.key === "UNDER_REVIEW" && actor.role === "UNIT_MANAGER" && r.reviewStage === "MANAGER",
     withManager: actor.role !== "ASSOCIATION_OFFICER" && r.status.key === "UNDER_REVIEW" && r.reviewStage === "MANAGER",
+    recommendation: actor.role !== "ASSOCIATION_OFFICER" && r.status.key === "UNDER_REVIEW" && r.reviewStage === "MANAGER" && r.evaluations[0] ? recommendationDecision(r.evaluations[0].recommendation) : null,
     isNew: isNewTo(seen, r),
   }));
   return { items, total, page: win.page, pageSize: PAGE_SIZE, pageCount: win.pageCount };
@@ -256,6 +262,9 @@ export type ReviewView = {
     reviewer: string;
     criteria: CriterionResult[];
     note: string | null;
+    /** What the supervisor recommended, and why when returning or rejecting (D-139). */
+    recommendation: Decision;
+    reason: string | null;
     /** The electronic seal of the supervisor's signing (D-122). */
     seal: SealView | null;
     createdAt: Date;
@@ -265,6 +274,8 @@ export type ReviewView = {
   /** The unit manager's signed final approvals (D-117). */
   approvals: { id: string; manager: string; seal: (SealView & { verifyCode: string | null }) | null; createdAt: Date }[];
   scopeChanges: { id: string; actor: string; actorRole: string; before: ScopeSnapshotView; after: ScopeSnapshotView; note: string | null; createdAt: Date }[];
+  /** Who held the request and when it moved (D-146). A null actor is the automatic assignment. */
+  assignments: { id: string; from: string | null; to: string | null; actor: string | null; reason: string | null; createdAt: Date }[];
 };
 
 export type SealView = { serial: string };
@@ -278,7 +289,7 @@ export type CertificateView = {
   signers: { kind: "EVALUATION" | "APPROVAL"; name: string; serial: string; signedAt: Date }[];
 };
 
-export type TimelineEntry = { id: string; from: StatusView | null; to: StatusView; actor: string | null; note: string | null; createdAt: Date };
+export type TimelineEntry = { id: string; from: StatusView | null; to: StatusView; actor: string | null; /** Staff only (D-146). */ actorRole: Role | null; note: string | null; createdAt: Date };
 
 export type CommentView = {
   id: string;
@@ -295,10 +306,12 @@ export type RequestCapabilities = {
   canDiscard: boolean;
   /** The formal document: staff always; the association only once the request is approved (D-114). */
   canPrint: boolean;
-  /** Return or reject: the assigned supervisor before sending to the manager, the manager always. */
+  /** Return or reject: a supervisor of the track before evaluating (D-145); the unit manager after the recommendation or with no active supervisor (D-139). */
   canDecide: boolean;
-  /** «تقييم واعتماد»: the assigned supervisor, at the supervisor stage (D-116). */
+  /** The evaluation and recommendation: any supervisor of the track, at the supervisor stage (D-116, D-139, D-144). */
   canEvaluate: boolean;
+  /** The unit manager waits for the supervisor's recommendation (D-139). */
+  awaitsSupervisor: boolean;
   /** Final approval: the unit manager, once the supervisor has evaluated and signed (D-116). */
   canApprove: boolean;
   /** Change the programme and initiatives, never the content (D-116). */
@@ -368,10 +381,11 @@ export async function getRequestDetail(actor: Actor, id: string) {
           id: true,
           number: true,
           name: true,
-          programs: { orderBy: { program: { number: "asc" } }, select: { program: { select: { id: true, number: true, name: true, description: true, archivedAt: true } } } },
+          supervisors: { where: { user: { isActive: true, role: "SUPERVISOR" } }, take: 1, select: { userId: true } },
+          programs: { orderBy: { program: { number: "asc" } }, select: { program: { select: { id: true, number: true, name: true, archivedAt: true } } } },
         },
       },
-      requestType: { select: { id: true, name: true } },
+      requestType: { select: { id: true, name: true, requiresDetail: true } },
       program: { select: { id: true, number: true, name: true, isActive: true, archivedAt: true } },
       initiative: { select: { id: true, number: true, name: true, isActive: true, archivedAt: true } },
       initiatives: { orderBy: [{ sortOrder: "asc" }, { initiativeId: "asc" }], select: { initiative: { select: { id: true, number: true, name: true } } } },
@@ -415,7 +429,7 @@ export async function getRequestDetail(actor: Actor, id: string) {
         createdAt: true,
         fromStatus: { select: { key: true, name: true, colorToken: true } },
         toStatus: { select: { key: true, name: true, colorToken: true } },
-        actor: { select: { name: true } },
+        actor: { select: { name: true, role: true } },
       },
     }),
     db.completenessCheck.findFirst({ where: { requestId: id }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { passed: true, missing: true, ranBy: true, createdAt: true } }),
@@ -440,6 +454,7 @@ export async function getRequestDetail(actor: Actor, id: string) {
     from: h.fromStatus ? statusView(h.fromStatus) : null,
     to: statusView(h.toStatus),
     actor: h.actor?.name ?? null,
+    actorRole: isOfficer ? null : ((h.actor?.role as Role | undefined) ?? null),
     note: h.note,
     createdAt: h.createdAt,
   }));
@@ -461,10 +476,14 @@ export async function getRequestDetail(actor: Actor, id: string) {
     canEdit: isOfficer && editable && request.association.isActive && can(actor.role, "requests.editDraft"),
     canDiscard: isOfficer && statusKey === "DRAFT" && !submitted,
     canPrint: !isOfficer || statusKey === "APPROVED",
-    canDecide: statusKey === "UNDER_REVIEW" && isDecider(actor, request.assignedSupervisorId) && (actor.role === "UNIT_MANAGER" || request.reviewStage === "SUPERVISOR"),
-    canEvaluate: statusKey === "UNDER_REVIEW" && actor.role === "SUPERVISOR" && isDecider(actor, request.assignedSupervisorId) && request.reviewStage === "SUPERVISOR",
+    canDecide:
+      statusKey === "UNDER_REVIEW" &&
+      can(actor.role, "requests.review") &&
+      (actor.role === "UNIT_MANAGER" ? managerMayDecide(request.reviewStage, request.track) : actor.role === "SUPERVISOR" && request.reviewStage === "SUPERVISOR" && actor.trackIds.includes(request.track?.id ?? "")),
+    awaitsSupervisor: statusKey === "UNDER_REVIEW" && actor.role === "UNIT_MANAGER" && !managerMayDecide(request.reviewStage, request.track),
+    canEvaluate: statusKey === "UNDER_REVIEW" && actor.role === "SUPERVISOR" && can(actor.role, "requests.review") && actor.trackIds.includes(request.track?.id ?? "") && request.reviewStage === "SUPERVISOR",
     canApprove: statusKey === "UNDER_REVIEW" && actor.role === "UNIT_MANAGER" && can(actor.role, "requests.review") && request.reviewStage === "MANAGER",
-    canChangeScope: canChangeScope(actor, { statusKey, reviewStage: request.reviewStage, assignedSupervisorId: request.assignedSupervisorId }),
+    canChangeScope: canChangeScope(actor, { statusKey, reviewStage: request.reviewStage, trackId: request.track?.id ?? null }),
     // The evaluation exists exactly when the request waits for the manager (D-116).
     canEditEvaluation: statusKey === "UNDER_REVIEW" && actor.role === "UNIT_MANAGER" && can(actor.role, "requests.review") && request.reviewStage === "MANAGER",
     canReassign: open && submitted && can(actor.role, "requests.assign"),
@@ -477,11 +496,11 @@ export async function getRequestDetail(actor: Actor, id: string) {
   // The two-step review is the unit's own business: none of it reaches the association (D-116).
   let review: ReviewView | null = null;
   if (!isOfficer) {
-    const [evaluations, approvals, scopeChanges] = await Promise.all([
+    const [evaluations, approvals, scopeChanges, assignments] = await Promise.all([
       db.requestEvaluation.findMany({
         where: { requestId: id },
         orderBy: { createdAt: "asc" },
-        select: { id: true, criteria: true, note: true, seal: { select: { serial: true } }, createdAt: true, editedAt: true, reviewer: { select: { name: true } }, editedBy: { select: { name: true } } },
+        select: { id: true, criteria: true, note: true, recommendation: true, reason: true, seal: { select: { serial: true } }, createdAt: true, editedAt: true, reviewer: { select: { name: true } }, editedBy: { select: { name: true } } },
       }),
       db.requestApproval.findMany({
         where: { requestId: id },
@@ -493,6 +512,11 @@ export async function getRequestDetail(actor: Actor, id: string) {
         orderBy: { createdAt: "asc" },
         select: { id: true, before: true, after: true, note: true, createdAt: true, actor: { select: { name: true, role: true } } },
       }),
+      db.assignmentHistory.findMany({
+        where: { requestId: id },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, reason: true, createdAt: true, fromUser: { select: { name: true } }, toUser: { select: { name: true } }, actor: { select: { name: true } } },
+      }),
     ]);
     review = {
       stage: request.reviewStage,
@@ -501,6 +525,8 @@ export async function getRequestDetail(actor: Actor, id: string) {
         reviewer: e.reviewer.name,
         criteria: (Array.isArray(e.criteria) ? e.criteria : []) as CriterionResult[],
         note: e.note,
+        recommendation: recommendationDecision(e.recommendation),
+        reason: e.reason,
         seal: e.seal,
         createdAt: e.createdAt,
         edited: e.editedAt && e.editedBy ? { by: e.editedBy.name, at: e.editedAt } : null,
@@ -515,6 +541,7 @@ export async function getRequestDetail(actor: Actor, id: string) {
         note: c.note,
         createdAt: c.createdAt,
       })),
+      assignments: assignments.map((a) => ({ id: a.id, from: a.fromUser?.name ?? null, to: a.toUser?.name ?? null, actor: a.actor?.name ?? null, reason: a.reason, createdAt: a.createdAt })),
     };
   }
 
@@ -550,8 +577,10 @@ export async function getRequestDetail(actor: Actor, id: string) {
     status: unitStatus(actor, request.status, request.resubmittedAt),
     track: request.track ? { id: request.track.id, number: request.track.number, name: request.track.name } : null,
     requestType: request.requestType,
+    /** What the association wrote for a type that asks for it, such as «أخرى» (D-151). */
+    requestTypeDetail: request.requestTypeDetail,
     /** The programmes the track covers, for the staff to see where the request belongs (D-123). */
-    trackPrograms: isOfficer ? [] : (request.track?.programs ?? []).map((l) => l.program).filter((p) => !p.archivedAt).map((p) => ({ id: p.id, number: p.number, name: p.name, description: p.description })),
+    trackPrograms: isOfficer ? [] : (request.track?.programs ?? []).map((l) => l.program).filter((p) => !p.archivedAt).map((p) => ({ id: p.id, number: p.number, name: p.name })),
     program: request.program ? { id: request.program.id, number: request.program.number, name: request.program.name } : null,
     initiative: request.initiative ? { id: request.initiative.id, number: request.initiative.number, name: request.initiative.name } : null,
     /** Every chosen initiative, the main one first (D-115). */

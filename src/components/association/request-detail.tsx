@@ -12,7 +12,8 @@ import { RefNumber } from "@/components/ui/ref-number";
 import { Panel, PanelHeader, StatusText } from "@/components/ui/surface";
 import { statusHelp } from "@/lib/association-status";
 import { cn } from "@/lib/cn";
-import { formatGregorian, formatHijri, formatHijriDateTime, formatNumber, toArabicDigits } from "@/lib/format";
+import { formatHijri, formatHijriDateTime, formatNumber, toArabicDigits } from "@/lib/format";
+import { requestTypeLabel } from "@/lib/requests";
 import { acceptAttribute } from "@/lib/uploads";
 import { workingDaysBetween } from "@/lib/working-days";
 import type { RequestDetail } from "@/server/services/requests/read";
@@ -49,12 +50,7 @@ function Pair({ label, children, wide }: { label: string; children: ReactNode; w
 const empty = <span className="text-ink-subtle">لم يُكتب بعد</span>;
 
 function dateValue(d: Date | null) {
-  if (!d) return empty;
-  return (
-    <span className="inline-flex flex-wrap items-baseline gap-x-2">
-      {formatHijri(d)} <span className="text-sm text-ink-muted">{formatGregorian(d)}</span>
-    </span>
-  );
+  return d ? formatHijri(d) : empty;
 }
 
 function fieldValue(type: string | null, value: string | null): ReactNode {
@@ -134,7 +130,7 @@ export function AssociationRequestView({
           </span>
         }
         title={r.title || "طلب بلا عنوان"}
-        lead={[r.track?.name, r.requestType?.name].filter(Boolean).join(" · ") || undefined}
+        lead={[r.track?.name, requestTypeLabel(r.requestType, r.requestTypeDetail)].filter(Boolean).join(" · ") || undefined}
         actions={
           <>
             <StatusText tone={r.status.tone} className="px-3 py-1.5 text-base">
@@ -174,7 +170,7 @@ export function AssociationRequestView({
         <div className="mb-4 hidden print:block">
           <p>{r.referenceNo ? <RefNumber value={r.referenceNo} /> : "مسودة"} · {r.status.name}</p>
           <h1 className="text-2xl font-bold">{r.title || "طلب بلا عنوان"}</h1>
-          <p>{[r.track?.name, r.requestType?.name].filter(Boolean).join(" · ")}</p>
+          <p>{[r.track?.name, requestTypeLabel(r.requestType, r.requestTypeDetail)].filter(Boolean).join(" · ")}</p>
         </div>
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
@@ -243,7 +239,17 @@ export function AssociationRequestView({
               <PanelHeader icon={<ListChecks strokeWidth={1.75} />} title="بيانات الطلب" />
               <dl className="grid grid-cols-1 gap-x-8 gap-y-5 px-6 pb-6 sm:grid-cols-2">
                 <Pair label="المسار المستهدف">{r.track?.name ?? empty}</Pair>
-                <Pair label="نوع الطلب">{r.requestType?.name ?? empty}</Pair>
+                <Pair label="نوع الطلب">{requestTypeLabel(r.requestType, r.requestTypeDetail) ?? empty}</Pair>
+                <Pair label="البرنامج">{r.program ? `${toArabicDigits(r.program.number)}. ${r.program.name}` : empty}</Pair>
+                <Pair label={r.initiatives.length > 1 ? "المبادرات" : "المبادرة"}>
+                  {r.initiatives.length
+                    ? r.initiatives.map((i) => (
+                        <span key={i.id} className="block">
+                          {toArabicDigits(i.number)}. {i.name}
+                        </span>
+                      ))
+                    : empty}
+                </Pair>
                 <Pair label="وصف المشروع" wide>
                   {r.description ? <span className="whitespace-pre-line">{r.description}</span> : empty}
                 </Pair>

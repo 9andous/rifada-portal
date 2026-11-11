@@ -12,8 +12,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: `${brand.productName} — ${brand.unitName}`,
-    template: `%s — ${brand.productName}`,
+    default: brand.unitShortName,
+    template: `%s — ${brand.unitShortName}`,
   },
   description: "منصة الإشراف الفني على الجمعيات الخيرية والتطوعية المقدمة لخدماتها لقاصدي الحرمين الشريفين.",
   icons: { icon: brand.logo.color.src },

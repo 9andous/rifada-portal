@@ -4,6 +4,7 @@ import type { RequirementSpec } from "@/lib/requests";
 import { canTriggerTransition, type SystemStatusKey } from "@/lib/workflow";
 import type { Role } from "@/server/authz/roles";
 import { db } from "@/server/db";
+import { notify } from "@/server/services/notifications";
 
 // Shared pieces of the request services (Phase 3).
 
@@ -11,6 +12,20 @@ export type Tx = Prisma.TransactionClient;
 export type Client = Tx | typeof db;
 
 export type StatusRef = { id: string; key: SystemStatusKey; name: string; colorToken: string; isTerminal: boolean };
+
+/**
+ * A supervisor of the track acted on a request assigned to another (D-144): it moves to them, recorded and
+ * told, so later notifications and a resubmission reach whoever reviewed it. The caller updates the request.
+ */
+export async function recordTakeover(
+  tx: Tx,
+  actorId: string,
+  request: { id: string; assignedSupervisorId: string | null; referenceNo: string | null; title: string },
+  reason: string,
+): Promise<void> {
+  await tx.assignmentHistory.create({ data: { requestId: request.id, fromUserId: request.assignedSupervisorId, toUserId: actorId, actorId, reason } });
+  await notify(tx, [request.assignedSupervisorId], { type: "request.reassigned_away", title: "تولّى مشرف آخر طلبًا كان لديك", body: `${request.referenceNo ?? ""} — ${request.title}`, requestId: request.id }, actorId);
+}
 
 /** The seven statuses by key. Statuses are data with stable keys (D-013); missing ones are a setup error. */
 export async function statusMap(client: Client = db): Promise<Record<SystemStatusKey, StatusRef>> {

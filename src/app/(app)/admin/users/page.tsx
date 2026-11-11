@@ -30,7 +30,7 @@ const PATH = "/admin/users";
 export default async function UsersPage({ searchParams }: PageProps<"/admin/users">) {
   const user = await requireUser();
   if (!can(user.role, "users.manage")) return <ForbiddenPage />;
-  const figures = await userFigures(user);
+  const [figures, params] = await Promise.all([userFigures(user), searchParams]);
 
   return (
     <>
@@ -46,8 +46,9 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
         }
         figures={
           <BandFigures
+            params={params}
             items={[
-              { label: "الحسابات", icon: Users, value: formatNumber(figures.total), caption: "في جميع الأدوار" },
+              { label: "الحسابات", icon: Users, value: formatNumber(figures.total), caption: "في جميع الأدوار", href: PATH },
               { label: "النشطة", icon: UserRoundCheck, tone: "ok", value: formatNumber(figures.active), caption: "تستطيع الدخول" },
               { label: "المعطلة", icon: UserRoundX, tone: "neutral", value: formatNumber(figures.inactive), caption: "موقوفة عن الدخول" },
               {
@@ -201,10 +202,10 @@ async function UsersList({
                     {u.isActive && u.mustChangePassword ? <span className="t-caption mt-0.5 block">بانتظار تغيير كلمة المرور</span> : null}
                   </Td>
                   <Td>
-                    {u.lastLoginAt ? <DateDisplay date={u.lastLoginAt} variant="hijri" /> : <span className="text-ink-subtle">لم يسجل الدخول</span>}
+                    {u.lastLoginAt ? <DateDisplay date={u.lastLoginAt} /> : <span className="text-ink-subtle">لم يسجل الدخول</span>}
                   </Td>
                   <Td>
-                    <DateDisplay date={u.createdAt} variant="hijri" />
+                    <DateDisplay date={u.createdAt} />
                   </Td>
                 </Tr>
               ))}

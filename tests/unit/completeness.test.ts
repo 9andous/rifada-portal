@@ -18,8 +18,8 @@ const base = (over: Partial<CompletenessInput> = {}): CompletenessInput => ({
   general: {
     title: "عنوان",
     description: "وصف",
-    goals: "الأهداف",
-    expectedBeneficiaries: "العاملون في قطاع الحج",
+    goals: "الأهداف — مؤشر القياس",
+    expectedBeneficiaries: "العاملون في قطاع الحج — ٣٠٠",
     kpis: "نسبة الحضور",
     estimatedBudget: 1000,
     startDate: new Date("2099-01-10T00:00:00Z"),
@@ -93,6 +93,6 @@ describe("completeness check (pure)", () => {
     expect(parseNumberValue("٢٥")).toBe(25);
     expect(parseNumberValue("1,5")).toBe(1.5);
     expect(parseNumberValue("12abc")).toBeNull();
-    expect(formatReference(1448, 7)).toBe("RF-1448-00007");
+    expect(formatReference(1448, 7)).toBe("PRH-1448-00007");
   });
 });

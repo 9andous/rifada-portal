@@ -24,7 +24,7 @@ export function ForgotForm() {
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       {state.message ? <FormError>{state.message}</FormError> : null}
-      <Field id="username" label="اسم المستخدم" error={state.errors?.username} required>
+      <Field id="username" label="اسم المستخدم أو البريد الإلكتروني" error={state.errors?.username} required>
         <Input id="username" name="username" dir="ltr" autoComplete="username" required autoFocus aria-invalid={Boolean(state.errors?.username)} />
       </Field>
       <SubmitButton pendingLabel="جارٍ الإرسال…">إرسال رابط إعادة التعيين</SubmitButton>

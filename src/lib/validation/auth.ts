@@ -37,7 +37,7 @@ export const resetPasswordSchema = z
   });
 
 export const forgotPasswordSchema = z.object({
-  username: z.string().trim().min(1, "أدخل اسم المستخدم."),
+  username: z.string().trim().min(1, "أدخل اسم المستخدم أو البريد الإلكتروني."),
 });
 
 export type FieldErrors = Partial<Record<string, string>>;

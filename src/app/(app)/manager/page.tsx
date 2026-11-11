@@ -115,7 +115,7 @@ export default async function ManagerDashboard({ searchParams }: PageProps<"/man
           <Alert
             ruled
             tone="info"
-            title={`${requestsPhrase(awaiting)} بانتظار اعتمادك بعد تقييم المشرف وتوقيعه`}
+            title={`${requestsPhrase(awaiting)} بانتظار قرارك بعد توصية المشرف وتوقيعه`}
             action={
               <Link href={`${REQUESTS}?stage=manager`} className={buttonClasses("primary", "sm")}>
                 <Eye aria-hidden="true" />

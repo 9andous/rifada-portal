@@ -14,8 +14,11 @@ import { CODE_ALPHABET, CODE_LENGTH, formatVerifyCode } from "@/lib/verify-code"
 
 type Client = PrismaClient | Prisma.TransactionClient;
 
-/** 2 (D-123): the content fingerprint also covers the track, the request type and the new fields. */
-export const SEAL_VERSION = 2;
+/**
+ * 2 (D-123): the content fingerprint also covers the track, the request type and the new fields.
+ * 3 (D-151): and what the association wrote for a type that asks for it («أخرى»).
+ */
+export const SEAL_VERSION = 3;
 
 // ---------------------------------------------------------------------------
 // Canonical JSON and hashing
@@ -63,14 +66,14 @@ export function newVerifyCode(): string {
   return formatVerifyCode(Array.from(randomBytes(CODE_LENGTH), (b) => CODE_ALPHABET[b & 31]).join(""));
 }
 
-/** Next RFD-SIG-<hijriYear>-<seq>: one atomic upsert on the year's counter row. */
+/** Next PRH-SIG-<hijriYear>-<seq> (RFD-SIG before D-150): one atomic upsert on the year's counter row. */
 async function nextSerial(tx: Client, at: Date): Promise<string> {
   const year = hijriYear(at);
   const rows = await tx.$queryRaw<{ lastSeq: number }[]>`
     INSERT INTO "seal_counters" ("hijriYear", "lastSeq") VALUES (${year}, 1)
     ON CONFLICT ("hijriYear") DO UPDATE SET "lastSeq" = "seal_counters"."lastSeq" + 1
     RETURNING "lastSeq"`;
-  return `RFD-SIG-${year}-${String(Number(rows[0].lastSeq)).padStart(6, "0")}`;
+  return `PRH-SIG-${year}-${String(Number(rows[0].lastSeq)).padStart(6, "0")}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -99,6 +102,7 @@ export async function contentDigest(client: Client, requestId: string, version: 
       endDate: true,
       trackId: true,
       requestTypeId: true,
+      requestTypeDetail: true,
       expectedBeneficiaries: true,
       estimatedBudget: true,
       kpis: true,
@@ -136,6 +140,7 @@ export async function contentDigest(client: Client, requestId: string, version: 
             partners: r.partners,
           }
         : {}),
+      ...(version >= 3 ? { requestTypeDetail: r.requestTypeDetail } : {}),
     }),
   );
 }
@@ -157,6 +162,9 @@ export type SealStatement = {
   signedAt: string;
   content: string;
   evaluation: string;
+  /** EVALUATION: what the supervisor recommended and the fingerprint of their reason (D-139). */
+  recommendation?: "APPROVE" | "RETURN" | "REJECT";
+  reason?: string;
   /** APPROVAL: the serial of the supervisor's seal the manager approved. */
   evaluationSeal?: string;
   decision?: "APPROVED";
@@ -180,11 +188,11 @@ export async function createSeal(tx: Client, input: SealInput) {
   ]);
   const evaluation =
     input.kind === "EVALUATION"
-      ? await tx.requestEvaluation.findUniqueOrThrow({ where: { id: input.evaluationId }, select: { criteria: true, note: true, seal: { select: { serial: true } } } })
+      ? await tx.requestEvaluation.findUniqueOrThrow({ where: { id: input.evaluationId }, select: { criteria: true, note: true, recommendation: true, reason: true, seal: { select: { serial: true } } } })
       : await tx.requestEvaluation.findFirstOrThrow({
           where: { requestId: input.requestId, createdAt: { lte: input.at } },
           orderBy: { createdAt: "desc" },
-          select: { criteria: true, note: true, seal: { select: { serial: true } } },
+          select: { criteria: true, note: true, recommendation: true, reason: true, seal: { select: { serial: true } } },
         });
   if (input.kind === "APPROVAL" && !evaluation.seal) throw new Error("The evaluation being approved has no seal.");
 
@@ -200,6 +208,7 @@ export async function createSeal(tx: Client, input: SealInput) {
     signedAt: input.at.toISOString(),
     content,
     evaluation: evaluationDigest(evaluation),
+    ...(input.kind === "EVALUATION" ? { recommendation: evaluation.recommendation, reason: sha256(evaluation.reason ?? "") } : {}),
     ...(input.kind === "APPROVAL" ? { evaluationSeal: evaluation.seal!.serial, decision: "APPROVED" as const, verifyCode } : {}),
   };
   const payload = canonical(statement);

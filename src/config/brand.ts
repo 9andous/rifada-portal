@@ -1,17 +1,17 @@
-// The only place logo assets are referenced. Replace with the official vector files when the
-// Presidency provides them, keeping the intrinsic sizes in step.
+// The only place the platform's identity and logo assets are referenced. The platform is known by
+// the unit's name and carries the Presidency's logo (D-133).
 
 export const brand = {
   unitName: "الوحدة الإشرافية على المنظمات غير الربحية بالحرمين الشريفين",
+  /** The platform's name: header, page titles and emails. */
+  unitShortName: "الوحدة الإشرافية على المنظمات غير الربحية",
   presidencyName: "رئاسة الشؤون الدينية بالمسجد الحرام والمسجد النبوي",
-  productName: "رفادة",
-  systemName: "منصة رفادة",
   logo: {
     /** For light surfaces. */
-    color: { src: "/brand/rifada-logo-color.png", width: 249, height: 288 },
+    color: { src: "/brand/prh-logo.png", width: 236, height: 150 },
     /** For dark surfaces and dark mode. */
-    white: { src: "/brand/rifada-logo-white.png", width: 249, height: 288 },
-    alt: "رفادة",
+    white: { src: "/brand/prh-logo-white.png", width: 273, height: 184 },
+    alt: "رئاسة الشؤون الدينية بالمسجد الحرام والمسجد النبوي",
   },
   presidencyLogo: {
     src: "/brand/prh-logo.png",

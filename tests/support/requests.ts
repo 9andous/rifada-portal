@@ -5,6 +5,7 @@ import { Readable } from "node:stream";
 import { seedStatuses } from "../../prisma/seed/statuses";
 import { REVIEW_CRITERIA } from "@/config/review-criteria";
 import type { Actor } from "@/server/authz/scope";
+import { decideRequests } from "@/server/services/requests/decisions";
 import { addAttachmentVersion, attachOwnFile, uploadContext } from "@/server/services/requests/attachments";
 import { createDraft, saveDraft } from "@/server/services/requests/drafts";
 import { approveRequests, evaluateRequest, type EvaluationInput } from "@/server/services/requests/review";
@@ -99,8 +100,8 @@ export async function stageFor(actor: Actor, requestId: string | null, fileName 
 export const validDraft = (overrides: Record<string, unknown> = {}) => ({
   title: "دورة تأهيل المؤذنين",
   description: "برنامج تدريبي لتأهيل المؤذنين الجدد.",
-  goals: "تأهيل المؤذنين الجدد على الأداء الصحيح للأذان.",
-  expectedBeneficiaries: "المؤذنون الجدد\nطلاب العلم",
+  goals: "تأهيل المؤذنين الجدد على الأداء الصحيح للأذان — عدد المؤذنين المؤهلين",
+  expectedBeneficiaries: "المؤذنون الجدد — ٤٠\nطلاب العلم — ١٢٠",
   startDate: FUTURE.start,
   endDate: FUTURE.end,
   estimatedBudget: "٤٨٠٬٠٠٠",
@@ -109,11 +110,26 @@ export const validDraft = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-/** A draft in a track (D-123): track 1 by default, whose supervisors are `supervisor` and `supervisor2`. */
+/**
+ * A draft in a track (D-123): track 1 by default, whose supervisors are `supervisor` and `supervisor2`.
+ * The association has chosen the track's first programme and that programme's first initiative (D-151).
+ */
 export async function newDraft(w: RequestWorld, actor: Actor = w.actors.officer, track: { id: string } = w.t1) {
   const r = await createDraft(actor, { trackId: track.id, requestTypeId: w.requestTypes[0].id, title: "دورة تأهيل المؤذنين" });
   if (!r.ok) throw new Error(r.message ?? JSON.stringify(r.errors));
+  const scope = await trackScope(track.id);
+  await db.request.update({
+    where: { id: r.id },
+    data: { programId: scope.programId, initiativeId: scope.initiativeIds[0], initiatives: { create: scope.initiativeIds.map((initiativeId, sortOrder) => ({ initiativeId, sortOrder })) } },
+  });
   return r.id;
+}
+
+/** The first programme of a track and that programme's first initiative (D-151). */
+export async function trackScope(trackId: string) {
+  const link = await db.trackProgram.findFirstOrThrow({ where: { trackId }, orderBy: { program: { number: "asc" } }, select: { programId: true } });
+  const initiative = await db.initiative.findFirstOrThrow({ where: { programId: link.programId, archivedAt: null, isActive: true }, orderBy: { number: "asc" }, select: { id: true } });
+  return { programId: link.programId, initiativeIds: [initiative.id] };
 }
 
 /** The association's plan as one of its own files (D-123: no initiative requirements). */
@@ -140,11 +156,21 @@ export async function submittedRequest(w: RequestWorld, actor: Actor = w.actors.
 
 /** A complete «تقييم واعتماد» input; `met` marks every criterion. */
 export function evaluationInput(overrides: Partial<EvaluationInput> = {}, met = true): EvaluationInput {
-  return { criteria: REVIEW_CRITERIA.map((c) => ({ key: c.key, met, note: "" })), note: "", password: TEST_PASSWORD, ...overrides };
+  return { criteria: REVIEW_CRITERIA.map((c) => ({ key: c.key, met, note: "" })), note: "", recommendation: "approve", reason: "", password: TEST_PASSWORD, ...overrides };
 }
 
 /** The unit manager's password confirming the final approval (D-117); the server seals it (D-122). */
 export const managerSignature = () => ({ password: TEST_PASSWORD });
+
+/** The supervisor recommends returning or rejecting, then the unit manager confirms it (D-139). */
+export async function decideThroughManager(w: RequestWorld, ids: string | string[], decision: "return" | "reject", reason: string, supervisor: Actor = w.actors.supervisor) {
+  for (const id of [ids].flat()) {
+    const evaluated = await evaluateRequest(supervisor, id, evaluationInput({ recommendation: decision, reason }));
+    if (!evaluated.ok) throw new Error(evaluated.message ?? JSON.stringify(evaluated.errors));
+    const decided = await decideRequests(w.actors.manager, [id], decision, reason);
+    if (!decided.ok || decided.outcome.done.length !== 1) throw new Error(JSON.stringify(decided));
+  }
+}
 
 /** The assigned supervisor evaluates and signs, then the unit manager approves (D-116). */
 export async function evaluateAndApprove(w: RequestWorld, id: string, supervisor: Actor = w.actors.supervisor) {

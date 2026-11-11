@@ -3,13 +3,14 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
+import { brand } from "@/config/brand";
 import { db } from "@/server/db";
 import { nafathMock } from "@/server/identity/nafath-mock-plugin";
 import { emailService } from "@/server/services/email";
 import { PASSWORD_MIN_LENGTH, hashPassword, verifyPassword } from "./password";
 
 export const auth = betterAuth({
-  appName: "رفادة",
+  appName: brand.unitShortName,
   database: prismaAdapter(db, { provider: "postgresql" }),
   // Profile and account self-service is handled by Rifada's own audited actions.
   disabledPaths: [
@@ -34,7 +35,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       await emailService.send({
         to: user.email,
-        subject: "إعادة تعيين كلمة المرور — رفادة",
+        subject: `إعادة تعيين كلمة المرور — ${brand.unitShortName}`,
         text: `لإعادة تعيين كلمة المرور افتح الرابط التالي خلال ساعة:\n${url}`,
       });
     },
@@ -64,6 +65,8 @@ export const auth = betterAuth({
     max: 100,
     customRules: {
       "/sign-in/username": { window: 60, max: 5 },
+      // Association accounts sign in with their email (D-149).
+      "/sign-in/email": { window: 60, max: 5 },
       "/request-password-reset": { window: 300, max: 3 },
       "/reset-password": { window: 300, max: 5 },
       "/change-password": { window: 300, max: 5 },

@@ -3,4 +3,4 @@
 services:
   db:
     ports: !override
-      - "5440:5432"
+      - "127.0.0.1:5440:5432"

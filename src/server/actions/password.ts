@@ -13,18 +13,18 @@ import {
 import { auth } from "@/server/auth/auth";
 import { homeFor, requireUser } from "@/server/auth/session";
 import { db } from "@/server/db";
+import { clientIp } from "@/server/http/client-ip";
 import { audit } from "@/server/services/audit";
 import { rateLimit } from "@/server/services/rate-limit";
 
 export type FormState = { ok?: boolean; message?: string; errors?: FieldErrors };
 
 async function clientKey(): Promise<string> {
-  const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "local";
+  return clientIp(await headers());
 }
 
 const GENERIC_RESET_MESSAGE =
-  "إن كان اسم المستخدم مسجلًا ولديه بريد إلكتروني معتمد فستصله رسالة تتضمن رابط إعادة التعيين خلال دقائق.";
+  "إن كان الحساب مسجلًا ولديه بريد إلكتروني معتمد فستصله رسالة تتضمن رابط إعادة التعيين خلال دقائق.";
 
 export async function requestPasswordResetAction(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = forgotPasswordSchema.safeParse({ username: formData.get("username") });
@@ -34,8 +34,10 @@ export async function requestPasswordResetAction(_: FormState, formData: FormDat
     return { message: "تجاوزت عدد المحاولات المسموح بها. انتظر بضع دقائق ثم حاول مرة أخرى." };
   }
 
+  // Association accounts sign in with their email (D-149); others with their username.
+  const login = parsed.data.username.toLowerCase();
   const user = await db.user.findUnique({
-    where: { username: parsed.data.username.toLowerCase() },
+    where: login.includes("@") ? { email: login } : { username: login },
     select: { id: true, email: true, isActive: true },
   });
   if (user?.isActive) {

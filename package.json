@@ -7,6 +7,7 @@
     "node": ">=24.11.0"
   },
   "scripts": {
+    "predev": "prisma migrate deploy && prisma generate",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -17,12 +18,14 @@
     "test:e2e": "playwright test",
     "db:up": "docker compose up -d db",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate dev && prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:seed:dev-users": "tsx prisma/seed/dev-users.ts",
     "db:seed:dev-templates": "tsx prisma/seed/dev-templates.ts",
     "db:seed:descriptions": "tsx prisma/seed/fill-descriptions.ts",
+    "db:seed:showcase": "tsx prisma/seed/showcase.ts",
+    "db:seed:rich-demo": "tsx prisma/seed/rich-demo.ts",
     "user:reset-password": "tsx scripts/reset-password.ts",
     "seal:keygen": "node scripts/generate-seal-key.mjs",
     "seal:backfill": "tsx scripts/seal-existing.ts",

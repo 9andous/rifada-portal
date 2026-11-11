@@ -21,6 +21,8 @@ function messageFor(error: AuthError): string {
   if (error.status === 429) return "تجاوزت عدد المحاولات المسموح بها. انتظر دقيقة ثم حاول مرة أخرى.";
   switch (error.code) {
     case "INVALID_USERNAME_OR_PASSWORD":
+    case "INVALID_EMAIL_OR_PASSWORD":
+    case "INVALID_EMAIL":
       return "اسم المستخدم أو كلمة المرور غير صحيحة.";
     case "FAILED_TO_CREATE_SESSION":
       return "لا يمكن الدخول بهذا الحساب حاليًا. تواصل مع مدير النظام.";
@@ -38,7 +40,10 @@ function messageFor(error: AuthError): string {
 /** Only same-site relative paths are accepted as a post-login destination. */
 function safeNext(): string {
   const next = new URLSearchParams(window.location.search).get("next");
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+  // One leading slash, then a character that is not a slash or backslash, and no control
+  // characters. Blocks "/\host" and "/%09/host", which URL parsing would otherwise fold into
+  // a protocol-relative "//host" and navigate off-site (open redirect).
+  return next && /^\/(?![/\\])[^\u0000-\u001f\u007f\\]*$/.test(next) ? next : "/dashboard";
 }
 
 export function LoginForm() {
@@ -52,10 +57,12 @@ export function LoginForm() {
     const form = new FormData(event.currentTarget);
     setError(null);
     startTransition(async () => {
-      const { error: authError } = await authClient.signIn.username({
-        username: String(form.get("username") ?? "").trim(),
-        password: String(form.get("password") ?? ""),
-      });
+      // Association accounts sign in with their email (D-149); staff with their username.
+      const login = String(form.get("username") ?? "").trim();
+      const password = String(form.get("password") ?? "");
+      const { error: authError } = login.includes("@")
+        ? await authClient.signIn.email({ email: login.toLowerCase(), password })
+        : await authClient.signIn.username({ username: login, password });
       if (authError) {
         setError(messageFor(authError));
         return;
@@ -73,7 +80,7 @@ export function LoginForm() {
     <div className="flex flex-col gap-4 short:gap-3">
       <form onSubmit={onSubmit} className="flex flex-col gap-3.5" noValidate>
         {error ? <FormError>{error}</FormError> : null}
-        <Field id="username" label="اسم المستخدم" required>
+        <Field id="username" label="اسم المستخدم أو البريد الإلكتروني" required>
           <Input id="username" name="username" autoComplete="username" dir="ltr" required autoFocus className="h-11" />
         </Field>
         <Field id="password" label="كلمة المرور" required>

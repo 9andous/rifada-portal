@@ -17,9 +17,9 @@ type Sample = { kind: TemplateKind; title: string; description: string; fileName
 const SAMPLES: Sample[] = [
   {
     kind: "GUIDE",
-    title: "دليل الجمعيات لتقديم الطلبات عبر منصة رفادة",
+    title: "دليل الجمعيات لتقديم الطلبات عبر المنصة",
     description: "خطوات تقديم الطلب من اختيار البرنامج والمبادرة إلى إرفاق المستندات ومتابعة الطلب، مع أمثلة لكل خطوة.",
-    fileName: "rifada-association-guide.pdf",
+    fileName: "association-guide.pdf",
   },
   {
     kind: "GUIDE",
@@ -126,7 +126,7 @@ const SAMPLES: Sample[] = [
 
 /** A one-page PDF with two lines of Latin text: Arabic would need an embedded font. */
 function placeholderPdf(label: string): Buffer {
-  const text = `BT /F1 20 Tf 72 720 Td (Rifada - sample file) Tj 0 -32 Td /F1 12 Tf (${label}) Tj 0 -20 Td (Placeholder for development; replace with the real document.) Tj ET`;
+  const text = `BT /F1 20 Tf 72 720 Td (Sample file) Tj 0 -32 Td /F1 12 Tf (${label}) Tj 0 -20 Td (Placeholder for development; replace with the real document.) Tj ET`;
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
